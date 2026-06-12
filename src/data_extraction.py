@@ -32,10 +32,17 @@ def fetch_rfam_thermoswitches(output_path="data/raw/rfam_templates.csv"):
         fr.seq_end
     FROM family f
     JOIN full_region fr ON f.rfam_acc = fr.rfam_acc
-    WHERE (f.description LIKE '%thermometer%'
+    WHERE (f.type LIKE '%thermoregulator%'         -- Captures the official Rfam classification
+       OR f.type LIKE '%thermometer%'
+       OR f.description LIKE '%thermoregulator%'
+       OR f.description LIKE '%thermometer%'
        OR f.description LIKE '%thermoswitch%'
-       OR f.type LIKE '%thermometer%')
-       AND fr.is_significant = 1;
+       OR f.rfam_id LIKE '%ROSE%'                  -- Explicitly catches ROSE and ROSE_2 families
+       OR f.rfam_id LIKE '%FourU%'                 -- Explicitly catches the FourU thermometer
+       OR f.rfam_id LIKE '%ToxT%'                  -- Explicitly catches ToxT
+       OR f.rfam_id LIKE '%AilA%'                  -- Explicitly catches AilA
+       OR f.rfam_id LIKE '%cIII%')                 -- Explicitly catches Lambda cIII
+       AND fr.is_significant = 1;                  -- Ensures only matches above the Gathering Cutoff are included
     """
 
     print("Executing text-mining query across Rfam relational tables...")
