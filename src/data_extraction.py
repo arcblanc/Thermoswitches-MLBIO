@@ -18,7 +18,7 @@ def connect():
 
 
 def fetch_rfam_thermoswitches(output_path="data/raw/rfam_templates.csv"):
-    """Connects to the public EMBL-EBI Rfam instance to isolate RNA thermometers."""
+    """Connects to the public EMBL-EBI Rfam instance to isolate heat-dependent, prokaryotic RNA thermometers."""
     connection = connect()
 
     sql_query = """
@@ -29,20 +29,58 @@ def fetch_rfam_thermoswitches(output_path="data/raw/rfam_templates.csv"):
         f.type,
         fr.rfamseq_acc,
         fr.seq_start,
-        fr.seq_end
+        fr.seq_end,
+        t.tax_string
     FROM family f
     JOIN full_region fr ON f.rfam_acc = fr.rfam_acc
-    WHERE (f.type LIKE '%thermoregulator%'         -- Captures the official Rfam classification
+    JOIN rfamseq rs ON fr.rfamseq_acc = rs.rfamseq_acc
+    JOIN taxonomy t ON rs.ncbi_id = t.ncbi_id
+    WHERE (
+       -- 1. Standard Rfam Classifications (Heat-dependent only)
+       f.type LIKE '%thermoregulator%'
        OR f.type LIKE '%thermometer%'
        OR f.description LIKE '%thermoregulator%'
        OR f.description LIKE '%thermometer%'
        OR f.description LIKE '%thermoswitch%'
-       OR f.rfam_id LIKE '%ROSE%'                  -- Explicitly catches ROSE and ROSE_2 families
-       OR f.rfam_id LIKE '%FourU%'                 -- Explicitly catches the FourU thermometer
-       OR f.rfam_id LIKE '%ToxT%'                  -- Explicitly catches ToxT
-       OR f.rfam_id LIKE '%AilA%'                  -- Explicitly catches AilA
-       OR f.rfam_id LIKE '%cIII%')                 -- Explicitly catches Lambda cIII
-       AND fr.is_significant = 1;                  -- Ensures only matches above the Gathering Cutoff are included
+       OR f.description LIKE '%heat shock%'
+       OR f.description LIKE '%heat-shock%'
+
+       -- 2. Canonical Heat Shock & Virulence Thermometers
+       OR f.rfam_id LIKE '%ROSE%'
+       OR f.rfam_id LIKE '%FourU%'
+       OR f.rfam_id LIKE '%ToxT%'
+       OR f.rfam_id LIKE '%AilA%'
+       OR f.rfam_id LIKE '%cIII%'
+       OR f.rfam_id LIKE '%agsA%'
+
+       -- 3. Newly Identified Pathogen Thermoswitches
+       OR f.rfam_id LIKE '%groES%'
+       OR f.rfam_id LIKE '%clpB%'
+       OR f.rfam_id LIKE '%shuA%'
+       OR f.rfam_id LIKE '%chuA%'
+       OR f.rfam_id LIKE '%cnfY%'
+       OR f.rfam_id LIKE '%cnf1%'
+       
+       -- 4. Pseudomonas elements
+       OR f.rfam_id LIKE '%ibpA%'
+       OR f.rfam_id LIKE '%IpbA%'
+       OR f.rfam_id LIKE '%rhlA%'
+       OR f.rfam_id LIKE '%lasI%'
+       OR f.rfam_id LIKE '%lsdI%'
+       
+       -- 5. Yersinia, coupled, & synthetic targets:
+       OR f.rfam_id LIKE '%katA%'
+       OR f.rfam_id LIKE '%cysK-2%'
+       OR f.rfam_id LIKE '%sodB%'
+       OR f.rfam_id LIKE '%pepN%'
+       OR f.rfam_id LIKE '%trxA%'
+       OR f.rfam_id LIKE '%hsp17%'
+       OR f.rfam_id LIKE '%sctS%'
+       OR f.rfam_id LIKE '%sctT%'
+       OR f.rfam_id LIKE '%Cyanobacterial%'
+    )
+    AND fr.is_significant = 1
+    AND t.tax_string NOT LIKE '%Eukaryota%'; -- Ensures mathematically consistent SD-occlusion models
     """
 
     print("Executing text-mining query across Rfam relational tables...")
