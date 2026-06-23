@@ -29,6 +29,7 @@ htmlcov/
 # Secrets and local config
 .env
 .env.*
+!.env.example
 
 # OS and editor
 .DS_Store
@@ -61,3 +62,4 @@ reports/figures/*
 slurm-*.out
 *.o[0-9]*
 *.e[0-9]*
+

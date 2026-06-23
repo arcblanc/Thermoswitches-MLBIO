@@ -17,7 +17,7 @@ def connect():
     return mysql.connector.connect(**RFAM_CONFIG)
 
 
-def fetch_rfam_thermoswitches(output_path="data/raw/rfam_templates.csv"):
+def fetch_rfam_thermoswitches(output_path="data/raw/rfam_positives.csv"):
     """Connects to the public EMBL-EBI Rfam instance to isolate heat-dependent, prokaryotic RNA thermometers."""
     connection = connect()
 
@@ -93,11 +93,16 @@ def fetch_rfam_thermoswitches(output_path="data/raw/rfam_templates.csv"):
         print(f"Removed {removed} duplicate row(s) before saving.")
 
     df.to_csv(output_path, index=False)
+    legacy_path = "data/raw/rfam_templates.csv"
+    if output_path != legacy_path:
+        df.to_csv(legacy_path, index=False)
     connection.close()
     print(
         f"Data ingestion successful! Overwrote {output_path} "
         f"with {len(df)} structural instances."
     )
+    if output_path != legacy_path:
+        print(f"Also wrote legacy copy to {legacy_path}.")
     return df
 
 
