@@ -1,0 +1,11 @@
+name: thermoswitches-mlbio
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python=3.11
+  - cd-hit
+  - pandas
+  - biopython
+  - mysql-connector-python
+  - python-dotenv
