@@ -2,3 +2,5 @@ mysql-connector-python
 pandas
 biopython
 python-dotenv
+imbalanced-learn
+scikit-learn

@@ -6,7 +6,8 @@ from pathlib import Path
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-STAGING_DIR = "data/processed/cdhit_input"
+CDHIT_OUTPUT_DIR = "data/processed/cdhitoutput"
+STAGING_DIR = f"{CDHIT_OUTPUT_DIR}/cdhit_input"
 JOIN_COLUMNS = ["rfamseq_acc", "seq_start", "seq_end"]
 DEFAULT_IDENTITY = 0.8
 DEFAULT_THREADS = 0
@@ -46,6 +47,53 @@ def stage_inputs(fasta_src, csv_src, label):
     print(f"Original preserved in {fasta_src.parent}/")
 
     return staged_fasta, staged_csv
+
+
+def consolidate_cdhit_outputs():
+    """Move legacy CD-HIT artifacts from data/processed/ into cdhitoutput/."""
+    processed_dir = resolve_path("data/processed")
+    output_dir = resolve_path(CDHIT_OUTPUT_DIR)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    patterns = [
+        "positives_cdhit.fasta",
+        "positives_cdhit.fasta.clstr",
+        "positives_deduped.fasta",
+        "positives_deduped.csv",
+        "negatives_cdhit.fasta",
+        "negatives_cdhit.fasta.clstr",
+        "negatives_deduped.fasta",
+        "negatives_deduped.csv",
+    ]
+
+    moved = 0
+    for name in patterns:
+        source = processed_dir / name
+        destination = output_dir / name
+        if source.exists() and not destination.exists():
+            shutil.move(str(source), str(destination))
+            print(f"Moved {source.name} -> {destination}")
+            moved += 1
+
+    legacy_staging = processed_dir / "cdhit_input"
+    new_staging = output_dir / "cdhit_input"
+    if legacy_staging.exists() and legacy_staging != new_staging:
+        new_staging.mkdir(parents=True, exist_ok=True)
+        for item in legacy_staging.iterdir():
+            destination = new_staging / item.name
+            if not destination.exists():
+                shutil.move(str(item), str(destination))
+                print(f"Moved {item.name} -> {destination}")
+                moved += 1
+        if not any(legacy_staging.iterdir()):
+            legacy_staging.rmdir()
+
+    if moved:
+        print(f"Consolidated {moved} CD-HIT artifact(s) into {output_dir}")
+    else:
+        print(f"CD-HIT artifacts already consolidated in {output_dir}")
+
+    return output_dir
 
 
 def parse_fasta_header(header):
@@ -267,9 +315,9 @@ def _digest_cd_hit_pool(
 def digest_positives_cd_hit(
     input_fasta="data/raw/positives.fasta",
     input_csv="data/raw/rfam_positives.csv",
-    output_fasta="data/processed/positives_deduped.fasta",
-    output_csv="data/processed/positives_deduped.csv",
-    cdhit_fasta="data/processed/positives_cdhit.fasta",
+    output_fasta=f"{CDHIT_OUTPUT_DIR}/positives_deduped.fasta",
+    output_csv=f"{CDHIT_OUTPUT_DIR}/positives_deduped.csv",
+    cdhit_fasta=f"{CDHIT_OUTPUT_DIR}/positives_cdhit.fasta",
     identity=DEFAULT_IDENTITY,
     threads=DEFAULT_THREADS,
 ):
@@ -289,9 +337,9 @@ def digest_positives_cd_hit(
 def digest_negatives_cd_hit(
     input_fasta="data/raw/negatives.fasta",
     input_csv="data/raw/rfam_negatives.csv",
-    output_fasta="data/processed/negatives_deduped.fasta",
-    output_csv="data/processed/negatives_deduped.csv",
-    cdhit_fasta="data/processed/negatives_cdhit.fasta",
+    output_fasta=f"{CDHIT_OUTPUT_DIR}/negatives_deduped.fasta",
+    output_csv=f"{CDHIT_OUTPUT_DIR}/negatives_deduped.csv",
+    cdhit_fasta=f"{CDHIT_OUTPUT_DIR}/negatives_cdhit.fasta",
     identity=DEFAULT_IDENTITY,
     threads=DEFAULT_THREADS,
 ):
@@ -312,10 +360,15 @@ def _build_parser():
     parser = argparse.ArgumentParser(
         description="Run CD-HIT deduplication and relink Rfam metadata."
     )
-    group = parser.add_mutually_exclusive_group(required=True)
+    group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument("--positives", action="store_true", help="Deduplicate positives.")
     group.add_argument("--negatives", action="store_true", help="Deduplicate negatives.")
     group.add_argument("--all", action="store_true", help="Deduplicate positives then negatives.")
+    parser.add_argument(
+        "--migrate",
+        action="store_true",
+        help="Move legacy CD-HIT artifacts into data/processed/cdhitoutput/.",
+    )
     parser.add_argument(
         "-c",
         "--identity",
@@ -336,6 +389,16 @@ def _build_parser():
 def main():
     args = _build_parser().parse_args()
     kwargs = {"identity": args.identity, "threads": args.threads}
+
+    if args.migrate:
+        consolidate_cdhit_outputs()
+        if not (args.positives or args.negatives or args.all):
+            return
+
+    if not (args.positives or args.negatives or args.all or args.migrate):
+        _build_parser().error(
+            "one of --positives, --negatives, --all, or --migrate is required"
+        )
 
     if args.all:
         digest_positives_cd_hit(**kwargs)

@@ -9,3 +9,5 @@ dependencies:
   - biopython
   - mysql-connector-python
   - python-dotenv
+  - imbalanced-learn
+  - scikit-learn
