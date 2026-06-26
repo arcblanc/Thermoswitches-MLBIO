@@ -11,3 +11,6 @@ dependencies:
   - python-dotenv
   - imbalanced-learn
   - scikit-learn
+  - viennarna
+  - pip:
+    - nupack  # requires active paid NUPACK subscription

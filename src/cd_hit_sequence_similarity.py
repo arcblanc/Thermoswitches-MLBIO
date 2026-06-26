@@ -23,6 +23,9 @@ def require_cd_hit():
 
 
 def resolve_path(path):
+    """A navigation helper. It takes any file path and ensures 
+    it is an absolute path (starting precisely from the project's root folder) 
+    so the script never gets lost looking for files."""
     path = Path(path)
     if not path.is_absolute():
         path = PROJECT_ROOT / path
@@ -30,7 +33,7 @@ def resolve_path(path):
 
 
 def stage_inputs(fasta_src, csv_src, label):
-    """Copy raw FASTA/CSV into processed staging; return staged paths."""
+    """A safety mechanism.Copy raw FASTA/CSV into processed staging; return staged paths."""
     fasta_src = resolve_path(fasta_src)
     csv_src = resolve_path(csv_src)
     staging_dir = resolve_path(STAGING_DIR)
@@ -97,7 +100,10 @@ def consolidate_cdhit_outputs():
 
 
 def parse_fasta_header(header):
-    """Extract composite join key fields from an enriched FASTA header."""
+    """Acts as a translator. The FASTA sequences have long, 
+    complicated name tags (e.g., >RF00114|sRNA|AB12345|10-50). 
+    This function chops that text up and turns it into clean, distinct variables."""
+    
     cleaned = header.strip()
     if cleaned.startswith(">"):
         cleaned = cleaned[1:]
@@ -121,7 +127,10 @@ def parse_fasta_header(header):
 
 
 def parse_representatives_from_fasta(cdhit_fasta):
-    """Read CD-HIT representative FASTA records into a DataFrame."""
+    """parse_representatives_from_fasta(cdhit_fasta)
+    Reads the final FASTA file that CD-HIT spits out (the survivors). 
+    It takes all those unique genetic sequences and organizes them into a clean pandas data table."""
+    
     cdhit_fasta = resolve_path(cdhit_fasta)
     records = []
     header = None
@@ -151,7 +160,9 @@ def parse_representatives_from_fasta(cdhit_fasta):
 
 
 def parse_cluster_file(clstr_path):
-    """Parse a CD-HIT .clstr file and return per-cluster size statistics."""
+    """Reads the .clstr file, which is basically CD-HIT's receipt. 
+    It calculates the statistics for your final report, 
+    such as how many duplicate clusters were formed and the size of the largest cluster."""
     clstr_path = resolve_path(clstr_path)
     cluster_sizes = []
     current_size = 0
@@ -178,6 +189,7 @@ def parse_cluster_file(clstr_path):
         "singletons": sum(size == 1 for size in cluster_sizes),
     }
 
+#Core Engine - CD-HIT 
 
 def run_cd_hit_est(
     input_fasta,
@@ -272,6 +284,9 @@ def _digest_cd_hit_pool(
     identity=DEFAULT_IDENTITY,
     threads=DEFAULT_THREADS,
 ):
+    """
+    Stage inputs → Run CD-HIT → Parse results → Relink metadata → Write outputs → Print statistics.
+    """
     input_fasta = resolve_path(input_fasta)
     input_csv = resolve_path(input_csv)
     output_fasta = resolve_path(output_fasta)
@@ -386,6 +401,8 @@ def _build_parser():
     return parser
 
 
+#Main Function
+
 def main():
     args = _build_parser().parse_args()
     kwargs = {"identity": args.identity, "threads": args.threads}
@@ -411,3 +428,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+
