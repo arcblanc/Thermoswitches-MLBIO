@@ -1,3 +1,4 @@
+import argparse
 import json
 import re
 import sys
@@ -9,9 +10,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from data_engineering.paths import resolve_path
 
-FASTA_PATH = "data/processed/de_novo/smoke/generated.fasta"
-EMBED_DIR = "data/processed/validation_embedding/smoke"
 RNA_PATTERN = re.compile(r"^[AUGC]+$")
+DEFAULT_FASTA = "data/processed/de_novo/smoke/generated.fasta"
+DEFAULT_EMBED_DIR = "data/processed/validation_embedding/smoke"
 
 
 def parse_fasta(path):
@@ -35,9 +36,14 @@ def parse_fasta(path):
     return records
 
 
-def verify(expected_records=2, hidden_size=768):
-    fasta_path = resolve_path(FASTA_PATH)
-    embed_dir = resolve_path(EMBED_DIR)
+def verify(
+    expected_records=2,
+    hidden_size=768,
+    fasta_path=DEFAULT_FASTA,
+    embed_dir=DEFAULT_EMBED_DIR,
+):
+    fasta_path = resolve_path(fasta_path)
+    embed_dir = resolve_path(embed_dir)
     manifest_path = embed_dir / "manifest.jsonl"
 
     checks = []
@@ -73,10 +79,31 @@ def verify(expected_records=2, hidden_size=768):
     failed = [name for name, ok, _ in checks if not ok]
     if failed:
         print(f"\nVerification failed: {', '.join(failed)}")
-        sys.exit(1)
+        return False
     print("\nAll LLM smoke output checks passed.")
+    return True
+
+
+def _build_parser():
+    parser = argparse.ArgumentParser(description="Verify GenerRNA + BiRNA-BERT outputs.")
+    parser.add_argument("--expected", type=int, default=2)
+    parser.add_argument("--hidden-size", type=int, default=768)
+    parser.add_argument("--fasta", default=DEFAULT_FASTA)
+    parser.add_argument("--embed-dir", default=DEFAULT_EMBED_DIR)
+    return parser
+
+
+def main():
+    args = _build_parser().parse_args()
+    ok = verify(
+        expected_records=args.expected,
+        hidden_size=args.hidden_size,
+        fasta_path=args.fasta,
+        embed_dir=args.embed_dir,
+    )
+    if not ok:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    expected = int(sys.argv[1]) if len(sys.argv) > 1 else 2
-    verify(expected_records=expected)
+    main()

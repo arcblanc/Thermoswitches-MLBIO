@@ -1,7 +1,9 @@
 import argparse
 import builtins
+import gc
 import importlib
 import json
+import signal
 import sys
 from pathlib import Path
 
@@ -17,9 +19,13 @@ if str(SRC_ROOT) not in sys.path:
 
 from data_engineering.paths import resolve_path
 from validation_embedding.config import load_llm_settings
+from validation_embedding.storage import get_storage
 
 DEFAULT_INPUT = "data/processed/de_novo/smoke/generated.fasta"
+BATCH_INPUT = "data/processed/de_novo/generated.fasta"
 _BIRNA_CPU_PATCHED = False
+_STORAGE = None
+_EMBEDDING_SUBDIR = ""
 
 
 def get_device():
@@ -27,7 +33,6 @@ def get_device():
 
 
 def _patch_birna_cpu_compat():
-    """Allow BiRNA-BERT on CPU/Mac without Triton or CUDA flash attention."""
     global _BIRNA_CPU_PATCHED
     if _BIRNA_CPU_PATCHED:
         return
@@ -54,7 +59,6 @@ def _patch_birna_cpu_compat():
         return dmu.get_relative_imports(filename)
 
     dmu.check_imports = check_imports
-
     real_import = builtins.__import__
 
     def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
@@ -147,7 +151,7 @@ def embed_sequence(tokenizer, model, config, sequence, device):
     return embeddings, nuc_input
 
 
-def save_embedding(record_id, sequence, embeddings, config, output_dir, settings):
+def save_embedding(record_id, sequence, embeddings, config, output_dir, settings, storage):
     output_dir = resolve_path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     array = embeddings.cpu().numpy()
@@ -164,29 +168,56 @@ def save_embedding(record_id, sequence, embeddings, config, output_dir, settings
     }
     with meta_path.open("w") as handle:
         json.dump(metadata, handle, indent=2)
-    manifest_path = output_dir / "manifest.jsonl"
-    with manifest_path.open("a") as handle:
-        handle.write(json.dumps(metadata) + "\n")
+    storage.append_jsonl(output_dir / "manifest.jsonl", metadata)
     return npy_path, meta_path
+
+
+def _flush_storage():
+    global _STORAGE, _EMBEDDING_SUBDIR
+    if _STORAGE is not None:
+        _STORAGE.sync_up(embedding_subdir=_EMBEDDING_SUBDIR)
+
+
+def _register_sigterm_handler(storage, embedding_subdir):
+    global _STORAGE, _EMBEDDING_SUBDIR
+    _STORAGE = storage
+    _EMBEDDING_SUBDIR = embedding_subdir
+
+    def _handle_sigterm(signum, frame):
+        print("SIGTERM received — flushing embedding artifacts before exit...")
+        storage.write_run_state(status="preempted", event="sigterm_embed")
+        _flush_storage()
+        raise SystemExit(143)
+
+    signal.signal(signal.SIGTERM, _handle_sigterm)
 
 
 def run_birna_embed(
     input_fasta=DEFAULT_INPUT,
     output_subdir="smoke",
     sequence=None,
+    batch_size=32,
+    resume=False,
     dry_run=False,
 ):
     settings = load_llm_settings()
+    storage = get_storage(settings)
     output_dir = resolve_path(settings.embedding_output_dir) / output_subdir
     device = get_device()
 
+    if resume:
+        storage.sync_down(embedding_subdir=output_subdir)
+
     if dry_run:
         input_path = None if sequence else resolve_path(input_fasta)
+        completed = storage.completed_embedding_ids(output_subdir) if resume else set()
         print("BiRNA-BERT dry-run")
-        print(f"  input:   {input_path or 'inline'}")
-        print(f"  output:  {output_dir}")
-        print(f"  model:   {settings.birna_model_id}")
-        print(f"  device:  {device}")
+        print(f"  input:     {input_path or 'inline'}")
+        print(f"  output:    {output_dir}")
+        print(f"  model:     {settings.birna_model_id}")
+        print(f"  device:    {device}")
+        print(f"  resume:    {resume} ({len(completed)} already embedded)")
+        print(f"  batch_size:{batch_size}")
         return []
 
     if sequence:
@@ -199,42 +230,78 @@ def run_birna_embed(
     if not records:
         raise ValueError(f"No sequences found in {input_path}")
 
-    tokenizer, model, config = load_birna_model(settings, device)
-    manifest_path = output_dir / "manifest.jsonl"
-    if manifest_path.exists():
-        manifest_path.unlink()
+    completed_ids = storage.completed_embedding_ids(output_subdir) if resume else set()
+    pending = [
+        (header, seq)
+        for header, seq in records
+        if header.replace("/", "_").replace(" ", "_") not in completed_ids
+    ]
 
+    if not pending:
+        print(f"Embedding complete: {len(completed_ids)} records already in manifest")
+        return []
+
+    _register_sigterm_handler(storage, output_subdir)
+    tokenizer, model, config = load_birna_model(settings, device)
     saved = []
-    for header, sequence in records:
-        record_id = header.replace("/", "_").replace(" ", "_")
-        embeddings, nuc_input = embed_sequence(tokenizer, model, config, sequence, device)
+
+    for batch_start in range(0, len(pending), batch_size):
+        batch = pending[batch_start : batch_start + batch_size]
+        for header, seq in batch:
+            record_id = header.replace("/", "_").replace(" ", "_")
+            embeddings, nuc_input = embed_sequence(tokenizer, model, config, seq, device)
+            print(
+                f"{record_id}: NUC input length={len(nuc_input.split())}, "
+                f"embedding shape={tuple(embeddings.shape)}"
+            )
+            paths = save_embedding(
+                record_id, seq, embeddings, config, output_dir, settings, storage
+            )
+            saved.append(paths)
+
+        storage.write_run_state(
+            status="embedding",
+            embedded=len(storage.completed_embedding_ids(output_subdir)),
+        )
+        storage.sync_up(embedding_subdir=output_subdir)
+        gc.collect()
         print(
-            f"{record_id}: NUC input length={len(nuc_input.split())}, "
-            f"embedding shape={tuple(embeddings.shape)}"
+            f"Embedding checkpoint: "
+            f"{len(storage.completed_embedding_ids(output_subdir))} total records"
         )
-        paths = save_embedding(
-            record_id, sequence, embeddings, config, output_dir, settings
-        )
-        saved.append(paths)
+
     print(f"Wrote embeddings to {output_dir}")
+    storage.write_run_state(
+        status="embedding_complete",
+        embedded=len(storage.completed_embedding_ids(output_subdir)),
+    )
+    storage.sync_up(embedding_subdir=output_subdir)
     return saved
 
 
 def _build_parser():
-    parser = argparse.ArgumentParser(description="BiRNA-BERT NUC embedding smoke test.")
-    parser.add_argument("--input-fasta", default=DEFAULT_INPUT)
-    parser.add_argument("--output-subdir", default="smoke")
+    parser = argparse.ArgumentParser(description="BiRNA-BERT NUC embedding.")
+    parser.add_argument("--input-fasta", default=None)
+    parser.add_argument("--output-subdir", default=None)
     parser.add_argument("--sequence", default=None, help="Inline sequence instead of FASTA")
+    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser
 
 
 def main():
     args = _build_parser().parse_args()
+    input_fasta = args.input_fasta or DEFAULT_INPUT
+    output_subdir = args.output_subdir
+    if output_subdir is None:
+        output_subdir = "smoke" if "smoke" in input_fasta else ""
     run_birna_embed(
-        input_fasta=args.input_fasta,
-        output_subdir=args.output_subdir,
+        input_fasta=input_fasta,
+        output_subdir=output_subdir,
         sequence=args.sequence,
+        batch_size=args.batch_size,
+        resume=args.resume,
         dry_run=args.dry_run,
     )
 

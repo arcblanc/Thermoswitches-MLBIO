@@ -7,3 +7,4 @@ tqdm
 numpy
 einops
 accelerate
+google-cloud-storage

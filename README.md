@@ -133,11 +133,24 @@ python src/validation_embedding/birna_embed.py \
 # End-to-end
 bash scripts/llm_smoke_test.sh
 bash scripts/blank_slate_llm_test.sh
-
-See `notebooks/04_llm_smoke_test_results.ipynb` for a walkthrough of the generated FASTA and embedding outputs.
 ```
 
+See `notebooks/04_llm_smoke_test_results.ipynb` for a walkthrough of the generated FASTA and embedding outputs.
+
 The same scripts run on a cloud GPU without code changes when CUDA is available.
+
+### Cloud Spot VM (10k batch + GCS)
+
+See [`cluster/README.md`](cluster/README.md) for bucket setup, the `gcloud` launch command, and two-phase rollout:
+
+1. **GPU smoke** — metadata `generna-num-samples=2`
+2. **Full batch** — metadata `generna-num-samples=10000`
+
+```bash
+# On the VM (or locally with STORAGE_TARGET=gcs in .env)
+bash scripts/llm_cloud_run.sh
+python scripts/llm_cloud_batch.py --dry-run
+```
 
 ### Roadmap
 
