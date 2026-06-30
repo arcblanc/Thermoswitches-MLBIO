@@ -107,13 +107,43 @@ python scripts/verify_batch_outputs.py 10
 
 ---
 
-## Phase 4: De Novo Design and Foundation Models (Planned)
+## Phase 4: De Novo Design and Foundation Models
 
-Future work lives under `src/de_novo_hallucinations/` and `src/validation_embedding/`:
+Code lives under `src/de_novo_hallucinations/` (GenerRNA generation) and `src/validation_embedding/` (BiRNA-BERT embeddings).
 
-- **De novo design (`de_novo_hallucinations/`):** inverse folding and mutation proposals targeting 55°C activation with low leakiness
-- **Validation and embeddings (`validation_embedding/`):** fine-tuning and evaluation with RNA foundation models (e.g. BiRNA-BERT, RiNALMo) on the curated dataset
-- **Structural context:** explore complementary structure representations (including non-Euclidean views) where they improve design fidelity
+### Local LLM smoke test (CPU)
+
+Install optional LLM dependencies (separate from the thermodynamics stack):
+
+```bash
+pip install -r requirements-llm.txt
+cp .env.example .env   # optional HF_TOKEN
+```
+
+First GenerRNA run downloads ~3.6 GB of weights into `models/genererna/` (gitignored).
+
+```bash
+# Micro-generation: 2 sequences, temperature=1.0, top_k=250
+python src/de_novo_hallucinations/gener_rna.py --num-samples 2 --temperature 1.0 --top-k 250
+
+# BiRNA-BERT NUC embeddings + save .npy under data/processed/validation_embedding/smoke/
+python src/validation_embedding/birna_embed.py \
+  --input-fasta data/processed/de_novo/smoke/generated.fasta
+
+# End-to-end
+bash scripts/llm_smoke_test.sh
+bash scripts/blank_slate_llm_test.sh
+
+See `notebooks/04_llm_smoke_test_results.ipynb` for a walkthrough of the generated FASTA and embedding outputs.
+```
+
+The same scripts run on a cloud GPU without code changes when CUDA is available.
+
+### Roadmap
+
+- **De novo design:** inverse folding and mutation proposals targeting 55°C activation with low leakiness
+- **Validation and embeddings:** fine-tuning BiRNA-BERT / RiNALMo on the curated dataset
+- **Structural context:** complementary structure representations where they improve design fidelity
 
 ---
 

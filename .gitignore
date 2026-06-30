@@ -79,3 +79,7 @@ nupack-4.1.0.1/
 # Prototype benchmark curves (large JSON)
 data/processed/prototype/curves/
 
+# LLM caches and generated embeddings (under data/processed/* by default)
+models/genererna/
+data/processed/validation_embedding/
+
