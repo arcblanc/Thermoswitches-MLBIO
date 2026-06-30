@@ -1,122 +1,146 @@
-# Thermoswitches-ML
+# Thermoswitches-MLBIO
 
+## RNA Thermoswitch Engineering: Machine Learning and Biophysics Pipeline
 
-# 🧬 RNA Thermoswitch Engineering: A Machine Learning & Biophysics Pipeline
-
-**Author:** Amier Zuhri 
+**Author:** Amier Zuhri  
 **Role:** Biotech Machine Learning Engineer  
-**Domain:** Synthetic Biology, Bioinformatics, Machine Learning, RNA  
+**Domain:** Synthetic Biology, Bioinformatics, Machine Learning, RNA
 
-## 📌 Project Overview
-This project aims to computationally classify and engineer **prokaryotic RNA thermoswitches** (RNA thermometers). Biologically, these are highly structured *cis*-regulatory non-coding RNA elements (often located in the 5' UTR) that fold into hairpins at low temperatures to physically sequester the Shine-Dalgarno (SD) sequence and prevent ribosome binding. Upon a temperature increase, the hairpin melts in a zipper-like fashion, exposing the SD sequence and activating translation. 
+## Project Overview
 
-**The Engineering Goal:** Build a robust machine learning pipeline(Random Forest) to classify pure non leaky thermoswitches at a specific temperature, with the ultimate future goal of utilizing deep learning foundation models to engineer a synthetic thermoswitch that triggers precisely at 55°C with zero low-temperature "leakiness" and have a very sharp hill coefficient.
+This project computationally classifies and engineers **prokaryotic RNA thermoswitches** (RNA thermometers). These are highly structured *cis*-regulatory non-coding RNA elements, typically in the 5' UTR, that sequester the Shine-Dalgarno (SD) sequence at low temperature and expose it upon melting as temperature rises.
 
----
+**Engineering goal:** Build a Random Forest classifier for non-leaky thermoswitches at a target temperature, with a longer-term objective of engineering synthetic switches that activate near 55°C with minimal low-temperature leakiness and a sharp Hill coefficient.
 
-## 🏗️ Architecture
-This repository is structured as a modular Python pipeline under `src/`:
+## Repository Architecture
 
-| Module | Role |
-|--------|------|
-| `data_extraction.py` | Rfam SQL extraction (positives + negatives) |
-| `sequence_retrieval.py` | NCBI Entrez FASTA fetch |
-| `cd_hit_sequence_similarity.py` | CD-HIT homology filtering |
-| `knn_undersample.py` | k-mer ENN + RUS balancing |
-| `vienna_rna.py` | ViennaRNA melting / unpaired-probability features |
-| `nupack.py` | NUPACK test-tube ensemble features |
-| `thermo_common.py` | Shared dataset loading, temp grid, Hill-fit stubs |
+The codebase is organized as domain subpackages under `src/`. Configuration is separated from code: secrets and runtime settings load from `.env` via `python-dotenv` and `os.environ`, while data paths resolve from the repository root through `data_engineering.paths.resolve_path()` rather than machine-specific absolute paths.
 
----
+| Package | Module | Role |
+|---------|--------|------|
+| `data_engineering/` | `paths.py` | `PROJECT_ROOT` and `resolve_path()` for portable file I/O |
+| `data_engineering/` | `data_extraction.py` | Rfam SQL extraction (positives and negatives) |
+| `data_engineering/` | `sequence_retrieval.py` | NCBI Entrez FASTA fetch (reads `EMAIL`, `NCBI_API_KEY` from `.env`) |
+| `data_engineering/` | `cd_hit_sequence_similarity.py` | CD-HIT homology filtering |
+| `data_engineering/` | `knn_undersample.py` | k-mer ENN + RUS balancing |
+| `thermo_sim/` | `thermo_common.py` | Shared dataset loading, temperature grid, Hill fitting |
+| `thermo_sim/` | `vienna_rna.py` | ViennaRNA melting and unpaired-probability features |
+| `thermo_sim/` | `nupack_engine.py` | NUPACK test-tube ensemble features |
+| `thermo_sim/` | `feature_fusion.py` | Join `viennarna_*` and `nupack_*` feature blocks |
+| `thermo_sim/` | `thermo_prototype.py` | 4-sequence stress-test benchmark |
+| `thermo_sim/` | `thermo_batch.py` | Batched full-dataset extraction with RAM logging |
+| `thermo_sim/` | `plot_prototype_benchmark.py` | Prototype benchmark figures |
+| `de_novo_hallucinations/` | *(planned)* | De novo sequence design and inverse folding |
+| `validation_embedding/` | *(planned)* | Foundation-model validation and embedding workflows |
 
-## 🛠️ Phase 1: Data Extraction & Balancing Workflow
-To prevent the model from learning evolutionary background noise or falling victim to class imbalance, we employ a strict, multi-step data processing pipeline:
+### Configuration
 
-1. **Broad SQL Extraction (Rfam):** 
-   *   **Positives:** ~2,960 known prokaryotic, heat-shock thermoswitches (e.g., ROSE, FourU elements) extracted from the Rfam relational database.
-   *   **Negatives:** A massive pool (~168,000) of standard, non-temperature-responsive bacterial 5' UTRs and *Cis*-regulatory elements from the same biological neighborhood. 
-2. **FASTA Retrieval:** We utilize Biopython's `Entrez` module to fetch the raw nucleotide sequences (A, C, G, U) using the genomic coordinates (`seq_start`, `seq_end`) from Rfam.
-3. **Homology Filtering (CD-HIT):** *Before* balancing, both positive and negative FASTA datasets are passed independently through the **CD-HIT algorithm**. By setting a sequence identity threshold (e.g., 80%), we remove highly homologous and redundant sequences that would otherwise cause severe data leakage and overfitting.
+Copy `.env.example` to `.env` and set:
 
-4. **Undersampling** using **K-mer ENN + RUS** architecture : To resolve the severe class imbalance between the surviving ~1,000 positive thermoswitches and the massive negative majority class, we apply an advanced k-mer ENN + RUS balancing pipeline. Machine learning algorithms trained on heavily skewed data tend to predict the over-represented class poorly, making balancing a critical step. 
-   * First, the script translates the raw RNA text strings into numerical feature matrices using k-mer frequency counts. 
-   
-   * Next, it applies Edited Nearest Neighbors (ENN), a specialized K-Nearest Neighbors (KNN) technique that calculates the mathematical distance between data points in the feature space. 
+```bash
+EMAIL=your.email@university.edu
+NCBI_API_KEY=your_ncbi_api_key_here
+```
 
-   * Rather than blindly dropping sequences, ENN strategically evaluates the k-mer features to maximize the distance between the selected negative training data points. This guarantees that the negative non-switches we retain are from completely different corners of the feature space, ensuring they are as structurally diverse and distinct from one another as possible to preserve maximum non-redundant information. 
-   
-   * Finally, Random Under-Sampling (RUS) shrinks the ENN-cleaned negative pool to match the positive class (strict 1:1 ratio). This outputs the finalized golden dataset to `data/processed/balanced/balanced_dataset.*`, sized for dual thermodynamic feature extraction (ViennaRNA + NUPACK).
+`sequence_retrieval.py` loads these at runtime with `load_dotenv()` and `os.environ.get()`. All pipeline scripts use repo-relative paths (for example `data/processed/balanced/balanced_dataset.csv`) resolved through `resolve_path()`, so the same code runs locally and on a remote VM without path edits.
 
 ---
 
-## 🌡️ Phase 2: Biophysical Feature Engineering (Dual-Engine)
-Static nucleotide strings cannot convey temperature dynamics to classical algorithms. We run **two independent thermodynamics engines** on the balanced dataset, each producing its own feature table:
+## Phase 1: Data Extraction and Balancing
+
+1. **Rfam SQL extraction** — positives (~2,960 prokaryotic heat-shock thermoswitches) and negatives (~168,000 bacterial 5' UTRs and cis-regulatory elements).
+2. **FASTA retrieval** — Biopython `Entrez` fetch using Rfam coordinates (`seq_start`, `seq_end`).
+3. **Homology filtering (CD-HIT)** — independent deduplication of positives and negatives at 80% identity to reduce leakage.
+4. **K-mer ENN + RUS balancing** — Edited Nearest Neighbors on k-mer features, then Random Under-Sampling to a 1:1 class ratio.
+
+Output: `data/processed/balanced/balanced_dataset.{csv,fasta}` (~2,396 sequences).
+
+---
+
+## Phase 2: Biophysical Feature Engineering (Dual-Engine)
 
 | Track | Tooling | Role |
 |-------|---------|------|
-| **ViennaRNA** | [`RNAheat`](https://www.tbi.univie.ac.at/RNA/documentation.html), `RNAplfold` (Python `RNA` / `viennarna` bindings) | Native melting curves across a temperature range; locally stable **single-strand / unpaired sub-state probabilities** along the sequence (RBS-exposure proxy) |
-| **NUPACK** | `Model`, `Tube`, `tube_analysis` ([NUPACK 4.1 Python API](https://docs.nupack.org/4.1/)) | Test-tube ensemble analysis across 20–70°C; complementary multi-strand thermodynamic view |
+| ViennaRNA | `RNA.md`, partition functions ([ViennaRNA docs](https://www.tbi.univie.ac.at/RNA/documentation.html)) | Melting curves and SD-window unpaired probabilities |
+| NUPACK | `Model`, `Tube`, `tube_analysis` ([NUPACK 4.1](https://docs.nupack.org/4.1/)) | Complementary test-tube thermodynamic view |
 
-**Shared post-processing (both tracks):** Each engine's melting/exposure curve is fitted to a logistic sigmoid (Hill function) to extract:
-   *   **Midpoint ($T_m$):** The inflection point determining the activation temperature.
-   *   **Hill Coefficient (Slope):** The steepness of the curve, defining how "zipper-like" or digital the switch is.
-   *   **Amplitude:** The difference between the top and bottom asymptotes, representing switch strength and low-temperature leakiness.
+Both tracks fit melting/exposure curves to a Hill sigmoid to extract **Tm**, **Hill coefficient**, and **amplitude**.
 
 **Outputs:**
-   * `data/processed/viennarna/features.csv` — `viennarna_*` columns
-   * `data/processed/nupack/features.csv` — `nupack_*` columns
+- `data/processed/viennarna/features.csv`
+- `data/processed/nupack/features.csv`
+- `data/processed/fused_features.csv` (after fusion)
 
-> **License note:** NUPACK requires an active paid subscription per the [NUPACK 4 license terms](https://docs.nupack.org/4.1/). ViennaRNA is open-source via [bioconda](https://www.tbi.univie.ac.at/RNA/documentation.html) or `pip install viennarna`.
+> **License note:** NUPACK requires a paid subscription per the [NUPACK 4 license](https://docs.nupack.org/4.1/). Install the local wheel from `nupack-4.1.0.1/package/` (gitignored) into your venv before running thermodynamic jobs.
 
----
+### Prototype benchmark (4-sequence stress test)
 
-## 🤖 Phase 3: Machine Learning Classification
-To classify functional switches based on our engineered features, we employ an ensemble learning approach:
-*   **The Algorithm:** **Random Forest Classifier**.
-*   **Dual-input design:** The classifier receives **two independent feature blocks** — `viennarna_*` and `nupack_*` columns — joined to the balanced golden dataset on `(rfamseq_acc, seq_start, seq_end)`. Each engine's Hill-fit parameters and summary statistics are fed separately so the forest can learn which thermodynamic view is most discriminative.
-*   **Why Random Forest?** A single decision tree breaks down data via binary decisions to maximize Information Gain, but it suffers from high variance and is highly prone to overfitting. Random Forest solves this by building a massive ensemble of decision trees, each trained on a bootstrapped subset of the data and restricted to a random subset of features.
-*   **Output:** The forest aggregates all individual tree predictions and outputs a **Majority Vote**, yielding a robust, generalizable classifier that resists overfitting.
-
----
-
-## 🚀 Phase 4: Future Plans (Deep Learning & Foundation Models)
-While Random Forest is excellent for *classifying* existing features, our future roadmap transitions to deep learning to *engineer* novel sequences targeting exactly 55°C.
-
-*   **Leveraging RNA Foundation Models:** We potentially plan to integrate large, pre-trained transformer models like **BiRNA-BERT** (117M parameters) and **RiNALMo** (650M parameters). These models have been pre-trained on tens of millions of unannotated non-coding RNAs from RNAcentral.
-*   **Alpha Fold:** We will explore Google's Alpha Fold to maybe input non euclidean RNA information 
-*   **Inverse Folding:** By fine-tuning these models on our carefully curated dataset, the Transformers will learn the hidden sequence-to-structure grammar directly from the raw nucleotides. This will allow the algorithm to suggest the precise base-pair mutations required to engineer a leak-free, 55°C-activated thermoswitch. 
-
----
-
-## 💻 Setup & Installation
+| Role | Sequence | Purpose |
+|------|----------|---------|
+| Canonical positive | FourU (73 nt) | Sigmoidal Hill fitting on the SD window |
+| Anomaly | cspA (425 nt) | Flat/inverted melting curve stress test |
+| Short negative | Guanidine-II (47 nt) | Leakiness baseline |
+| O(N³) stress | cspA (512 nt) | Peak RAM profiling |
 
 ```bash
-# 1. Clone the repository
+pip install nupack-4.1.0.1/package/nupack-4.1.0.1-cp312-cp312-macosx_11_0_arm64.whl
+
+python src/thermo_sim/thermo_prototype.py
+python src/thermo_sim/thermo_prototype.py --run
+python src/thermo_sim/plot_prototype_benchmark.py
+```
+
+### Batch extraction (full dataset)
+
+```bash
+python src/thermo_sim/thermo_batch.py --run --limit 10 --batch-size 2 --workers 2
+python scripts/verify_batch_outputs.py 10
+```
+
+---
+
+## Phase 3: Machine Learning Classification
+
+- **Algorithm:** Random Forest Classifier
+- **Inputs:** dual feature blocks (`viennarna_*`, `nupack_*`) joined on `(rfamseq_acc, seq_start, seq_end)`
+- **Output:** majority-vote classification of functional thermoswitches
+
+---
+
+## Phase 4: De Novo Design and Foundation Models (Planned)
+
+Future work lives under `src/de_novo_hallucinations/` and `src/validation_embedding/`:
+
+- **De novo design (`de_novo_hallucinations/`):** inverse folding and mutation proposals targeting 55°C activation with low leakiness
+- **Validation and embeddings (`validation_embedding/`):** fine-tuning and evaluation with RNA foundation models (e.g. BiRNA-BERT, RiNALMo) on the curated dataset
+- **Structural context:** explore complementary structure representations (including non-Euclidean views) where they improve design fidelity
+
+---
+
+## Setup and Installation
+
+```bash
 git clone https://github.com/arcblanc/Thermoswitches-MLBIO.git
 cd Thermoswitches-MLBIO
 
-# 2. Create conda/micromamba environment (includes cd-hit, viennarna)
 conda env create -f environment.yml
 conda activate thermoswitches-mlbio
 
-# Or use a venv with pip (cd-hit and viennarna must be installed separately)
+# Or pip venv (install cd-hit and viennarna separately)
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# 3. Configure NCBI credentials for sequence retrieval
-cp .env.example .env   # set EMAIL and NCBI_API_KEY
+cp .env.example .env
 
-# 4. Run the data pipeline
-python src/data_extraction.py
-python src/sequence_retrieval.py --all
-python src/cd_hit_sequence_similarity.py --all
-python src/knn_undersample.py
+python src/data_engineering/data_extraction.py
+python src/data_engineering/sequence_retrieval.py --all
+python src/data_engineering/cd_hit_sequence_similarity.py --all
+python src/data_engineering/knn_undersample.py
 
-# 5. Thermodynamics feature extraction (architecture scaffold — dry-run by default)
-python src/vienna_rna.py --dry-run
-python src/nupack.py --dry-run
+python src/thermo_sim/vienna_rna.py --dry-run
+python src/thermo_sim/nupack_engine.py --dry-run
 ```
 
-**Optional dependencies for Phase 2:**
-* `viennarna` — bioconda or `pip install viennarna` ([ViennaRNA docs](https://www.tbi.univie.ac.at/RNA/documentation.html))
-* `nupack` — `pip install nupack` ([NUPACK 4.1 docs](https://docs.nupack.org/4.1/); requires paid subscription)
+**Phase 2 dependencies:**
+- `viennarna` — bioconda or `pip install viennarna`
+- `nupack` — local wheel from `nupack-4.1.0.1/package/`

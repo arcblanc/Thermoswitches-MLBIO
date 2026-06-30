@@ -1,11 +1,17 @@
 import argparse
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = Path(__file__).resolve().parent.parent
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from data_engineering.paths import resolve_path
+
 CDHIT_OUTPUT_DIR = "data/processed/cdhitoutput"
 STAGING_DIR = f"{CDHIT_OUTPUT_DIR}/cdhit_input"
 JOIN_COLUMNS = ["rfamseq_acc", "seq_start", "seq_end"]
@@ -20,16 +26,6 @@ def require_cd_hit():
             "cd-hit-est not found on PATH. "
             "Create the conda env: conda env create -f environment.yml && conda activate thermoswitches-mlbio"
         )
-
-
-def resolve_path(path):
-    """A navigation helper. It takes any file path and ensures 
-    it is an absolute path (starting precisely from the project's root folder) 
-    so the script never gets lost looking for files."""
-    path = Path(path)
-    if not path.is_absolute():
-        path = PROJECT_ROOT / path
-    return path
 
 
 def stage_inputs(fasta_src, csv_src, label):

@@ -2,6 +2,7 @@ import argparse
 import csv
 import json
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -9,7 +10,12 @@ import pandas as pd
 from Bio import Entrez
 from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = Path(__file__).resolve().parent.parent
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from data_engineering.paths import PROJECT_ROOT
+
 load_dotenv(PROJECT_ROOT / ".env")
 
 DEFAULT_SLEEP_SEC = 0.11

@@ -7,10 +7,13 @@ import pandas as pd
 from imblearn.under_sampling import EditedNearestNeighbours, RandomUnderSampler
 from sklearn.feature_extraction.text import CountVectorizer
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from cd_hit_sequence_similarity import JOIN_COLUMNS, parse_fasta_header, resolve_path
+SRC_ROOT = Path(__file__).resolve().parent.parent
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+from data_engineering.cd_hit_sequence_similarity import JOIN_COLUMNS, parse_fasta_header
+from data_engineering.paths import resolve_path
+
 CDHIT_OUTPUT_DIR = "data/processed/cdhitoutput"
 BALANCED_DIR = "data/processed/balanced"
 RANDOM_STATE = 42

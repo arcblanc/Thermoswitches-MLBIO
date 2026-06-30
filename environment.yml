@@ -11,6 +11,10 @@ dependencies:
   - python-dotenv
   - imbalanced-learn
   - scikit-learn
+  - scipy
+  - psutil
   - viennarna
+  - matplotlib
+  - seaborn
   - pip:
-    - nupack  # requires active paid NUPACK subscription
+    - nupack  # install from local nupack-4.1.0.1/package/*.whl if pip index unavailable

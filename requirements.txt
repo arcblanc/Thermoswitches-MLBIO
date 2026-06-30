@@ -4,5 +4,8 @@ biopython
 python-dotenv
 imbalanced-learn
 scikit-learn
-# viennarna          # pip install viennarna  OR  conda install -c bioconda viennarna
-# nupack             # pip install nupack (requires active paid NUPACK subscription)
+scipy
+psutil
+matplotlib
+seaborn
+

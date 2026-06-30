@@ -46,6 +46,8 @@ data/processed/*
 !data/processed/viennarna/.gitkeep
 !data/processed/nupack/
 !data/processed/nupack/.gitkeep
+!data/processed/prototype/
+!data/processed/prototype/.gitkeep
 
 # Trained models
 models/*
@@ -54,6 +56,7 @@ models/*
 # Generated figures
 reports/figures/*
 !reports/figures/.gitkeep
+!reports/figures/prototype/
 
 # ML artifacts
 *.pkl
@@ -69,4 +72,10 @@ slurm-*.out
 
 # Local tooling binaries
 bin/
+
+# Local NUPACK distribution (licensed; install wheel into venv separately)
+nupack-4.1.0.1/
+
+# Prototype benchmark curves (large JSON)
+data/processed/prototype/curves/
 
