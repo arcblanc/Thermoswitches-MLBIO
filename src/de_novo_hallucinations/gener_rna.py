@@ -35,6 +35,14 @@ def validate_sequence(sequence):
     return sequence
 
 
+def try_validate_sequence(sequence):
+    try:
+        return validate_sequence(sequence)
+    except ValueError as exc:
+        print(f"  skipping invalid sequence: {exc}")
+        return None
+
+
 def append_fasta_record(output_path, record_id, sequence):
     output_path = resolve_path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -144,9 +152,12 @@ def run_gener_rna(
             temperature=temperature,
             top_k=top_k,
         )
-        for offset, raw in enumerate(raw_sequences):
-            record_id = f"sample_{start_index + offset}"
-            sequence = validate_sequence(raw)
+        accepted = 0
+        for raw in raw_sequences:
+            sequence = try_validate_sequence(raw)
+            if sequence is None:
+                continue
+            record_id = f"sample_{start_index}"
             append_fasta_record(out_path, record_id, sequence)
             storage.append_jsonl(
                 manifest_path,
@@ -159,9 +170,12 @@ def run_gener_rna(
             )
             generated.append(sequence)
             print(f"  {record_id}: {len(sequence)} nt")
+            start_index += 1
+            accepted += 1
+            if accepted >= remaining:
+                break
 
-        start_index += chunk_size
-        remaining -= chunk_size
+        remaining -= accepted
         storage.write_run_state(
             status="generating",
             generated=len(storage.completed_generation_ids()),

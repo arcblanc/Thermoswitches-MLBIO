@@ -88,23 +88,28 @@ class ArtifactStorage:
     def run_state_path(self) -> Path:
         return self.local_path(f"data/processed/{RUN_STATE_NAME}")
 
-    def upload_file(self, local_path: Path, remote_relative: str | None = None) -> None:
+    def upload_file(self, local_path: Path, remote_relative: str | None = None) -> bool:
         if not self.uses_remote:
-            return
+            return True
         local_path = Path(local_path)
         if not local_path.exists():
-            return
+            return False
         remote_relative = remote_relative or str(local_path.relative_to(resolve_path(".")))
         remote_key = self._remote_key(remote_relative)
-        if self.uses_gcs:
-            blob = self._gcs_bucket().blob(remote_key)
-            blob.upload_from_filename(str(local_path))
-        else:
-            self._s3_client_or_raise().upload_file(
-                str(local_path),
-                self.settings.aws_s3_bucket,
-                remote_key,
-            )
+        try:
+            if self.uses_gcs:
+                blob = self._gcs_bucket().blob(remote_key)
+                blob.upload_from_filename(str(local_path))
+            else:
+                self._s3_client_or_raise().upload_file(
+                    str(local_path),
+                    self.settings.aws_s3_bucket,
+                    remote_key,
+                )
+            return True
+        except Exception as exc:
+            print(f"WARNING: upload failed for {remote_relative}: {exc}")
+            return False
 
     def download_file(self, remote_relative: str, local_path: Path) -> bool:
         if not self.uses_remote:
