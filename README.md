@@ -117,6 +117,7 @@ Code lives under `src/de_novo_hallucinations/` (GenerRNA generation) and `src/va
 Install optional LLM dependencies (separate from the thermodynamics stack):
 
 ```bash
+pip install torch>=2.1   # local only — RunPod template includes CUDA-matched PyTorch
 pip install -r requirements-llm.txt
 cp .env.example .env   # optional HF_TOKEN
 ```
@@ -155,7 +156,9 @@ python scripts/llm_cloud_batch.py --dry-run
 
 ### RunPod + EC2 (recommended AWS path)
 
-See [`cluster/README-aws.md`](cluster/README-aws.md) for the full runbook.
+**Architecture and finalized choices:** [`cluster/CLOUD_PIPELINE.md`](cluster/CLOUD_PIPELINE.md) (RunPod ↔ S3 ↔ EC2, scripts, and every production adjustment).
+
+**Operator runbook:** [`cluster/README-aws.md`](cluster/README-aws.md).
 
 **RunPod Thermopod** (1× A100 80GB): SSH in (no SCP), run GenerRNA + BiRNA, upload to `s3://thermo-s3-bucket`, terminate pod.
 
