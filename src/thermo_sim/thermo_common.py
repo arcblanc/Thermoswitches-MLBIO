@@ -329,27 +329,38 @@ def _failed_hill_fit(reason):
     }
 
 
-def _feature_table_columns(feature_columns, extra_columns=None):
-    columns = JOIN_COLUMNS + ["label"]
+def _feature_table_columns(feature_columns, extra_columns=None, join_columns=None, include_label=True):
+    join_columns = join_columns or JOIN_COLUMNS
+    columns = list(join_columns)
+    if include_label:
+        columns.append("label")
     if extra_columns:
         columns.extend(extra_columns)
     columns.extend(feature_columns)
     return list(dict.fromkeys(columns))
 
 
-def append_feature_table(df, output_path, feature_columns, extra_columns=None):
+def append_feature_table(
+    df, output_path, feature_columns, extra_columns=None, join_columns=None, include_label=True
+):
     output_path = resolve_path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    columns = _feature_table_columns(feature_columns, extra_columns)
+    columns = _feature_table_columns(
+        feature_columns, extra_columns, join_columns=join_columns, include_label=include_label
+    )
     write_header = not output_path.exists() or output_path.stat().st_size == 0
     df[columns].to_csv(output_path, mode="a", header=write_header, index=False)
     return output_path
 
 
-def write_feature_table(df, output_path, feature_columns, extra_columns=None):
+def write_feature_table(
+    df, output_path, feature_columns, extra_columns=None, join_columns=None, include_label=True
+):
     output_path = resolve_path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    columns = _feature_table_columns(feature_columns, extra_columns)
+    columns = _feature_table_columns(
+        feature_columns, extra_columns, join_columns=join_columns, include_label=include_label
+    )
     df[columns].to_csv(output_path, index=False)
     return output_path
 
@@ -396,6 +407,71 @@ def max_stem_length(dot_bracket):
         elif char == ")":
             current = max(current - 1, 0)
     return longest
+
+
+def max_loop_length(dot_bracket):
+    longest = 0
+    current = 0
+    for char in dot_bracket:
+        if char == ".":
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 0
+    return longest
+
+
+def gc_content(sequence):
+    sequence = normalize_sequence(sequence)
+    if not sequence:
+        return 0.0
+    gc = sum(1 for base in sequence if base in {"G", "C"})
+    return gc / len(sequence)
+
+
+FASTA_JOIN_COLUMNS = ["record_id"]
+DEFAULT_DENOVO_FASTA = "data/processed/de_novo/generated.fasta"
+
+
+def load_fasta_dataset(fasta_path=DEFAULT_DENOVO_FASTA):
+    fasta_path = resolve_path(fasta_path)
+    records = []
+    header = None
+    sequence_parts = []
+
+    with fasta_path.open() as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                if header is not None:
+                    seq = normalize_sequence("".join(sequence_parts))
+                    record_id = header[1:].split()[0]
+                    records.append(
+                        {
+                            "record_id": record_id,
+                            "sequence": seq,
+                            "seq_length": len(seq),
+                        }
+                    )
+                header = line
+                sequence_parts = []
+            else:
+                sequence_parts.append(line)
+
+    if header is not None:
+        seq = normalize_sequence("".join(sequence_parts))
+        record_id = header[1:].split()[0]
+        records.append(
+            {
+                "record_id": record_id,
+                "sequence": seq,
+                "seq_length": len(seq),
+            }
+        )
+
+    return pd.DataFrame(records)
 
 
 @dataclass

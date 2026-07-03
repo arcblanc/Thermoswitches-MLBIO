@@ -13,6 +13,7 @@ from thermo_sim.thermo_common import METADATA_COLUMNS, append_feature_table, wri
 
 FUSED_FEATURE_COLUMNS = [
     "panel_role",
+    "record_id",
     "seq_length",
     "viennarna_Tm",
     "viennarna_hill_coeff",
@@ -20,6 +21,9 @@ FUSED_FEATURE_COLUMNS = [
     "viennarna_mean_unpaired_prob",
     "viennarna_sd_pair_prob_10C",
     "viennarna_sd_pair_prob_80C",
+    "viennarna_MFE",
+    "viennarna_max_loop_length",
+    "viennarna_gc_content",
     "viennarna_dangles_model",
     "viennarna_fit_status",
     "nupack_Tm",
@@ -28,6 +32,8 @@ FUSED_FEATURE_COLUMNS = [
     "nupack_mean_exposure",
     "nupack_MFE",
     "nupack_max_stem_length",
+    "nupack_max_loop_length",
+    "nupack_gc_content",
     "nupack_sd_pair_prob_10C",
     "nupack_sd_pair_prob_80C",
     "nupack_fit_status",
@@ -42,7 +48,11 @@ def fuse_engine_features(vienna_df, nupack_df, join_on=None):
     vienna_cols = [col for col in vienna_df.columns if col.startswith("viennarna_")]
     nupack_cols = [col for col in nupack_df.columns if col.startswith("nupack_")]
     meta_cols = [col for col in METADATA_COLUMNS if col in vienna_df.columns]
-    extra_cols = [col for col in ("panel_role", "seq_length") if col in vienna_df.columns]
+    extra_cols = [
+        col
+        for col in ("panel_role", "record_id", "seq_length")
+        if col in vienna_df.columns
+    ]
     left_cols = list(dict.fromkeys(join_on + meta_cols + extra_cols + vienna_cols))
     right_cols = list(dict.fromkeys(join_on + nupack_cols))
 
@@ -74,7 +84,11 @@ def validate_fused_row(row):
 
 
 def _fused_extra_columns(fused_df):
-    return [col for col in ("panel_role", "seq_length") if col in fused_df.columns]
+    return [
+        col
+        for col in ("panel_role", "record_id", "seq_length")
+        if col in fused_df.columns
+    ]
 
 
 def write_fused_features(fused_df, output_csv):

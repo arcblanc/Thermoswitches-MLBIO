@@ -29,6 +29,7 @@ The codebase is organized as domain subpackages under `src/`. Configuration is s
 | `thermo_sim/` | `feature_fusion.py` | Join `viennarna_*` and `nupack_*` feature blocks |
 | `thermo_sim/` | `thermo_prototype.py` | 4-sequence stress-test benchmark |
 | `thermo_sim/` | `thermo_batch.py` | Batched full-dataset extraction with RAM logging |
+| `thermo_sim/` | `thermo_classifier.py` | Random Forest train/predict on fused physics features |
 | `thermo_sim/` | `plot_prototype_benchmark.py` | Prototype benchmark figures |
 | `de_novo_hallucinations/` | *(planned)* | De novo sequence design and inverse folding |
 | `validation_embedding/` | *(planned)* | Foundation-model validation and embedding workflows |
@@ -150,6 +151,29 @@ See [`cluster/README.md`](cluster/README.md) for bucket setup, the `gcloud` laun
 # On the VM (or locally with STORAGE_TARGET=gcs in .env)
 bash scripts/llm_cloud_run.sh
 python scripts/llm_cloud_batch.py --dry-run
+```
+
+### RunPod + EC2 (recommended AWS path)
+
+See [`cluster/README-aws.md`](cluster/README-aws.md) for the full runbook.
+
+**RunPod Thermopod** (1× A100 80GB): SSH in (no SCP), run GenerRNA + BiRNA, upload to `s3://thermo-s3-bucket`, terminate pod.
+
+**EC2 `aws-thermo-ec2`** (`c7i-flex.large`, 2 workers): already running. Two separate thermo jobs:
+
+1. **Train** — 2,396 balanced sequences → `fused_features.csv` → Random Forest
+2. **Predict** — 10k de novo FASTA (SCP'd from Mac) → `denovo_predictions.csv`
+
+```bash
+# Mac → RunPod
+bash scripts/runpod_ssh.sh
+
+# Mac → EC2 thermo (remote)
+bash scripts/thermo_ec2_run.sh train --run
+aws s3 cp s3://thermo-s3-bucket/llm-batch/v1/de_novo/generated.fasta data/processed/de_novo/
+bash scripts/scp_ec2.sh push-fasta
+bash scripts/thermo_ec2_run.sh predict --run
+bash scripts/scp_ec2.sh pull-predictions
 ```
 
 ### Roadmap

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Cloud batch orchestrator: GCS sync, generation, embedding, verify, shutdown."""
+"""Cloud batch orchestrator: remote sync, generation, embedding, verify, shutdown."""
 
 import argparse
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -27,7 +28,6 @@ def _metadata(path: str) -> str:
 def vm_shutdown_if_configured():
     settings = load_llm_settings()
     if not settings.vm_auto_shutdown:
-        print("VM_AUTO_SHUTDOWN=false — leaving instance running")
         return
     try:
         instance = _metadata("instance/name")
@@ -53,6 +53,43 @@ def vm_shutdown_if_configured():
     )
 
 
+def runpod_terminate_if_configured():
+    settings = load_llm_settings()
+    if settings.storage_target != "runpod":
+        return
+    if not settings.runpod_auto_terminate:
+        print("RUNPOD_AUTO_TERMINATE=false — leaving pod running")
+        return
+    if not settings.runpod_api_key or not settings.runpod_pod_id:
+        print("RUNPOD_API_KEY or RUNPOD_POD_ID missing; skipping pod terminate")
+        return
+
+    url = f"https://rest.runpod.io/v1/pods/{settings.runpod_pod_id}/stop"
+    request = urllib.request.Request(
+        url,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {settings.runpod_api_key}",
+            "Content-Type": "application/json",
+        },
+        data=b"{}",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = response.read().decode()
+        print(f"RunPod stop requested for {settings.runpod_pod_id}: {body}")
+    except urllib.error.HTTPError as exc:
+        print(f"RunPod stop failed ({exc.code}): {exc.read().decode()}")
+
+
+def _remote_bucket_label(settings):
+    if settings.storage_target == "gcs":
+        return settings.gcs_bucket
+    if settings.storage_target in {"s3", "runpod"}:
+        return settings.aws_s3_bucket
+    return None
+
+
 def run_cloud_batch(dry_run=False):
     settings = load_llm_settings()
     storage = get_storage(settings)
@@ -61,11 +98,15 @@ def run_cloud_batch(dry_run=False):
     if dry_run:
         print("Cloud LLM batch dry-run")
         print(f"  storage:     {settings.storage_target}")
-        print(f"  bucket:      {settings.gcs_bucket}")
-        print(f"  prefix:      {settings.gcs_prefix}")
+        print(f"  bucket:      {_remote_bucket_label(settings)}")
+        if settings.storage_target in {"s3", "runpod"}:
+            print(f"  prefix:      {settings.aws_s3_prefix}")
+        else:
+            print(f"  prefix:      {settings.gcs_prefix}")
         print(f"  num_samples: {settings.generna_num_samples}")
         print(f"  batch_size:  {settings.generna_batch_size}")
-        print(f"  auto_delete: {settings.vm_auto_shutdown}")
+        print(f"  gce_delete:  {settings.vm_auto_shutdown}")
+        print(f"  runpod_stop: {settings.runpod_auto_terminate}")
         return
 
     storage.sync_down(embedding_subdir=embedding_subdir)
@@ -86,6 +127,7 @@ def run_cloud_batch(dry_run=False):
         check=True,
         cwd=PROJECT_ROOT,
     )
+    storage.sync_up(embedding_subdir=embedding_subdir)
 
     subprocess.run(
         [
@@ -102,6 +144,7 @@ def run_cloud_batch(dry_run=False):
         check=True,
         cwd=PROJECT_ROOT,
     )
+    storage.sync_up(embedding_subdir=embedding_subdir)
 
     subprocess.run(
         [
@@ -121,6 +164,7 @@ def run_cloud_batch(dry_run=False):
     storage.write_run_state(status="complete")
     storage.sync_up(embedding_subdir=embedding_subdir)
     vm_shutdown_if_configured()
+    runpod_terminate_if_configured()
 
 
 def _build_parser():

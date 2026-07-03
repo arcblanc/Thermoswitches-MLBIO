@@ -26,6 +26,12 @@ class LLMSettings:
     storage_target: str
     gcs_bucket: str | None
     gcs_prefix: str
+    aws_s3_bucket: str | None
+    aws_region: str
+    aws_s3_prefix: str
+    runpod_pod_id: str | None
+    runpod_api_key: str | None
+    runpod_auto_terminate: bool
     vm_auto_shutdown: bool
     generna_batch_size: int
     generna_num_samples: int
@@ -44,6 +50,12 @@ def load_llm_settings() -> LLMSettings:
         storage_target=os.environ.get("STORAGE_TARGET", "local").strip().lower(),
         gcs_bucket=os.environ.get("GCS_BUCKET") or None,
         gcs_prefix=os.environ.get("GCS_PREFIX", "llm-batch/v1").strip("/"),
+        aws_s3_bucket=os.environ.get("AWS_S3_BUCKET") or None,
+        aws_region=os.environ.get("AWS_REGION", "us-east-1"),
+        aws_s3_prefix=os.environ.get("AWS_S3_PREFIX", "llm-batch/v1").strip("/"),
+        runpod_pod_id=os.environ.get("RUNPOD_POD_ID") or None,
+        runpod_api_key=os.environ.get("RUNPOD_API_KEY") or None,
+        runpod_auto_terminate=_env_bool("RUNPOD_AUTO_TERMINATE", default=False),
         vm_auto_shutdown=_env_bool("VM_AUTO_SHUTDOWN", default=False),
         generna_batch_size=int(os.environ.get("GENERNA_BATCH_SIZE", "50")),
         generna_num_samples=int(os.environ.get("GENERNA_NUM_SAMPLES", "10000")),

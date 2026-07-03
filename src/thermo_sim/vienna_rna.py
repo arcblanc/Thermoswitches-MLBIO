@@ -21,7 +21,9 @@ from thermo_sim.thermo_common import (
     detect_shine_dalgarno,
     extract_pair_probability,
     fit_hill_curve,
+    gc_content,
     load_balanced_dataset,
+    max_loop_length,
     mean_unpaired_from_pair_matrix,
     resolve_path,
     sd_window_indices,
@@ -36,6 +38,9 @@ VIENNA_FEATURE_COLUMNS = [
     "viennarna_mean_unpaired_prob",
     "viennarna_sd_pair_prob_10C",
     "viennarna_sd_pair_prob_80C",
+    "viennarna_MFE",
+    "viennarna_max_loop_length",
+    "viennarna_gc_content",
     "viennarna_dangles_model",
     "viennarna_fit_status",
 ]
@@ -105,6 +110,15 @@ def pair_probability_at_sd(sequence, temp_range, sd_i, sd_j, config=None):
     return values
 
 
+def _fold_mfe(sequence, config):
+    import RNA
+
+    md = _build_model(config)
+    fc = RNA.fold_compound(sequence, md)
+    structure, mfe = fc.mfe()
+    return float(mfe), str(structure)
+
+
 def extract_vienna_features(row, temp_range, config=None):
     config = config or ViennaConfig()
     sequence = row["sequence"]
@@ -122,6 +136,7 @@ def extract_vienna_features(row, temp_range, config=None):
     hill = fit_hill_curve(temp_range, hill_input)
 
     temp_to_value = dict(zip(temp_range, hill_input))
+    mfe_energy, dot_bracket = _fold_mfe(sequence, ViennaConfig(dangles=config.dangles))
     return {
         "viennarna_Tm": hill["Tm"],
         "viennarna_hill_coeff": hill["hill_coeff"],
@@ -129,6 +144,9 @@ def extract_vienna_features(row, temp_range, config=None):
         "viennarna_mean_unpaired_prob": sum(unpaired_profile) / len(unpaired_profile),
         "viennarna_sd_pair_prob_10C": temp_to_value.get(10, hill_input[0] if hill_input else None),
         "viennarna_sd_pair_prob_80C": temp_to_value.get(80, hill_input[-1] if hill_input else None),
+        "viennarna_MFE": mfe_energy,
+        "viennarna_max_loop_length": max_loop_length(dot_bracket),
+        "viennarna_gc_content": gc_content(sequence),
         "viennarna_dangles_model": config.dangles,
         "viennarna_fit_status": hill["fit_status"],
         "_melting_curve": melting_values,

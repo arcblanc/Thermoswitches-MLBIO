@@ -4,8 +4,8 @@ from pathlib import Path
 from data_engineering.paths import resolve_path
 from validation_embedding.config import LLMSettings, load_llm_settings
 
-DE_NOVO_GCS_SUBDIR = "de_novo"
-EMBEDDING_GCS_SUBDIR = "validation_embedding"
+DE_NOVO_REMOTE_SUBDIR = "de_novo"
+EMBEDDING_REMOTE_SUBDIR = "validation_embedding"
 RUN_STATE_NAME = "run_state.json"
 GENERATION_MANIFEST_NAME = "generation_manifest.jsonl"
 EMBEDDING_MANIFEST_NAME = "manifest.jsonl"
@@ -15,32 +15,55 @@ GENERATED_FASTA_NAME = "generated.fasta"
 class ArtifactStorage:
     def __init__(self, settings: LLMSettings | None = None):
         self.settings = settings or load_llm_settings()
-        self._client = None
+        self._gcs_client = None
+        self._s3_client = None
 
     @property
     def uses_gcs(self) -> bool:
         return self.settings.storage_target == "gcs"
 
+    @property
+    def uses_s3(self) -> bool:
+        return self.settings.storage_target in {"s3", "runpod"}
+
+    @property
+    def uses_remote(self) -> bool:
+        return self.uses_gcs or self.uses_s3
+
+    def _remote_key(self, relative_path: str) -> str:
+        relative_path = relative_path.lstrip("/")
+        if self.uses_gcs:
+            prefix = self.settings.gcs_prefix
+        else:
+            prefix = self.settings.aws_s3_prefix
+        return f"{prefix}/{relative_path}" if prefix else relative_path
+
     def _require_gcs(self):
         if not self.settings.gcs_bucket:
             raise ValueError("GCS_BUCKET is required when STORAGE_TARGET=gcs")
 
-    def _gcs_blob_path(self, relative_path: str) -> str:
-        prefix = self.settings.gcs_prefix
-        relative_path = relative_path.lstrip("/")
-        return f"{prefix}/{relative_path}" if prefix else relative_path
+    def _require_s3(self):
+        if not self.settings.aws_s3_bucket:
+            raise ValueError("AWS_S3_BUCKET is required when STORAGE_TARGET=s3 or runpod")
 
-    def _client_or_raise(self):
+    def _gcs_client_or_raise(self):
         self._require_gcs()
-        if self._client is None:
+        if self._gcs_client is None:
             from google.cloud import storage
 
-            self._client = storage.Client()
-        return self._client
+            self._gcs_client = storage.Client()
+        return self._gcs_client
 
-    def _bucket(self):
-        client = self._client_or_raise()
-        return client.bucket(self.settings.gcs_bucket)
+    def _s3_client_or_raise(self):
+        self._require_s3()
+        if self._s3_client is None:
+            import boto3
+
+            self._s3_client = boto3.client("s3", region_name=self.settings.aws_region)
+        return self._s3_client
+
+    def _gcs_bucket(self):
+        return self._gcs_client_or_raise().bucket(self.settings.gcs_bucket)
 
     def local_path(self, relative_path: str) -> Path:
         return resolve_path(relative_path)
@@ -65,50 +88,93 @@ class ArtifactStorage:
     def run_state_path(self) -> Path:
         return self.local_path(f"data/processed/{RUN_STATE_NAME}")
 
-    def upload_file(self, local_path: Path, gcs_relative: str | None = None) -> None:
-        if not self.uses_gcs:
+    def upload_file(self, local_path: Path, remote_relative: str | None = None) -> None:
+        if not self.uses_remote:
             return
         local_path = Path(local_path)
         if not local_path.exists():
             return
-        gcs_relative = gcs_relative or str(local_path.relative_to(resolve_path(".")))
-        blob = self._bucket().blob(self._gcs_blob_path(gcs_relative))
-        blob.upload_from_filename(str(local_path))
+        remote_relative = remote_relative or str(local_path.relative_to(resolve_path(".")))
+        remote_key = self._remote_key(remote_relative)
+        if self.uses_gcs:
+            blob = self._gcs_bucket().blob(remote_key)
+            blob.upload_from_filename(str(local_path))
+        else:
+            self._s3_client_or_raise().upload_file(
+                str(local_path),
+                self.settings.aws_s3_bucket,
+                remote_key,
+            )
 
-    def download_file(self, gcs_relative: str, local_path: Path) -> bool:
-        if not self.uses_gcs:
+    def download_file(self, remote_relative: str, local_path: Path) -> bool:
+        if not self.uses_remote:
             return local_path.exists()
         local_path = Path(local_path)
         local_path.parent.mkdir(parents=True, exist_ok=True)
-        blob = self._bucket().blob(self._gcs_blob_path(gcs_relative))
-        if not blob.exists():
-            return False
-        blob.download_to_filename(str(local_path))
+        remote_key = self._remote_key(remote_relative)
+        if self.uses_gcs:
+            blob = self._gcs_bucket().blob(remote_key)
+            if not blob.exists():
+                return False
+            blob.download_to_filename(str(local_path))
+        else:
+            client = self._s3_client_or_raise()
+            from botocore.exceptions import ClientError
+
+            try:
+                client.head_object(Bucket=self.settings.aws_s3_bucket, Key=remote_key)
+            except ClientError:
+                return False
+            client.download_file(self.settings.aws_s3_bucket, remote_key, str(local_path))
         return True
 
+    def _list_remote_objects(self, prefix: str) -> list[str]:
+        names = []
+        remote_prefix = self._remote_key(prefix)
+        if self.uses_gcs:
+            bucket = self._gcs_bucket()
+            blob_prefix = remote_prefix if remote_prefix.endswith("/") else f"{remote_prefix}/"
+            for blob in bucket.list_blobs(prefix=blob_prefix):
+                name = blob.name[len(blob_prefix) :]
+                if name and "/" not in name:
+                    names.append(name)
+        else:
+            client = self._s3_client_or_raise()
+            paginator = client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(
+                Bucket=self.settings.aws_s3_bucket,
+                Prefix=remote_prefix.rstrip("/") + "/",
+            ):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    name = key.split("/")[-1]
+                    if name:
+                        names.append(name)
+        return names
+
     def upload_de_novo_artifacts(self) -> None:
-        if not self.uses_gcs:
+        if not self.uses_remote:
             return
         fasta = self.de_novo_fasta_path()
         manifest = self.generation_manifest_path()
         if fasta.exists():
             self.upload_file(
                 fasta,
-                f"{DE_NOVO_GCS_SUBDIR}/{GENERATED_FASTA_NAME}",
+                f"{DE_NOVO_REMOTE_SUBDIR}/{GENERATED_FASTA_NAME}",
             )
         if manifest.exists():
             self.upload_file(
                 manifest,
-                f"{DE_NOVO_GCS_SUBDIR}/{GENERATION_MANIFEST_NAME}",
+                f"{DE_NOVO_REMOTE_SUBDIR}/{GENERATION_MANIFEST_NAME}",
             )
 
     def upload_embedding_artifacts(self, subdir: str = "") -> None:
-        if not self.uses_gcs:
+        if not self.uses_remote:
             return
         output_dir = self.embedding_dir(subdir)
         if not output_dir.exists():
             return
-        prefix = EMBEDDING_GCS_SUBDIR
+        prefix = EMBEDDING_REMOTE_SUBDIR
         if subdir:
             prefix = f"{prefix}/{subdir}"
         manifest = output_dir / EMBEDDING_MANIFEST_NAME
@@ -132,17 +198,17 @@ class ArtifactStorage:
         self.upload_run_state()
 
     def sync_down(self, embedding_subdir: str = "") -> None:
-        if not self.uses_gcs:
+        if not self.uses_remote:
             return
         self.download_file(
-            f"{DE_NOVO_GCS_SUBDIR}/{GENERATED_FASTA_NAME}",
+            f"{DE_NOVO_REMOTE_SUBDIR}/{GENERATED_FASTA_NAME}",
             self.de_novo_fasta_path(),
         )
         self.download_file(
-            f"{DE_NOVO_GCS_SUBDIR}/{GENERATION_MANIFEST_NAME}",
+            f"{DE_NOVO_REMOTE_SUBDIR}/{GENERATION_MANIFEST_NAME}",
             self.generation_manifest_path(),
         )
-        prefix = EMBEDDING_GCS_SUBDIR
+        prefix = EMBEDDING_REMOTE_SUBDIR
         if embedding_subdir:
             prefix = f"{prefix}/{embedding_subdir}"
         output_dir = self.embedding_dir(embedding_subdir)
@@ -151,12 +217,7 @@ class ArtifactStorage:
             f"{prefix}/{EMBEDDING_MANIFEST_NAME}",
             self.embedding_manifest_path(embedding_subdir),
         )
-        bucket = self._bucket()
-        blob_prefix = self._gcs_blob_path(f"{prefix}/")
-        for blob in bucket.list_blobs(prefix=blob_prefix):
-            name = blob.name[len(blob_prefix) :]
-            if not name or "/" in name:
-                continue
+        for name in self._list_remote_objects(prefix):
             if name.endswith((".npy", ".json")) and name != EMBEDDING_MANIFEST_NAME:
                 self.download_file(f"{prefix}/{name}", output_dir / name)
         self.download_file(RUN_STATE_NAME, self.run_state_path())
