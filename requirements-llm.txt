@@ -1,4 +1,6 @@
-torch>=2.1
+# RunPod ships PyTorch 2.8 + CUDA 12.8 pre-installed — do NOT pip install torch there
+# (it replaces the driver-matched build and breaks GPU). For local Mac CPU/GPU dev:
+#   pip install torch>=2.1 && pip install -r requirements-llm.txt
 transformers>=4.40
 huggingface_hub>=0.23
 safetensors

@@ -1,15 +1,28 @@
 #!/usr/bin/env bash
 # Bootstrap + run GenerRNA + BiRNA batch on RunPod Thermopod (inside SSH session).
+# Uses RunPod's native PyTorch via --system-site-packages; never pip-installs torch.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-if [[ -f .venv/bin/activate ]]; then
-  source .venv/bin/activate
+if [[ ! -d .venv ]]; then
+  python3 -m venv --system-site-packages .venv
 fi
+source .venv/bin/activate
 
 pip install -q -r requirements-llm.txt -r requirements-aws.txt
+
+echo "=== GPU check (must pass before batch) ==="
+python - <<'PY'
+import torch
+if not torch.cuda.is_available():
+    raise SystemExit(
+        "CUDA unavailable. Do not pip install torch on RunPod — use the pytorch template "
+        "and requirements-llm.txt without torch."
+    )
+print(f"torch {torch.__version__} | GPU: {torch.cuda.get_device_name(0)}")
+PY
 
 export STORAGE_TARGET="${STORAGE_TARGET:-runpod}"
 

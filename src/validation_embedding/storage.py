@@ -140,16 +140,23 @@ class ArtifactStorage:
                     names.append(name)
         else:
             client = self._s3_client_or_raise()
+            from botocore.exceptions import ClientError
+
             paginator = client.get_paginator("list_objects_v2")
-            for page in paginator.paginate(
-                Bucket=self.settings.aws_s3_bucket,
-                Prefix=remote_prefix.rstrip("/") + "/",
-            ):
-                for obj in page.get("Contents", []):
-                    key = obj["Key"]
-                    name = key.split("/")[-1]
-                    if name:
-                        names.append(name)
+            try:
+                for page in paginator.paginate(
+                    Bucket=self.settings.aws_s3_bucket,
+                    Prefix=remote_prefix.rstrip("/") + "/",
+                ):
+                    for obj in page.get("Contents", []):
+                        key = obj["Key"]
+                        name = key.split("/")[-1]
+                        if name:
+                            names.append(name)
+            except ClientError as exc:
+                code = exc.response.get("Error", {}).get("Code", "")
+                if code not in {"AccessDenied", "403"}:
+                    raise
         return names
 
     def upload_de_novo_artifacts(self) -> None:
