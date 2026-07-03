@@ -28,11 +28,22 @@ _STORAGE = None
 _EMBEDDING_SUBDIR = ""
 
 
-def get_device():
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def get_device(prefer_cuda=True, require_cuda=False):
+    if prefer_cuda and torch.cuda.is_available():
+        device = torch.device("cuda")
+        print(f"BiRNA device: {device} ({torch.cuda.get_device_name(0)})")
+        return device
+    if require_cuda:
+        raise RuntimeError(
+            "CUDA is required for BiRNA embedding on this host, but torch.cuda.is_available() "
+            "is False. Do not pip-install torch over the RunPod image PyTorch build."
+        )
+    print("BiRNA device: cpu (CUDA unavailable)")
+    return torch.device("cpu")
 
 
 def _patch_birna_cpu_compat():
+    """Mac/CPU-only: skip Triton flash-attn imports that break without GPU kernels."""
     global _BIRNA_CPU_PATCHED
     if _BIRNA_CPU_PATCHED:
         return
@@ -75,13 +86,15 @@ def _patch_birna_cpu_compat():
     _BIRNA_CPU_PATCHED = True
 
 
-def _patch_birna_alibi(module):
+def _patch_birna_alibi(module, device):
+    """Keep ALiBi tensors on the same device as the model (GPU when available)."""
     encoder = module.BertEncoder
     original_rebuild = encoder.rebuild_alibi_tensor
+    default_device = torch.device(device)
 
     def rebuild_alibi(self, size, device=None):
         if device is None:
-            device = torch.device("cpu")
+            device = default_device
         return original_rebuild(self, size, device=device)
 
     encoder.rebuild_alibi_tensor = rebuild_alibi
@@ -114,30 +127,57 @@ def nuc_tokenize_input(sequence):
 
 
 def load_birna_model(settings, device):
-    _patch_birna_cpu_compat()
+    # CPU-compat patches only when actually on CPU (Mac smoke). On CUDA, leave
+    # Triton/flash-attn imports alone so the A100 path can engage.
+    if device.type == "cpu":
+        _patch_birna_cpu_compat()
     tokenizer = AutoTokenizer.from_pretrained(settings.birna_tokenizer_id)
     config = transformers.BertConfig.from_pretrained(settings.birna_model_id)
     model_cls = get_class_from_dynamic_module(
         "bert_layers.BertForMaskedLM",
         settings.birna_model_id,
     )
-    _patch_birna_alibi(sys.modules[model_cls.__module__])
+    _patch_birna_alibi(sys.modules[model_cls.__module__], device)
+    # float32 on GPU: BiRNA's custom attention path mismatches float16 (Half vs Float).
+    dtype = torch.float32
     model = model_cls.from_pretrained(
         settings.birna_model_id,
         config=config,
-        torch_dtype=torch.float32,
+        torch_dtype=dtype,
     )
     model.cls = torch.nn.Identity()
     model.to(device)
     model.eval()
+    print(f"BiRNA model on {next(model.parameters()).device}, dtype={dtype}")
     return tokenizer, model, config
 
 
+def _record_id(header):
+    return header.replace("/", "_").replace(" ", "_")
+
+
+def _sort_pending_by_length(pending):
+    """Sort by sequence length so micro-batches share similar lengths (less pad waste)."""
+    return sorted(pending, key=lambda item: len(item[1]))
+
+
 def embed_sequence(tokenizer, model, config, sequence, device):
-    nuc_input = nuc_tokenize_input(sequence)
-    if " " not in nuc_input.strip():
-        raise ValueError("NUC tokenization requires space-separated nucleotides")
-    tokens = tokenizer(nuc_input, return_tensors="pt")
+    results = embed_batch(tokenizer, model, config, [sequence], device)
+    return results[0]
+
+
+def embed_batch(tokenizer, model, config, sequences, device):
+    """True GPU micro-batch: pad within the batch, one forward, slice off pad tokens."""
+    if not sequences:
+        return []
+    nuc_inputs = []
+    for sequence in sequences:
+        nuc_input = nuc_tokenize_input(sequence)
+        if " " not in nuc_input.strip():
+            raise ValueError("NUC tokenization requires space-separated nucleotides")
+        nuc_inputs.append(nuc_input)
+
+    tokens = tokenizer(nuc_inputs, padding=True, return_tensors="pt")
     batch = {key: value.to(device) for key, value in tokens.items()}
     with torch.no_grad():
         output = model(**batch)
@@ -148,7 +188,15 @@ def embed_sequence(tokenizer, model, config, sequence, device):
         raise ValueError(
             f"Hidden size mismatch: expected {config.hidden_size}, got {embeddings.shape[-1]}"
         )
-    return embeddings, nuc_input
+
+    attention_mask = batch["attention_mask"]
+    results = []
+    for index, nuc_input in enumerate(nuc_inputs):
+        length = int(attention_mask[index].sum().item())
+        # Keep special tokens; drop pad positions only (matches single-seq path).
+        row = embeddings[index, :length, :].unsqueeze(0).contiguous()
+        results.append((row, nuc_input))
+    return results
 
 
 def save_embedding(record_id, sequence, embeddings, config, output_dir, settings, storage):
@@ -199,11 +247,14 @@ def run_birna_embed(
     batch_size=32,
     resume=False,
     dry_run=False,
+    require_cuda=False,
 ):
     settings = load_llm_settings()
     storage = get_storage(settings)
     output_dir = resolve_path(settings.embedding_output_dir) / output_subdir
-    device = get_device()
+    # Cloud / RunPod targets must use the A100; local Mac may fall back to CPU.
+    require_cuda = require_cuda or settings.storage_target in {"runpod", "s3", "gcs"}
+    device = get_device(prefer_cuda=True, require_cuda=require_cuda)
 
     if resume:
         storage.sync_down(embedding_subdir=output_subdir)
@@ -217,7 +268,7 @@ def run_birna_embed(
         print(f"  model:     {settings.birna_model_id}")
         print(f"  device:    {device}")
         print(f"  resume:    {resume} ({len(completed)} already embedded)")
-        print(f"  batch_size:{batch_size}")
+        print(f"  batch_size:{batch_size} (length-bucketed GPU micro-batches)")
         return []
 
     if sequence:
@@ -234,40 +285,59 @@ def run_birna_embed(
     pending = [
         (header, seq)
         for header, seq in records
-        if header.replace("/", "_").replace(" ", "_") not in completed_ids
+        if _record_id(header) not in completed_ids
     ]
 
     if not pending:
         print(f"Embedding complete: {len(completed_ids)} records already in manifest")
         return []
 
+    pending = _sort_pending_by_length(pending)
+    print(
+        f"Length-bucketed batching: {len(pending)} pending, batch_size={batch_size}, "
+        f"len_range=[{len(pending[0][1])}, {len(pending[-1][1])}]"
+    )
+
     _register_sigterm_handler(storage, output_subdir)
     tokenizer, model, config = load_birna_model(settings, device)
     saved = []
+    total_batches = (len(pending) + batch_size - 1) // batch_size
 
-    for batch_start in range(0, len(pending), batch_size):
+    for batch_idx, batch_start in enumerate(range(0, len(pending), batch_size), start=1):
         batch = pending[batch_start : batch_start + batch_size]
-        for header, seq in batch:
-            record_id = header.replace("/", "_").replace(" ", "_")
-            embeddings, nuc_input = embed_sequence(tokenizer, model, config, seq, device)
-            print(
-                f"{record_id}: NUC input length={len(nuc_input.split())}, "
-                f"embedding shape={tuple(embeddings.shape)}"
-            )
+        headers = [header for header, _ in batch]
+        seqs = [seq for _, seq in batch]
+        lengths = [len(seq) for seq in seqs]
+        results = embed_batch(tokenizer, model, config, seqs, device)
+
+        batch_ids = []
+        for header, seq, (embeddings, nuc_input) in zip(headers, seqs, results):
+            record_id = _record_id(header)
             paths = save_embedding(
                 record_id, seq, embeddings, config, output_dir, settings, storage
             )
             saved.append(paths)
+            batch_ids.append(record_id)
+
+        print(
+            f"batch {batch_idx}/{total_batches}: size={len(batch)}, "
+            f"len_range=[{min(lengths)}, {max(lengths)}], device={device}"
+        )
 
         storage.write_run_state(
             status="embedding",
             embedded=len(storage.completed_embedding_ids(output_subdir)),
         )
-        storage.sync_up(embedding_subdir=output_subdir)
+        # Upload only this batch's artifacts + manifest (not the full embedding tree).
+        storage.upload_embedding_artifacts(output_subdir, record_ids=batch_ids)
+        storage.upload_run_state()
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
         gc.collect()
         print(
             f"Embedding checkpoint: "
-            f"{len(storage.completed_embedding_ids(output_subdir))} total records"
+            f"{len(storage.completed_embedding_ids(output_subdir))} total records "
+            f"on {device}"
         )
 
     print(f"Wrote embeddings to {output_dir}")
@@ -287,6 +357,11 @@ def _build_parser():
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--require-cuda",
+        action="store_true",
+        help="Fail if CUDA is unavailable (default on runpod/s3/gcs storage targets).",
+    )
     return parser
 
 
@@ -303,6 +378,7 @@ def main():
         batch_size=args.batch_size,
         resume=args.resume,
         dry_run=args.dry_run,
+        require_cuda=args.require_cuda,
     )
 
 

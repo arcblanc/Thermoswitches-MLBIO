@@ -115,6 +115,9 @@ class ArtifactStorage:
         if not self.uses_remote:
             return local_path.exists()
         local_path = Path(local_path)
+        # Resume-friendly: keep existing local artifacts (avoid re-pulling hundreds of .npy files).
+        if local_path.exists() and local_path.stat().st_size > 0:
+            return True
         local_path.parent.mkdir(parents=True, exist_ok=True)
         remote_key = self._remote_key(remote_relative)
         if self.uses_gcs:
@@ -180,7 +183,9 @@ class ArtifactStorage:
                 f"{DE_NOVO_REMOTE_SUBDIR}/{GENERATION_MANIFEST_NAME}",
             )
 
-    def upload_embedding_artifacts(self, subdir: str = "") -> None:
+    def upload_embedding_artifacts(
+        self, subdir: str = "", record_ids: list[str] | None = None
+    ) -> None:
         if not self.uses_remote:
             return
         output_dir = self.embedding_dir(subdir)
@@ -192,11 +197,24 @@ class ArtifactStorage:
         manifest = output_dir / EMBEDDING_MANIFEST_NAME
         if manifest.exists():
             self.upload_file(manifest, f"{prefix}/{EMBEDDING_MANIFEST_NAME}")
-        for path in output_dir.glob("*.npy"):
-            self.upload_file(path, f"{prefix}/{path.name}")
-        for path in output_dir.glob("*.json"):
-            if path.name == EMBEDDING_MANIFEST_NAME:
-                continue
+        # Full sync when record_ids is None; otherwise only upload this batch
+        # (avoids re-uploading hundreds of .npy files every checkpoint).
+        if record_ids is None:
+            paths = list(output_dir.glob("*.npy")) + [
+                path
+                for path in output_dir.glob("*.json")
+                if path.name != EMBEDDING_MANIFEST_NAME
+            ]
+        else:
+            paths = []
+            for record_id in record_ids:
+                npy_path = output_dir / f"{record_id}.npy"
+                json_path = output_dir / f"{record_id}.json"
+                if npy_path.exists():
+                    paths.append(npy_path)
+                if json_path.exists():
+                    paths.append(json_path)
+        for path in paths:
             self.upload_file(path, f"{prefix}/{path.name}")
 
     def upload_run_state(self) -> None:
