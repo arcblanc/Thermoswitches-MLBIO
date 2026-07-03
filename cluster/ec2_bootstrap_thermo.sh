@@ -12,7 +12,8 @@ sudo apt-get install -y python3-venv python3-pip
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -q -r requirements.txt
-pip install -q viennarna
+pip install -q -r requirements-aws.txt
+pip install -q viennarna joblib
 
 WHEEL="$(python -c "
 import sys

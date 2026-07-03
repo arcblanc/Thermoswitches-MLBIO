@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SSH wrapper to run thermo_ec2_batch.py on aws-thermo-ec2.
+# SSH wrapper to run thermo_s3_batch.py on aws-thermo-ec2.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -21,4 +21,4 @@ KEY="${EC2_SSH_KEY/#\~/$HOME}"
 REMOTE="${EC2_USER}@${EC2_HOST}"
 
 exec ssh -i "$KEY" "$REMOTE" \
-  "cd ${EC2_REPO_PATH} && source .venv/bin/activate && python scripts/thermo_ec2_batch.py $*"
+  "cd ${EC2_REPO_PATH} && source .venv/bin/activate && python scripts/thermo_s3_batch.py $*"
