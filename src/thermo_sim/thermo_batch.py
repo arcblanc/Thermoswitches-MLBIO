@@ -72,30 +72,50 @@ def _row_dicts_from_dataset(dataset, limit, resume_keys, join_columns, resume=Fa
             key = tuple(row[col] for col in join_columns)
         if key in resume_keys:
             continue
+        sequence = row["sequence"]
+        if not _is_valid_rna_sequence(sequence):
+            invalid = sorted(set(str(sequence).upper().replace("T", "U")) - set("AUGC"))
+            print(f"  skipping invalid sequence (chars={invalid})")
+            continue
         row_dict = row.to_dict()
-        row_dict["sequence"] = row["sequence"]
-        row_dict["seq_length"] = len(row["sequence"])
+        row_dict["sequence"] = sequence
+        row_dict["seq_length"] = len(sequence)
         rows.append(row_dict)
         if process_limit is not None and len(rows) >= process_limit:
             break
     return rows
 
 
+def _is_valid_rna_sequence(sequence):
+    if not sequence:
+        return False
+    return set(sequence.upper().replace("T", "U")) <= set("AUGC")
+
+
 def _worker_entry(args):
     row_dict, temp_range, dangles, sodium, magnesium, threads, concentration, engine = args
+    sequence = row_dict.get("sequence", "")
+    if not _is_valid_rna_sequence(sequence):
+        invalid = sorted(set(sequence.upper().replace("T", "U")) - set("AUGC"))
+        print(f"  skipping invalid sequence (chars={invalid}): len={len(sequence)}")
+        return row_dict, None, None
     vienna_result = None
     nupack_result = None
-    if engine in {"both", "vienna"}:
-        vienna_result = run_vienna_worker(row_dict, temp_range, dangles)
-    if engine in {"both", "nupack"}:
-        nupack_result = run_nupack_worker(
-            row_dict,
-            temp_range,
-            sodium,
-            magnesium,
-            threads,
-            concentration,
-        )
+    try:
+        if engine in {"both", "vienna"}:
+            vienna_result = run_vienna_worker(row_dict, temp_range, dangles)
+        if engine in {"both", "nupack"}:
+            nupack_result = run_nupack_worker(
+                row_dict,
+                temp_range,
+                sodium,
+                magnesium,
+                threads,
+                concentration,
+            )
+    except Exception as exc:
+        print(f"  skipping sequence after engine error: {exc}")
+        return row_dict, None, None
     return row_dict, vienna_result, nupack_result
 
 
