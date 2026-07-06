@@ -1,0 +1,5 @@
+rfam_acc,rfam_id,description,type,rfamseq_acc,seq_start,seq_end,tax_string,label
+RF00230,T-box,T-box leader,Cis-reg; leader;,CP022437.1,68521,68315,Bacteria; Firmicutes; Bacillales; Bacillaceae; Virgibacillus.,0
+RF00174,Cobalamin,Cobalamin riboswitch aptamer,Cis-reg; riboswitch;,CP071182.1,12426,12240,Bacteria; Terrabacteria group; Bacillota; Bacilli; Bacillales; Alicyclobacillaceae; Alicyclobacillus,0
+RF01766,cspA,cspA thermoregulator,Cis-reg; thermoregulator;,JPER01000003.1,127157,127581,Bacteria; Proteobacteria; Gammaproteobacteria; Alteromonadales; Idiomarinaceae; Pseudidiomarina.,1
+RF01766,cspA,cspA thermoregulator,Cis-reg; thermoregulator;,WSEK01000004.1,2433862,2433451,Bacteria; Terrabacteria group; Actinomycetota; Actinomycetes; Propionibacteriales; Nocardioidaceae; Nocardioides; unclassified Nocardioides,1

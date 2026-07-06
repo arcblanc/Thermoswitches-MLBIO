@@ -216,8 +216,9 @@ RunPod’s **SSH proxy does not support SCP/SFTP**.
 ### 3.7 RunPod terminate
 
 - `RUNPOD_AUTO_TERMINATE=true`
-- `RUNPOD_POD_ID=x0ggh3d7lmi9yn` (API id, not the SSH username suffix form)
-- `llm_cloud_batch.py` → `runpod_terminate_if_configured()` posts stop to RunPod REST API after successful verify + final `sync_up`
+- `RUNPOD_POD_ID=x0ggh3d7lmi9yn` (API id, not the SSH username suffix form; SSH-style ids are auto-normalized)
+- Auto-stop runs after **any** standalone job finishes (`gener_rna.py`, `birna_embed.py`) via [`runpod_lifecycle.py`](../src/validation_embedding/runpod_lifecycle.py)
+- `llm_cloud_batch.py` sets `RUNPOD_SKIP_TERMINATE=1` on children so the pod is not stopped mid-pipeline, then stops once in a `finally` block (success or failure)
 
 ### 3.8 RunPod launch commands (final)
 
@@ -481,7 +482,6 @@ ssh -i /Users/amierzuhri/Downloads/Thermo-bio-key.pem ubuntu@35.179.95.63 \
 | Doc | Scope |
 |-----|--------|
 | [README-aws.md](README-aws.md) | Operator runbook (commands) |
-| [README.md](README.md) (GCP section) | Legacy Spot VM path |
-| [cluster/README.md](README.md) | Original GCP Spot notes |
+| [README.md](../README.md) | Project overview (RunPod + EC2 section) |
 
 This file (`CLOUD_PIPELINE.md`) supersedes informal chat plans for **finalized** cloud choices.

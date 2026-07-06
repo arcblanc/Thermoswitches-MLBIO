@@ -366,20 +366,27 @@ def _build_parser():
 
 
 def main():
+    from validation_embedding.runpod_lifecycle import runpod_terminate_if_configured
+
     args = _build_parser().parse_args()
     input_fasta = args.input_fasta or DEFAULT_INPUT
     output_subdir = args.output_subdir
     if output_subdir is None:
         output_subdir = "smoke" if "smoke" in input_fasta else ""
-    run_birna_embed(
-        input_fasta=input_fasta,
-        output_subdir=output_subdir,
-        sequence=args.sequence,
-        batch_size=args.batch_size,
-        resume=args.resume,
-        dry_run=args.dry_run,
-        require_cuda=args.require_cuda,
-    )
+    try:
+        run_birna_embed(
+            input_fasta=input_fasta,
+            output_subdir=output_subdir,
+            sequence=args.sequence,
+            batch_size=args.batch_size,
+            resume=args.resume,
+            dry_run=args.dry_run,
+            require_cuda=args.require_cuda,
+        )
+    finally:
+        # Standalone BiRNA jobs stop the pod; orchestrator sets RUNPOD_SKIP_TERMINATE.
+        if not args.dry_run:
+            runpod_terminate_if_configured()
 
 
 if __name__ == "__main__":

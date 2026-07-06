@@ -141,20 +141,7 @@ See `notebooks/04_llm_smoke_test_results.ipynb` for a walkthrough of the generat
 
 The same scripts run on a cloud GPU without code changes when CUDA is available.
 
-### Cloud Spot VM (10k batch + GCS)
-
-See [`cluster/README.md`](cluster/README.md) for bucket setup, the `gcloud` launch command, and two-phase rollout:
-
-1. **GPU smoke** — metadata `generna-num-samples=2`
-2. **Full batch** — metadata `generna-num-samples=10000`
-
-```bash
-# On the VM (or locally with STORAGE_TARGET=gcs in .env)
-bash scripts/llm_cloud_run.sh
-python scripts/llm_cloud_batch.py --dry-run
-```
-
-### RunPod + EC2 (recommended AWS path)
+### RunPod + EC2 (AWS path)
 
 **Architecture and finalized choices:** [`cluster/CLOUD_PIPELINE.md`](cluster/CLOUD_PIPELINE.md) (RunPod ↔ S3 ↔ EC2, scripts, and every production adjustment).
 

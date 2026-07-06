@@ -2,9 +2,9 @@
 """Cloud batch orchestrator: remote sync, generation, embedding, verify, shutdown."""
 
 import argparse
+import os
 import subprocess
 import sys
-import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -12,6 +12,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from validation_embedding.config import load_llm_settings
+from validation_embedding.runpod_lifecycle import (
+    SKIP_TERMINATE_ENV,
+    runpod_terminate_if_configured,
+)
 from validation_embedding.storage import get_storage
 
 BATCH_FASTA_PATH = "data/processed/de_novo/generated.fasta"
@@ -53,41 +57,19 @@ def vm_shutdown_if_configured():
     )
 
 
-def runpod_terminate_if_configured():
-    settings = load_llm_settings()
-    if settings.storage_target != "runpod":
-        return
-    if not settings.runpod_auto_terminate:
-        print("RUNPOD_AUTO_TERMINATE=false — leaving pod running")
-        return
-    if not settings.runpod_api_key or not settings.runpod_pod_id:
-        print("RUNPOD_API_KEY or RUNPOD_POD_ID missing; skipping pod terminate")
-        return
-
-    url = f"https://rest.runpod.io/v1/pods/{settings.runpod_pod_id}/stop"
-    request = urllib.request.Request(
-        url,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {settings.runpod_api_key}",
-            "Content-Type": "application/json",
-        },
-        data=b"{}",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            body = response.read().decode()
-        print(f"RunPod stop requested for {settings.runpod_pod_id}: {body}")
-    except urllib.error.HTTPError as exc:
-        print(f"RunPod stop failed ({exc.code}): {exc.read().decode()}")
-
-
 def _remote_bucket_label(settings):
     if settings.storage_target == "gcs":
         return settings.gcs_bucket
     if settings.storage_target in {"s3", "runpod"}:
         return settings.aws_s3_bucket
     return None
+
+
+def _child_env():
+    """Children must not stop the pod; orchestrator stops once at the end."""
+    env = os.environ.copy()
+    env[SKIP_TERMINATE_ENV] = "1"
+    return env
 
 
 def run_cloud_batch(dry_run=False):
@@ -109,62 +91,70 @@ def run_cloud_batch(dry_run=False):
         print(f"  runpod_stop: {settings.runpod_auto_terminate}")
         return
 
-    storage.sync_down(embedding_subdir=embedding_subdir)
-    storage.write_run_state(status="started")
+    # Always stop the pod when this orchestrator exits (success or failure),
+    # unless RUNPOD_AUTO_TERMINATE=false.
+    try:
+        storage.sync_down(embedding_subdir=embedding_subdir)
+        storage.write_run_state(status="started")
 
-    subprocess.run(
-        [
-            sys.executable,
-            str(PROJECT_ROOT / "src/de_novo_hallucinations/gener_rna.py"),
-            "--resume",
-            "--num-samples",
-            str(settings.generna_num_samples),
-            "--batch-size",
-            str(settings.generna_batch_size),
-            "--output-fasta",
-            BATCH_FASTA_PATH,
-        ],
-        check=True,
-        cwd=PROJECT_ROOT,
-    )
-    storage.sync_up(embedding_subdir=embedding_subdir)
+        child_env = _child_env()
+        subprocess.run(
+            [
+                sys.executable,
+                str(PROJECT_ROOT / "src/de_novo_hallucinations/gener_rna.py"),
+                "--resume",
+                "--num-samples",
+                str(settings.generna_num_samples),
+                "--batch-size",
+                str(settings.generna_batch_size),
+                "--output-fasta",
+                BATCH_FASTA_PATH,
+            ],
+            check=True,
+            cwd=PROJECT_ROOT,
+            env=child_env,
+        )
+        storage.sync_up(embedding_subdir=embedding_subdir)
 
-    subprocess.run(
-        [
-            sys.executable,
-            str(PROJECT_ROOT / "src/validation_embedding/birna_embed.py"),
-            "--resume",
-            "--input-fasta",
-            BATCH_FASTA_PATH,
-            "--output-subdir",
-            embedding_subdir,
-            "--batch-size",
-            str(settings.generna_batch_size),
-        ],
-        check=True,
-        cwd=PROJECT_ROOT,
-    )
-    storage.sync_up(embedding_subdir=embedding_subdir)
+        subprocess.run(
+            [
+                sys.executable,
+                str(PROJECT_ROOT / "src/validation_embedding/birna_embed.py"),
+                "--resume",
+                "--input-fasta",
+                BATCH_FASTA_PATH,
+                "--output-subdir",
+                embedding_subdir,
+                "--batch-size",
+                str(settings.generna_batch_size),
+            ],
+            check=True,
+            cwd=PROJECT_ROOT,
+            env=child_env,
+        )
+        storage.sync_up(embedding_subdir=embedding_subdir)
 
-    subprocess.run(
-        [
-            sys.executable,
-            str(PROJECT_ROOT / "scripts/verify_llm_smoke_outputs.py"),
-            "--expected",
-            str(settings.generna_num_samples),
-            "--fasta",
-            BATCH_FASTA_PATH,
-            "--embed-dir",
-            BATCH_EMBED_DIR,
-        ],
-        check=True,
-        cwd=PROJECT_ROOT,
-    )
+        subprocess.run(
+            [
+                sys.executable,
+                str(PROJECT_ROOT / "scripts/verify_llm_smoke_outputs.py"),
+                "--expected",
+                str(settings.generna_num_samples),
+                "--fasta",
+                BATCH_FASTA_PATH,
+                "--embed-dir",
+                BATCH_EMBED_DIR,
+            ],
+            check=True,
+            cwd=PROJECT_ROOT,
+            env=child_env,
+        )
 
-    storage.write_run_state(status="complete")
-    storage.sync_up(embedding_subdir=embedding_subdir)
-    vm_shutdown_if_configured()
-    runpod_terminate_if_configured()
+        storage.write_run_state(status="complete")
+        storage.sync_up(embedding_subdir=embedding_subdir)
+        vm_shutdown_if_configured()
+    finally:
+        runpod_terminate_if_configured(force=True)
 
 
 def _build_parser():

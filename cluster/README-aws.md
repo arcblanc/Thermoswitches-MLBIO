@@ -58,7 +58,7 @@ AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 HF_TOKEN=...
-RUNPOD_POD_ID=x0ggh3d7lmi9yn-64410a9d
+RUNPOD_POD_ID=x0ggh3d7lmi9yn
 RUNPOD_API_KEY=...
 RUNPOD_AUTO_TERMINATE=true
 GENERNA_NUM_SAMPLES=10000
@@ -105,7 +105,7 @@ aws s3 ls s3://thermo-s3-bucket/llm-batch/v1/de_novo/
 aws s3 ls s3://thermo-s3-bucket/llm-batch/v1/validation_embedding/ | head
 ```
 
-Pod terminates automatically when `RUNPOD_AUTO_TERMINATE=true` and batch completes.
+Pod stops automatically when `RUNPOD_AUTO_TERMINATE=true` after **any** GenerRNA or BiRNA job (or after `llm_cloud_batch.py` finishes, including on failure). Use the API pod id (`x0ggh3d7lmi9yn`), not the SSH username.
 
 ---
 

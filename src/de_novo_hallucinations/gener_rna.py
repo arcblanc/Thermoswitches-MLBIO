@@ -210,21 +210,28 @@ def _build_parser():
 
 
 def main():
+    from validation_embedding.runpod_lifecycle import runpod_terminate_if_configured
+
     args = _build_parser().parse_args()
     output_fasta = args.output_fasta
     if output_fasta is None:
         output_fasta = BATCH_FASTA if args.num_samples > 2 else DEFAULT_OUTPUT
-    run_gener_rna(
-        num_samples=args.num_samples,
-        max_new_tokens=args.max_new_tokens,
-        temperature=args.temperature,
-        top_k=args.top_k,
-        strategy=args.strategy,
-        output_fasta=output_fasta,
-        batch_size=args.batch_size,
-        resume=args.resume,
-        dry_run=args.dry_run,
-    )
+    try:
+        run_gener_rna(
+            num_samples=args.num_samples,
+            max_new_tokens=args.max_new_tokens,
+            temperature=args.temperature,
+            top_k=args.top_k,
+            strategy=args.strategy,
+            output_fasta=output_fasta,
+            batch_size=args.batch_size,
+            resume=args.resume,
+            dry_run=args.dry_run,
+        )
+    finally:
+        # Standalone GenerRNA jobs stop the pod; orchestrator sets RUNPOD_SKIP_TERMINATE.
+        if not args.dry_run:
+            runpod_terminate_if_configured()
 
 
 if __name__ == "__main__":

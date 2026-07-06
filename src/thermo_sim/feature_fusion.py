@@ -91,21 +91,25 @@ def _fused_extra_columns(fused_df):
     ]
 
 
-def write_fused_features(fused_df, output_csv):
+def write_fused_features(fused_df, output_csv, join_columns=None, include_label=True):
     engine_cols = [col for col in fused_df.columns if col.startswith(("viennarna_", "nupack_"))]
     return write_feature_table(
         fused_df,
         output_csv,
         engine_cols,
         extra_columns=_fused_extra_columns(fused_df),
+        join_columns=join_columns,
+        include_label=include_label,
     )
 
 
-def append_fused_features(fused_df, output_csv):
+def append_fused_features(fused_df, output_csv, join_columns=None, include_label=True):
     engine_cols = [col for col in fused_df.columns if col.startswith(("viennarna_", "nupack_"))]
     return append_feature_table(
         fused_df,
         output_csv,
         engine_cols,
         extra_columns=_fused_extra_columns(fused_df),
+        join_columns=join_columns,
+        include_label=include_label,
     )

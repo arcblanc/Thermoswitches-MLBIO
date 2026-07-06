@@ -1,0 +1,5 @@
+rfam_acc,rfam_id,description,type,rfamseq_acc,seq_start,seq_end,tax_string,label,panel_role,seq_length
+RF01795,FourU,FourU thermometer RNA element,Cis-reg; thermoregulator;,CGIG01000001.1,3764693,3764765,Bacteria; Proteobacteria; Gammaproteobacteria; Enterobacteriales; Enterobacteriaceae; Brenneria.,1,canonical_positive,73
+RF01766,cspA,cspA thermoregulator,Cis-reg; thermoregulator;,JPER01000003.1,127157,127581,Bacteria; Proteobacteria; Gammaproteobacteria; Alteromonadales; Idiomarinaceae; Pseudidiomarina.,1,anomaly_cspA,425
+RF01068,Guanidine-II,Guanidine-II riboswitch aptamer (mini-ykkC),Cis-reg; riboswitch;,QKRX01000017.1,39750,39704,Bacteria; Pseudomonadota; Gammaproteobacteria; Oceanospirillales; Oceanospirillaceae; Nitrincola,0,short_negative,47
+RF01766,cspA,cspA thermoregulator,Cis-reg; thermoregulator;,LNAM01000175.1,44100,44611,Bacteria; Firmicutes; Clostridia; Clostridiales; Ruminococcaceae; Acetivibrio.,1,stress_512nt,512

@@ -1,0 +1,14 @@
+# Notebook export (PDF via Chromium, HTML via nbconvert)
+nbconvert>=7.0
+nbformat>=5.10
+nbclient>=0.10
+playwright>=1.40
+
+# After pip install -r requirements-notebooks.txt:
+#   playwright install chromium
+#
+# Export PDF (bypass broken ~/.jupyter contrib config):
+#   JUPYTER_CONFIG_DIR=.jupyter jupyter nbconvert --to webpdf --execute notebooks/05_full_thermo_rf_analysis.ipynb
+#
+# Export HTML:
+#   JUPYTER_CONFIG_DIR=.jupyter jupyter nbconvert --to html --execute notebooks/05_full_thermo_rf_analysis.ipynb

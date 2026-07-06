@@ -119,15 +119,29 @@ def _worker_entry(args):
     return row_dict, vienna_result, nupack_result
 
 
-def _process_batch(batch_rows, temp_range, dangles, sodium, magnesium, threads, concentration, engine, workers):
+def _process_batch(
+    batch_rows,
+    temp_range,
+    dangles,
+    sodium,
+    magnesium,
+    threads,
+    concentration,
+    engine,
+    workers,
+    isolate_subprocess=True,
+):
     pool_args = [
         (row_dict, temp_range, dangles, sodium, magnesium, threads, concentration, engine)
         for row_dict in batch_rows
     ]
     worker_count = min(workers, len(batch_rows))
-    if worker_count <= 1:
+    if worker_count <= 1 and not isolate_subprocess:
         return [_worker_entry(args) for args in pool_args]
-    with Pool(processes=worker_count) as pool:
+    # maxtasksperchild=1: recycle each worker after one sequence so C/C++ engine
+    # allocations (ViennaRNA / NUPACK) are fully released to the OS.
+    max_tasks = 1 if isolate_subprocess else None
+    with Pool(processes=max(worker_count, 1), maxtasksperchild=max_tasks) as pool:
         return pool.map(_worker_entry, pool_args)
 
 
@@ -170,7 +184,12 @@ def _append_batch_results(
             pd.DataFrame(nupack_rows),
             join_on=join_columns,
         )
-        append_fused_features(fused, fused_csv)
+        append_fused_features(
+            fused,
+            fused_csv,
+            join_columns=join_columns,
+            include_label=include_label,
+        )
 
 
 def _log_ram_event(log_path, event):
@@ -189,6 +208,7 @@ def run_thermo_batch(
     temp_min=DEFAULT_TEMP_MIN,
     temp_max=DEFAULT_TEMP_MAX,
     temp_step=DEFAULT_TEMP_STEP,
+    temps=None,
     dangles=2,
     sodium=0.05,
     magnesium=0.0,
@@ -201,6 +221,7 @@ def run_thermo_batch(
     fused_csv=FUSED_OUTPUT,
     ram_log=BATCH_RAM_LOG,
     dry_run=True,
+    isolate_subprocess=True,
 ):
     if input_mode == "fasta":
         dataset = load_fasta_dataset(input_fasta)
@@ -211,7 +232,10 @@ def run_thermo_batch(
         join_columns = JOIN_COLUMNS
         include_label = True
 
-    temp_range = build_temp_range(temp_min, temp_max, temp_step)
+    if temps:
+        temp_range = [int(t) for t in temps]
+    else:
+        temp_range = build_temp_range(temp_min, temp_max, temp_step)
     resume_keys = _load_completed_keys(fused_csv, join_columns) if resume else set()
     row_dicts = _row_dicts_from_dataset(
         dataset, limit, resume_keys, join_columns, resume=resume
@@ -222,7 +246,9 @@ def run_thermo_batch(
         print(f"  input_mode:  {input_mode}")
         print(f"  batch_size:  {batch_size}, workers: {workers}, engine: {engine}")
         print(f"  resume:      {resume} ({len(resume_keys)} keys already complete)")
-        print(f"  temp range:  {temp_range[0]}–{temp_range[-1]}°C (step {temp_step})")
+        print(f"  temps:       {temp_range}°C")
+        print(f"  sodium:      {sodium} M, magnesium: {magnesium} M")
+        print(f"  isolate:     {isolate_subprocess} (maxtasksperchild=1)")
         print(f"  outputs:     {resolve_path(vienna_csv)}, {resolve_path(nupack_csv)}, {resolve_path(fused_csv)}")
         return row_dicts
 
@@ -252,6 +278,7 @@ def run_thermo_batch(
             concentration,
             engine,
             workers,
+            isolate_subprocess=isolate_subprocess,
         )
         _append_batch_results(
             results,
@@ -288,6 +315,12 @@ def run_thermo_batch(
     return row_dicts
 
 
+def _parse_temps(value):
+    if not value:
+        return None
+    return [int(part.strip()) for part in value.split(",") if part.strip()]
+
+
 def _build_parser():
     parser = argparse.ArgumentParser(description="Run batched thermodynamic feature extraction.")
     parser.add_argument("--limit", type=int, default=10)
@@ -304,7 +337,25 @@ def _build_parser():
     parser.add_argument("--temp-min", type=int, default=DEFAULT_TEMP_MIN)
     parser.add_argument("--temp-max", type=int, default=DEFAULT_TEMP_MAX)
     parser.add_argument("--temp-step", type=int, default=DEFAULT_TEMP_STEP)
+    parser.add_argument(
+        "--temps",
+        default=None,
+        help="Comma-separated temperatures in °C (e.g. 37,45,55). Overrides min/max/step.",
+    )
+    parser.add_argument("--sodium", type=float, default=0.05, help="NUPACK [Na+] in M")
+    parser.add_argument("--magnesium", type=float, default=0.0, help="NUPACK [Mg2+] in M")
     parser.add_argument("--dangles", type=int, choices=[2, 3], default=2)
+    parser.add_argument(
+        "--isolate-subprocess",
+        action="store_true",
+        default=True,
+        help="Recycle each worker after one sequence (default). Releases C-extension RAM.",
+    )
+    parser.add_argument(
+        "--no-isolate-subprocess",
+        action="store_true",
+        help="Reuse worker processes across sequences (faster, risk of C-extension leak).",
+    )
     parser.add_argument("--dry-run", action="store_true", default=True)
     parser.add_argument("--run", action="store_true")
     return parser
@@ -324,7 +375,10 @@ def main():
         temp_min=args.temp_min,
         temp_max=args.temp_max,
         temp_step=args.temp_step,
+        temps=_parse_temps(args.temps),
         dangles=args.dangles,
+        sodium=args.sodium,
+        magnesium=args.magnesium,
         input_mode=args.input_mode,
         input_csv=args.input_csv,
         input_fasta=input_fasta,
@@ -332,6 +386,7 @@ def main():
         nupack_csv=args.nupack_csv,
         fused_csv=args.fused_csv,
         dry_run=not args.run,
+        isolate_subprocess=not args.no_isolate_subprocess,
     )
 
 

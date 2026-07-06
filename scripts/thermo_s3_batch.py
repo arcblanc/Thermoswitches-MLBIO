@@ -87,13 +87,28 @@ def upload_denovo_artifacts() -> None:
     upload_to_s3(NUPACK_DENOVO, f"{THERMO_DENOVO_PREFIX}/nupack/features.csv")
 
 
-def _instance_id_from_metadata() -> str | None:
+def _metadata(path: str) -> str | None:
     try:
-        url = "http://169.254.169.254/latest/meta-data/instance-id"
+        url = f"http://169.254.169.254/latest/meta-data/{path}"
         with urllib.request.urlopen(url, timeout=2) as response:
             return response.read().decode().strip()
     except Exception:
         return None
+
+
+def _instance_id_from_metadata() -> str | None:
+    return _metadata("instance-id")
+
+
+def _region_from_metadata() -> str | None:
+    # Prefer explicit region; fall back to AZ (e.g. eu-west-2a -> eu-west-2).
+    region = _metadata("placement/region")
+    if region:
+        return region
+    az = _metadata("placement/availability-zone")
+    if az and len(az) > 1:
+        return az[:-1]
+    return None
 
 
 def stop_ec2_if_configured() -> None:
@@ -108,11 +123,20 @@ def stop_ec2_if_configured() -> None:
 
     import boto3
 
-    region = os.environ.get("AWS_REGION", "us-east-1")
+    # Instance region may differ from S3 bucket region (AWS_REGION).
+    region = (
+        os.environ.get("EC2_REGION")
+        or _region_from_metadata()
+        or os.environ.get("AWS_REGION", "us-east-1")
+    )
     client = boto3.client("ec2", region_name=region)
     print(f"Stopping EC2 instance {instance_id} in {region}...")
-    client.stop_instances(InstanceIds=[instance_id])
-    print(f"Stop requested for {instance_id}")
+    try:
+        client.stop_instances(InstanceIds=[instance_id])
+        print(f"Stop requested for {instance_id}")
+    except Exception as exc:
+        print(f"ERROR: failed to stop instance {instance_id} in {region}: {exc}")
+        raise
 
 
 def run_train(

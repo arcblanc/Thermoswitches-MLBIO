@@ -101,7 +101,13 @@ def predict_thermoswitches(
         raise ValueError(f"Fused CSV missing feature columns: {missing}")
 
     predict_df = df.dropna(subset=feature_cols)
-    probs = model.predict_proba(predict_df[feature_cols])[:, 1]
+    proba = model.predict_proba(predict_df[feature_cols])
+    classes = list(model.classes_)
+    if 1 in classes:
+        probs = proba[:, classes.index(1)]
+    else:
+        # Smoke / degenerate train sets may only contain label 0.
+        probs = [0.0] * len(predict_df)
     labels = model.predict(predict_df[feature_cols])
 
     id_col = join_column if join_column in predict_df.columns else _resolve_id_column(predict_df)
