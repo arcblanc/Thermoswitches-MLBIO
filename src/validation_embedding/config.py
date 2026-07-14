@@ -35,6 +35,14 @@ class LLMSettings:
     vm_auto_shutdown: bool
     generna_batch_size: int
     generna_num_samples: int
+    # EVA (Option B TaxID panel + chunk gates)
+    eva_checkpoint_dir: str
+    eva_cache_dir: str
+    eva_chunk_size: int
+    eva_min_len: int
+    eva_max_len: int
+    eva_rna_type: str
+    eva_num_samples: int
 
 
 def load_llm_settings() -> LLMSettings:
@@ -59,4 +67,11 @@ def load_llm_settings() -> LLMSettings:
         vm_auto_shutdown=_env_bool("VM_AUTO_SHUTDOWN", default=False),
         generna_batch_size=int(os.environ.get("GENERNA_BATCH_SIZE", "50")),
         generna_num_samples=int(os.environ.get("GENERNA_NUM_SAMPLES", "10000")),
+        eva_checkpoint_dir=os.environ.get("EVA_CHECKPOINT_DIR", "models/eva/checkpoint"),
+        eva_cache_dir=os.environ.get("EVA_CACHE_DIR", "models/eva"),
+        eva_chunk_size=int(os.environ.get("EVA_CHUNK_SIZE", "512")),
+        eva_min_len=int(os.environ.get("EVA_MIN_LEN", "40")),
+        eva_max_len=int(os.environ.get("EVA_MAX_LEN", "600")),
+        eva_rna_type=os.environ.get("EVA_RNA_TYPE", "mRNA"),
+        eva_num_samples=int(os.environ.get("EVA_NUM_SAMPLES", "16")),
     )

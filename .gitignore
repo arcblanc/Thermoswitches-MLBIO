@@ -40,6 +40,8 @@ Thumbs.db
 # Generated data
 data/raw/*
 !data/raw/.gitkeep
+data/reference/*
+!data/reference/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
 !data/processed/viennarna/
@@ -48,6 +50,18 @@ data/processed/*
 !data/processed/nupack/.gitkeep
 !data/processed/prototype/
 !data/processed/prototype/.gitkeep
+!data/processed/novelty/
+!data/processed/novelty/.gitkeep
+# Keep novelty summaries / candidates; drop multi-GB search dumps
+data/processed/novelty/nhmmer_hits.out
+data/processed/novelty/nhmmer_hits.tbl
+data/processed/novelty/run.log
+!data/processed/novelty/novelty_summary.json
+!data/processed/novelty/novelty_report.csv
+!data/processed/novelty/novelty_by_category.csv
+!data/processed/novelty/candidates_99.fasta
+!data/processed/novelty/blastn_hits.tsv
+!data/processed/novelty/figures/
 
 # Trained models
 models/*
@@ -72,6 +86,7 @@ slurm-*.out
 
 # Local tooling binaries
 bin/
+.tools/
 
 # Local NUPACK distribution (licensed; install wheel into venv separately)
 nupack-4.1.0.1/
@@ -83,3 +98,10 @@ data/processed/prototype/curves/
 models/genererna/
 data/processed/validation_embedding/
 
+
+# Local notebook PDF export helpers (not published)
+scripts/export_notebook_pdf.sh
+scripts/install_pandoc_for_nbconvert.sh
+.jupyter/
+.vscode/
+notebooks/*.pdf

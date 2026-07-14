@@ -1,13 +1,16 @@
 # RunPod + AWS EC2 Pipeline
 
-Hybrid workflow: **RunPod Thermopod** (GenerRNA + BiRNA → S3) then **EC2 `aws-thermo-ec2`** (ViennaRNA + NUPACK + Random Forest). EC2 is already running; thermo files transfer via **SCP**. RunPod supports **SSH only** — no SCP/SFTP.
+Hybrid workflow: **RunPod** (GenerRNA *or* **EVA** + BiRNA → S3) then **EC2 `aws-thermo-ec2`** (ViennaRNA + NUPACK + Random Forest). EC2 is already running; thermo files transfer via **SCP**. RunPod supports **SSH only** — no SCP/SFTP.
+
+**EVA smoke / full panel runbook:** [`EVA_RUNPOD.md`](EVA_RUNPOD.md) (Option B TaxIDs, 512-chunk gates, `llm-batch/eva/v1`).
 
 ## Architecture
 
 | Step | Machine | Action |
 |------|---------|--------|
 | 0 | Mac → RunPod SSH | Connect, clone repo, bootstrap, run LLM batch |
-| 1 | RunPod Thermopod | GenerRNA 10k → BiRNA → S3 upload → terminate pod |
+| 1a | RunPod (legacy) | GenerRNA 10k → BiRNA → S3 `llm-batch/v1` → terminate |
+| 1b | RunPod (EVA) | EVA smoke then 10k Option B panel → BiRNA → S3 `llm-batch/eva/v1` → terminate on success or quality-gate fail |
 | 2 | EC2 (SSH) | Thermo batch on 2,396 balanced sequences → train RF |
 | 3 | Mac | Pull `generated.fasta` from S3, SCP to EC2 |
 | 4 | EC2 (SSH) | Thermo batch on 10k de novo FASTA → RF predict |

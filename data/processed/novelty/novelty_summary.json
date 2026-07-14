@@ -1,0 +1,23 @@
+{
+  "n_candidates": 99,
+  "evalue_threshold": 0.1,
+  "identity_near_threshold": 0.9,
+  "categories": {
+    "identical_near": {
+      "count": 98,
+      "fraction": 0.9899
+    },
+    "remote_homolog": {
+      "count": 1,
+      "fraction": 0.0101
+    },
+    "no_hit": {
+      "count": 0,
+      "fraction": 0.0
+    }
+  },
+  "tools": {
+    "blastn_hits": 99,
+    "nhmmer_hits": 99
+  }
+}

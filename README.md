@@ -31,8 +31,9 @@ The codebase is organized as domain subpackages under `src/`. Configuration is s
 | `thermo_sim/` | `thermo_batch.py` | Batched full-dataset extraction with RAM logging |
 | `thermo_sim/` | `thermo_classifier.py` | Random Forest train/predict on fused physics features |
 | `thermo_sim/` | `plot_prototype_benchmark.py` | Prototype benchmark figures |
-| `de_novo_hallucinations/` | *(planned)* | De novo sequence design and inverse folding |
-| `validation_embedding/` | *(planned)* | Foundation-model validation and embedding workflows |
+| `de_novo_hallucinations/` | `eva_generate.py` / `eva_quality.py` / `eva_prompts.py` | EVA Option B panel generation + chunk quality gates |
+| `de_novo_hallucinations/` | `gener_rna.py` | Legacy GenerRNA generation |
+| `validation_embedding/` | `birna_embed.py` / `storage.py` | BiRNA-BERT embeddings + S3 / RunPod artifact sync |
 
 ### Configuration
 
@@ -110,7 +111,28 @@ python scripts/verify_batch_outputs.py 10
 
 ## Phase 4: De Novo Design and Foundation Models
 
-Code lives under `src/de_novo_hallucinations/` (GenerRNA generation) and `src/validation_embedding/` (BiRNA-BERT embeddings).
+Code lives under `src/de_novo_hallucinations/` (GenerRNA + **EVA** generation) and `src/validation_embedding/` (BiRNA-BERT embeddings).
+
+### EVA generation (smoke → Option B panel)
+
+EVA replaces GenerRNA for new de novo runs. Conditioning uses the official CLI TaxID wrapper (`--rna_type mRNA` + `--taxid`) — never `sRNA`. Full run is a **3-host panel** (E. coli 562 / Salmonella 28901 / Lister 1639 → 10k sequences) in **512-seq chunks** with hard quality gates (Invalid Biological Formatting, Length Violations, Repetitive Text Collapse). Gate failure aborts and **stops the RunPod pod**.
+
+```bash
+# Dry-run
+python scripts/eva_cloud_batch.py --smoke --dry-run
+
+# On pod after keys + checkpoint (see cluster/EVA_RUNPOD.md):
+bash cluster/runpod_eva_thermopod.sh smoke --yes
+bash cluster/runpod_eva_thermopod.sh full --yes
+```
+
+Operator details and required API/AWS keys: [`cluster/EVA_RUNPOD.md`](cluster/EVA_RUNPOD.md). Artifacts land under `s3://…/llm-batch/eva/v1/` (separate from GenerRNA `llm-batch/v1`).
+
+### GenerRNA memorization (key finding)
+
+The Random Forest is trained **only** on the Rfam balanced corpus (~2,396 sequences). GenerRNA was then used to propose de novo candidates, which were scored by the RF and filtered for biophysical plausibility. A novelty screen of the top **99** RF-filtered candidates against Rfam 14.9 (`blastn` + `nhmmer`, ≥90% identity threshold) found that **98 of 99** were identical or near-identical to known sequences — i.e. **memorized training/regurgitated strands**, not genuinely new RNA. Only **1** sequence qualified as a remote homolog (<90% identity, E≤0.1); **0** had no hit.
+
+See `notebooks/06_novelty_rfam_analysis.ipynb` and `data/processed/novelty/novelty_summary.json` for the full breakdown.
 
 ### Local LLM smoke test (CPU)
 
@@ -151,8 +173,8 @@ The same scripts run on a cloud GPU without code changes when CUDA is available.
 
 **EC2 `aws-thermo-ec2`** (`c7i-flex.large`, 2 workers): already running. Two separate thermo jobs:
 
-1. **Train** — 2,396 balanced sequences → `fused_features.csv` → Random Forest
-2. **Predict** — 10k de novo FASTA (SCP'd from Mac) → `denovo_predictions.csv`
+1. **Train** — 2,396 Rfam balanced sequences → `fused_features.csv` → Random Forest (no hallucinated sequences in training)
+2. **Predict** — 10k GenerRNA FASTA (SCP'd from Mac) → `denovo_predictions.csv` → novelty filter on top hits
 
 ```bash
 # Mac → RunPod
@@ -168,7 +190,7 @@ bash scripts/scp_ec2.sh pull-predictions
 
 ### Roadmap
 
-- **De novo design:** inverse folding and mutation proposals targeting 55°C activation with low leakiness
+- **De novo design:** EVA Option B panel (mRNA + TaxID hosts) with chunk quality gates; address GenerRNA memorization on the legacy path before inverse folding / 55°C targeting
 - **Validation and embeddings:** fine-tuning BiRNA-BERT / RiNALMo on the curated dataset
 - **Structural context:** complementary structure representations where they improve design fidelity
 
