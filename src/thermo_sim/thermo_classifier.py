@@ -13,11 +13,14 @@ if str(SRC_ROOT) not in sys.path:
 from data_engineering.paths import resolve_path
 
 DEFAULT_MODEL_PATH = "data/processed/models/rf_thermoswitch.joblib"
+DEFAULT_LENGTH_MATCHED_MODEL_PATH = "data/processed/models/rf_thermoswitch_length_matched.joblib"
 DEFAULT_TRAINING_FUSED = "data/processed/fused_features.csv"
+DEFAULT_LENGTH_MATCHED_FUSED = "data/processed/fused_features_length_matched.csv"
 DEFAULT_DENOVO_FUSED = "data/processed/denovo_fused_features.csv"
 DEFAULT_PREDICTIONS = "data/processed/denovo_predictions.csv"
 
-PHYSICS_FEATURE_COLUMNS = [
+# Legacy extensive-feature set (raw MFE + absolute stem/loop). Kept for comparison.
+LEGACY_PHYSICS_FEATURE_COLUMNS = [
     "nupack_MFE",
     "nupack_max_stem_length",
     "nupack_max_loop_length",
@@ -35,9 +38,54 @@ PHYSICS_FEATURE_COLUMNS = [
     "viennarna_amplitude",
 ]
 
+# Intensive features: length-normalized MFE and stem/loop fractions (no raw MFE).
+PHYSICS_FEATURE_COLUMNS = [
+    "nupack_MFE_per_nt",
+    "nupack_max_stem_frac",
+    "nupack_max_loop_frac",
+    "nupack_mean_exposure",
+    "nupack_gc_content",
+    "nupack_Tm",
+    "nupack_hill_coeff",
+    "nupack_amplitude",
+    "viennarna_MFE_per_nt",
+    "viennarna_max_loop_frac",
+    "viennarna_gc_content",
+    "viennarna_mean_unpaired_prob",
+    "viennarna_Tm",
+    "viennarna_hill_coeff",
+    "viennarna_amplitude",
+    # Dynamic / composition-relative Vienna features
+    "viennarna_mfe_zscore",
+    "viennarna_delta_P_RBS",
+    "viennarna_delta_delta_G",
+    "viennarna_ensemble_diversity",
+    "viennarna_mean_positional_entropy",
+]
 
-def _available_features(df):
-    return [col for col in PHYSICS_FEATURE_COLUMNS if col in df.columns]
+
+def add_intensive_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add MFE/N and stem/loop fraction columns derived from raw fused features."""
+    out = df.copy()
+    if "seq_length" not in out.columns:
+        raise ValueError("seq_length required to build intensive features")
+    length = out["seq_length"].replace(0, pd.NA)
+    if "viennarna_MFE" in out.columns:
+        out["viennarna_MFE_per_nt"] = out["viennarna_MFE"] / length
+    if "nupack_MFE" in out.columns:
+        out["nupack_MFE_per_nt"] = out["nupack_MFE"] / length
+    if "nupack_max_stem_length" in out.columns:
+        out["nupack_max_stem_frac"] = out["nupack_max_stem_length"] / length
+    if "nupack_max_loop_length" in out.columns:
+        out["nupack_max_loop_frac"] = out["nupack_max_loop_length"] / length
+    if "viennarna_max_loop_length" in out.columns:
+        out["viennarna_max_loop_frac"] = out["viennarna_max_loop_length"] / length
+    return out
+
+
+def _available_features(df, feature_columns=None):
+    cols = feature_columns if feature_columns is not None else PHYSICS_FEATURE_COLUMNS
+    return [col for col in cols if col in df.columns]
 
 
 def train_random_forest(
@@ -45,12 +93,17 @@ def train_random_forest(
     model_path=DEFAULT_MODEL_PATH,
     n_estimators=200,
     random_state=42,
+    intensive=True,
 ):
     fused_csv = resolve_path(fused_csv)
     df = pd.read_csv(fused_csv)
     if "label" not in df.columns:
         raise ValueError(f"{fused_csv} must contain a label column for training.")
-    feature_cols = _available_features(df)
+    if intensive:
+        df = add_intensive_features(df)
+        feature_cols = _available_features(df, PHYSICS_FEATURE_COLUMNS)
+    else:
+        feature_cols = _available_features(df, LEGACY_PHYSICS_FEATURE_COLUMNS)
     if not feature_cols:
         raise ValueError("No physics feature columns found in fused CSV.")
 
@@ -96,6 +149,8 @@ def predict_thermoswitches(
     feature_cols = payload["feature_columns"]
 
     df = pd.read_csv(fused_csv)
+    if any(col not in df.columns for col in feature_cols):
+        df = add_intensive_features(df)
     missing = [col for col in feature_cols if col not in df.columns]
     if missing:
         raise ValueError(f"Fused CSV missing feature columns: {missing}")
@@ -129,6 +184,11 @@ def _build_parser():
     train_parser = sub.add_parser("train", help="Train RF on labeled fused_features.csv")
     train_parser.add_argument("--fused-csv", default=DEFAULT_TRAINING_FUSED)
     train_parser.add_argument("--model-path", default=DEFAULT_MODEL_PATH)
+    train_parser.add_argument(
+        "--legacy-features",
+        action="store_true",
+        help="Use raw MFE + absolute stem/loop features instead of intensive set.",
+    )
 
     predict_parser = sub.add_parser("predict", help="Predict on de novo fused features")
     predict_parser.add_argument("--fused-csv", default=DEFAULT_DENOVO_FUSED)
@@ -140,7 +200,11 @@ def _build_parser():
 def main():
     args = _build_parser().parse_args()
     if args.command == "train":
-        train_random_forest(fused_csv=args.fused_csv, model_path=args.model_path)
+        train_random_forest(
+            fused_csv=args.fused_csv,
+            model_path=args.model_path,
+            intensive=not args.legacy_features,
+        )
     elif args.command == "predict":
         predict_thermoswitches(
             fused_csv=args.fused_csv,
