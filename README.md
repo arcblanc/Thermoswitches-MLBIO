@@ -23,13 +23,17 @@ The codebase is organized as domain subpackages under `src/`. Configuration is s
 | `data_engineering/` | `sequence_retrieval.py` | NCBI Entrez FASTA fetch (reads `EMAIL`, `NCBI_API_KEY` from `.env`) |
 | `data_engineering/` | `cd_hit_sequence_similarity.py` | CD-HIT homology filtering |
 | `data_engineering/` | `knn_undersample.py` | k-mer ENN + RUS balancing |
-| `thermo_sim/` | `thermo_common.py` | Shared dataset loading, temperature grid, Hill fitting |
-| `thermo_sim/` | `vienna_rna.py` | ViennaRNA melting and unpaired-probability features |
+| `data_engineering/` | `refseq_utr_extract.py` | Housekeeping 5′ UTR negatives from RefSeq genomes |
+| `data_engineering/` | `cmscan_decontaminate.py` | Infernal `cmscan --cut_ga` scrub of thermoswitch/riboswitch hits |
+| `data_engineering/` | `length_gc_match.py` | Z-space / cKDTree / Hungarian length–GC matching |
+| `thermo_sim/` | `thermo_common.py` | Shared dataset loading, temperature grid, Hill fitting, dinuc shuffle |
+| `thermo_sim/` | `vienna_rna.py` | ViennaRNA melting, unpaired-probability, and dynamic features |
 | `thermo_sim/` | `nupack_engine.py` | NUPACK test-tube ensemble features |
 | `thermo_sim/` | `feature_fusion.py` | Join `viennarna_*` and `nupack_*` feature blocks |
+| `thermo_sim/` | `enrich_dynamic_features.py` | Enrich fused CSV with Z / ΔP_RBS / ΔΔG / Q / S |
 | `thermo_sim/` | `thermo_prototype.py` | 4-sequence stress-test benchmark |
 | `thermo_sim/` | `thermo_batch.py` | Batched full-dataset extraction with RAM logging |
-| `thermo_sim/` | `thermo_classifier.py` | Random Forest train/predict on fused physics features |
+| `thermo_sim/` | `thermo_classifier.py` | Random Forest train/predict (intensive + dynamic features) |
 | `thermo_sim/` | `plot_prototype_benchmark.py` | Prototype benchmark figures |
 | `de_novo_hallucinations/` | `eva_generate.py` / `eva_quality.py` / `eva_prompts.py` | EVA Option B panel generation + chunk quality gates |
 | `de_novo_hallucinations/` | `gener_rna.py` | Legacy GenerRNA generation |
@@ -56,6 +60,8 @@ NCBI_API_KEY=your_ncbi_api_key_here
 4. **K-mer ENN + RUS balancing** — Edited Nearest Neighbors on k-mer features, then Random Under-Sampling to a 1:1 class ratio.
 
 Output: `data/processed/balanced/balanced_dataset.{csv,fasta}` (~2,396 sequences).
+
+For the **length-controlled baseline**, short Rfam negatives are replaced by RefSeq housekeeping 5′ UTRs and globally length/GC-matched (see [Length-bias remediation](#length-bias-remediation-refseq-5-utr-baseline) below).
 
 ---
 
@@ -104,8 +110,63 @@ python scripts/verify_batch_outputs.py 10
 ## Phase 3: Machine Learning Classification
 
 - **Algorithm:** Random Forest Classifier
+- **Default feature set (intensive):** length-normalized MFE (`*_MFE_per_nt`), stem/loop fractions, Tm / Hill / amplitude, plus Vienna dynamic columns (MFE Z-score, ΔP_RBS, ΔΔG, ensemble diversity, mean positional entropy)
+- **Legacy feature set:** raw MFE + absolute stem/loop (`--legacy-features`) retained for comparison only
 - **Inputs:** dual feature blocks (`viennarna_*`, `nupack_*`) joined on `(rfamseq_acc, seq_start, seq_end)`
-- **Output:** majority-vote classification of functional thermoswitches
+- **Honest CV:** `StratifiedGroupKFold` by `rfam_acc` (positives) / `REFSEQ:{assembly}` (RefSeq negatives) via `scripts/rf_length_bias_diagnostics.py`
+
+```bash
+# Train intensive RF on RefSeq-matched + dynamic fused features
+python src/thermo_sim/thermo_classifier.py train \
+  --fused-csv data/processed/fused_features_refseq_dynamic.csv \
+  --model-path data/processed/models/rf_thermoswitch_refseq_dynamic.joblib
+
+python scripts/rf_length_bias_diagnostics.py \
+  --fused-csv data/processed/fused_features_refseq_dynamic.csv \
+  --output-json data/processed/refseq_dynamic_rf_diagnostics.json
+```
+
+---
+
+## Length-bias remediation (RefSeq 5′ UTR baseline)
+
+The legacy RF (~0.95 stratified AUC) was largely a **length detector**: positives averaged ~346 nt vs short Rfam negatives ~162 nt, and raw MFE correlated with length (r ≈ −0.89; length-alone AUC ≈ 0.94).
+
+### Dataset pivot
+1. Decommission short Rfam non-switch fragments as negatives.
+2. Extract housekeeping 5′ UTRs [200–600 nt] from RefSeq complete genomes (Pseudomonadota + Bacillota) via `scripts/download_refseq_genomes.sh` + `refseq_utr_extract.py`.
+3. Scrub thermoswitch/riboswitch hits with Infernal `cmscan --cut_ga` (`cmscan_decontaminate.py`).
+4. Globally match each CD-HIT positive to a RefSeq negative in Z(length, GC) space (`length_gc_match.py --all-positives --cds-truncate`): cKDTree top-K + Hungarian assignment, `|ΔL|≤40`, `|ΔGC|≤0.05`, CDS-proximal truncation for exact length.
+
+### Feature and validation changes
+- Intensive features only (no raw MFE in the production RF path).
+- Dynamic Vienna enrichment (`enrich_dynamic_features.py`): dinucleotide-shuffle MFE Z, ΔP_RBS (last 30 nt), ΔΔG, ensemble diversity Q, mean positional entropy S.
+- Group hold-out CV: family / assembly boundaries (not random stratified alone).
+
+### Current honest metrics (n=2396, dynamic intensive set)
+| Test | AUC |
+|------|-----|
+| Length-alone | ~0.20 (length shortcut removed) |
+| Stratified intensive | ~0.80 (optimistic / leakage-prone) |
+| **StratifiedGroupKFold** | ~0.19 (no transferable out-of-family detector) |
+
+Mean MFE Z: positives ≈ −2.54 vs RefSeq controls ≈ −1.34 (composition-relative structure signal present; still fails group CV).
+
+Narrative for stakeholders: [`notebooks/05_BUSINESS_BRIEF_thermo_rf_results.md`](notebooks/05_BUSINESS_BRIEF_thermo_rf_results.md). Release notes: [`CHANGELOG.md`](CHANGELOG.md).
+
+```bash
+# Download capped RefSeq assemblies (≥50) then extract + decontaminate UTRs
+bash scripts/download_refseq_genomes.sh
+PYTHONPATH=src python src/data_engineering/refseq_utr_extract.py
+PYTHONPATH=src python src/data_engineering/cmscan_decontaminate.py
+
+# Match all positives; fold negatives; enrich dynamics
+PYTHONPATH=src python src/data_engineering/length_gc_match.py \
+  --all-positives --cds-truncate \
+  --negatives-csv data/processed/refseq_utr/candidates_clean.csv \
+  --negatives-fasta data/processed/refseq_utr/candidates_clean.fasta
+PYTHONPATH=src python src/thermo_sim/enrich_dynamic_features.py --workers 4
+```
 
 ---
 
@@ -127,6 +188,8 @@ bash cluster/runpod_eva_thermopod.sh full --yes
 ```
 
 Operator details and required API/AWS keys: [`cluster/EVA_RUNPOD.md`](cluster/EVA_RUNPOD.md). Artifacts land under `s3://…/llm-batch/eva/v1/` (separate from GenerRNA `llm-batch/v1`).
+
+**Docker image bake:** from an M3, SSH into a temporary **Linux x86_64** VM and run `bash scripts/build_push_eva_docker.sh --push` to publish `arcblanc/eva-model:v1`. The script hard-fails on macOS (CUDA/`flash-attn` cannot be baked on Apple Silicon).
 
 ### GenerRNA memorization (key finding)
 
@@ -190,6 +253,7 @@ bash scripts/scp_ec2.sh pull-predictions
 
 ### Roadmap
 
+- **Classifier:** address GroupKFold collapse (~0.19 AUC) — sequence+physics models and/or monotonic constraints; do not treat legacy 0.95 AUC as a wet-lab gate
 - **De novo design:** EVA Option B panel (mRNA + TaxID hosts) with chunk quality gates; address GenerRNA memorization on the legacy path before inverse folding / 55°C targeting
 - **Validation and embeddings:** fine-tuning BiRNA-BERT / RiNALMo on the curated dataset
 - **Structural context:** complementary structure representations where they improve design fidelity
