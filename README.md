@@ -45,14 +45,18 @@ The codebase is organized as domain subpackages under `src/`. Configuration is s
 
 ### Configuration
 
-Copy `.env.example` to `.env` and set:
+Copy `.env.example` to `.env` and set NCBI credentials (used by Entrez fetch **and** RefSeq genome download):
 
 ```bash
+# Boosts NCBI Datasets / Entrez rate limits (~3 req/s without a key → ~10/s with a key).
+# scripts/download_refseq_genomes.sh sources .env and fails if NCBI_API_KEY is unset.
+cat <<'EOF' > .env
 EMAIL=your.email@university.edu
 NCBI_API_KEY=your_ncbi_api_key_here
+EOF
 ```
 
-`sequence_retrieval.py` loads these at runtime with `load_dotenv()` and `os.environ.get()`. All pipeline scripts use repo-relative paths (for example `data/processed/fused_features_refseq_dynamic.csv`) resolved through `resolve_path()`, so the same code runs locally and on a remote VM without path edits.
+`sequence_retrieval.py` loads these at runtime with `load_dotenv()` and `os.environ.get()`. `download_refseq_genomes.sh` does `source .env` then `: "${NCBI_API_KEY:?...}"`. All pipeline scripts use repo-relative paths (for example `data/processed/fused_features_refseq_dynamic.csv`) resolved through `resolve_path()`, so the same code runs locally and on a remote VM without path edits.
 
 ---
 
@@ -70,17 +74,28 @@ The first balanced set used Rfam non-switch / cis-regulatory fragments as negati
 
 ### 1b. Negatives (RefSeq housekeeping 5′ UTRs)
 
-1. **Genome download** — capped complete + reference assemblies for **Pseudomonadota** and **Bacillota** (`scripts/download_refseq_genomes.sh`, NCBI Datasets CLI).
+1. **Genome download** — capped complete + reference assemblies for **Pseudomonadota** and **Bacillota** (`scripts/download_refseq_genomes.sh`, NCBI Datasets CLI). Requires `NCBI_API_KEY` in `.env` (see [Configuration](#configuration)).
 2. **UTR extract** — operon-aware 5′ windows [200–600 nt] upstream of housekeeping CDS (`refseq_utr_extract.py`); CDS-proximal end retained.
 3. **Decontamination** — Infernal `cmscan --cut_ga` against thermoswitch/riboswitch CMs (`cmscan_decontaminate.py`) → clean candidate pool.
-4. **Length/GC match** — each Rfam positive is paired 1:1 to a RefSeq UTR in standardized (length, GC) space (`length_gc_match.py --all-positives --cds-truncate`): cKDTree top-K + Hungarian assignment, gates `|ΔL|≤40`, `|ΔGC|≤0.05`, with CDS-proximal truncation for exact length.
+4. **Length/GC match** — each Rfam positive is paired 1:1 to a RefSeq UTR in standardized (length, GC) space (`length_gc_match.py --all-positives --cds-truncate`): cKDTree top-K + Hungarian assignment, gates `|ΔL|≤40`, `|ΔGC|≤0.05`.
+
+**3′ CDS-proximal truncation:** when a longer RefSeq UTR must match a positive’s length exactly, the matcher keeps the **3′ end** (`seq[-length:]`) and discards the **5′ distal** flank. That preserves the Shine-Dalgarno / translation-initiation region immediately upstream of the CDS so downstream `viennarna_delta_P_RBS` (last 30 nt) evaluates the authentic cellular RBS window.
+
+**Group cross-validation schema:** to enforce out-of-distribution evaluation via `StratifiedGroupKFold`, all sequences share a single grouping column (`rfam_acc`):
+
+- **Positives:** Rfam family accession (e.g. `RF00038`), so entire structural families are held out together.
+- **RefSeq negatives:** `REFSEQ:{assembly_accession}` (e.g. `REFSEQ:GCF_000006945.2`), so all 5′ UTRs from one bacterial genome stay in the same fold.
+
+`scripts/rf_length_bias_diagnostics.py` defaults to `--group-col rfam_acc` and needs no separate `assembly_accession` column.
 
 **Primary training table:** `data/processed/fused_features_refseq_dynamic.csv` (1,198 pos + 1,198 RefSeq-matched neg after thermo fold + dynamic enrichment).
 
 **Legacy (do not use for new RF claims):** `data/processed/balanced/balanced_dataset.{csv,fasta}` and `fused_features.csv` — Rfam-vs-Rfam ENN/RUS balance that embeds the length trap.
 
 ```bash
-# RefSeq negative bank → match to CD-HIT positives
+# Prerequisites: .env with EMAIL + NCBI_API_KEY (see Configuration above).
+# download_refseq_genomes.sh sources .env automatically.
+
 bash scripts/download_refseq_genomes.sh
 PYTHONPATH=src python src/data_engineering/refseq_utr_extract.py
 PYTHONPATH=src python src/data_engineering/cmscan_decontaminate.py
@@ -297,7 +312,7 @@ conda activate thermoswitches-mlbio
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-cp .env.example .env
+cp .env.example .env   # must include EMAIL + NCBI_API_KEY before RefSeq download
 
 # Positives from Rfam (legacy ENN/RUS balance optional; not the production negative bank)
 python src/data_engineering/data_extraction.py
@@ -305,6 +320,7 @@ python src/data_engineering/sequence_retrieval.py --all
 python src/data_engineering/cd_hit_sequence_similarity.py --all
 
 # Production negatives: RefSeq housekeeping 5′ UTRs → match → fold → enrich
+# download_refseq_genomes.sh sources .env and aborts if NCBI_API_KEY is missing
 bash scripts/download_refseq_genomes.sh
 PYTHONPATH=src python src/data_engineering/refseq_utr_extract.py
 PYTHONPATH=src python src/data_engineering/cmscan_decontaminate.py
@@ -321,3 +337,4 @@ python src/thermo_sim/nupack_engine.py --dry-run
 - `viennarna` — bioconda or `pip install viennarna`
 - `nupack` — local wheel from `nupack-4.1.0.1/package/`
 - `infernal` + `ncbi-datasets-cli` — via `environment.yml` (RefSeq UTR path)
+- `NCBI_API_KEY` in `.env` — required for `download_refseq_genomes.sh` (raises NCBI rate limit ~3/s → ~10/s)
