@@ -1,9 +1,11 @@
 import argparse
 import os
+import random
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 SRC_ROOT = Path(__file__).resolve().parent.parent
@@ -19,12 +21,18 @@ from thermo_sim.thermo_common import (
     VIENNA_OUTPUT_DIR,
     build_temp_range,
     detect_shine_dalgarno,
+    dinucleotide_shuffle,
     extract_pair_probability,
     fit_hill_curve,
     gc_content,
+    get_stable_seed,
     load_balanced_dataset,
     max_loop_length,
     mean_unpaired_from_pair_matrix,
+    mean_unpaired_in_window,
+    normalize_sequence,
+    positional_entropy_from_bpp,
+    rbs_window_indices,
     resolve_path,
     sd_window_indices,
     window_mean,
@@ -43,6 +51,14 @@ VIENNA_FEATURE_COLUMNS = [
     "viennarna_gc_content",
     "viennarna_dangles_model",
     "viennarna_fit_status",
+]
+
+VIENNA_DYNAMIC_FEATURE_COLUMNS = [
+    "viennarna_mfe_zscore",
+    "viennarna_delta_P_RBS",
+    "viennarna_delta_delta_G",
+    "viennarna_ensemble_diversity",
+    "viennarna_mean_positional_entropy",
 ]
 
 
@@ -117,6 +133,87 @@ def _fold_mfe(sequence, config):
     fc = RNA.fold_compound(sequence, md)
     structure, mfe = fc.mfe()
     return float(mfe), str(structure)
+
+
+def _pf_bundle(sequence, config):
+    """Return (mfe, structure, ensemble_diversity, bpp) from one fold_compound."""
+    import RNA
+
+    md = _build_model(config)
+    fc = RNA.fold_compound(sequence, md)
+    structure, mfe = fc.mfe()
+    # pf() returns (centroid_or_string, free_energy); diversity via mean_bp_distance
+    fc.pf()
+    try:
+        diversity = float(fc.mean_bp_distance())
+    except Exception:
+        diversity = None
+    bpp = fc.bpp()
+    return float(mfe), str(structure), diversity, bpp
+
+
+def extract_dynamic_vienna_features(
+    row,
+    *,
+    n_shuffles: int = 100,
+    dangles: int = 2,
+    temp_low: float = 37.0,
+    temp_high: float = 55.0,
+    rbs_width: int = 30,
+    sigma_floor: float = 1e-6,
+):
+    """Composition-relative / differential Vienna features (no full melting curve)."""
+    sequence = normalize_sequence(row["sequence"])
+    n = len(sequence)
+    if n == 0:
+        return {col: None for col in VIENNA_DYNAMIC_FEATURE_COLUMNS}
+
+    join_key = (
+        f"{row.get('rfamseq_acc', '')}|{int(row.get('seq_start', 0))}|"
+        f"{int(row.get('seq_end', 0))}"
+    )
+    cfg37 = ViennaConfig(dangles=dangles, temperature_c=temp_low)
+    cfg55 = ViennaConfig(dangles=dangles, temperature_c=temp_high)
+
+    mfe37, _struct37, diversity, bpp37 = _pf_bundle(sequence, cfg37)
+    mfe55, _struct55, _div55, bpp55 = _pf_bundle(sequence, cfg55)
+
+    unpaired37 = mean_unpaired_from_pair_matrix(bpp37, n)
+    unpaired55 = mean_unpaired_from_pair_matrix(bpp55, n)
+    rbs_idx = rbs_window_indices(sequence, width=rbs_width)
+    p_rbs_37 = mean_unpaired_in_window(unpaired37, rbs_idx)
+    p_rbs_55 = mean_unpaired_in_window(unpaired55, rbs_idx)
+    delta_p = (
+        None
+        if p_rbs_37 is None or p_rbs_55 is None
+        else float(p_rbs_55 - p_rbs_37)
+    )
+
+    mean_s = positional_entropy_from_bpp(bpp37, n)
+
+    rng = random.Random(get_stable_seed(join_key))
+    shuffle_mfes = []
+    modes = []
+    for _ in range(int(n_shuffles)):
+        shuf, mode = dinucleotide_shuffle(sequence, rng)
+        modes.append(mode)
+        mfe_s, _ = _fold_mfe(shuf, cfg37)
+        shuffle_mfes.append(mfe_s)
+    mu = float(np.mean(shuffle_mfes)) if shuffle_mfes else 0.0
+    sigma = float(np.std(shuffle_mfes, ddof=0)) if shuffle_mfes else 0.0
+    sigma = max(sigma, sigma_floor)
+    zscore = float((mfe37 - mu) / sigma)
+    shuffle_mode = "dinuc" if modes.count("dinuc") >= modes.count("mono") else "mono"
+
+    return {
+        "viennarna_mfe_zscore": zscore,
+        "viennarna_delta_P_RBS": delta_p,
+        "viennarna_delta_delta_G": float(mfe55 - mfe37),
+        "viennarna_ensemble_diversity": diversity,
+        "viennarna_mean_positional_entropy": mean_s,
+        "viennarna_mfe_zscore_shuffle_mode": shuffle_mode,
+        "viennarna_MFE": mfe37,  # keep native MFE consistent if caller wants it
+    }
 
 
 def extract_vienna_features(row, temp_range, config=None):

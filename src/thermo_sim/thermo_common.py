@@ -1,9 +1,12 @@
+import hashlib
 import json
 import math
 import os
+import random
 import time
 import tracemalloc
 import warnings
+from collections import defaultdict
 from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
@@ -205,6 +208,124 @@ def sd_window_indices(sequence):
     return list(range(start, end + 1))
 
 
+def get_stable_seed(join_key: str, base_seed: int = 42) -> int:
+    """Deterministic seed across processes (avoids PYTHONHASHSEED drift)."""
+    hash_bytes = hashlib.md5(str(join_key).encode("utf-8")).digest()
+    hash_int = int.from_bytes(hash_bytes[:4], byteorder="big")
+    return int(base_seed + (hash_int % 10_000))
+
+
+def rbs_window_indices(sequence, width: int = 30) -> list[int]:
+    """CDS-proximal RBS/AUG window: last `width` nt, motif-anchored when useful."""
+    sequence = normalize_sequence(sequence)
+    n = len(sequence)
+    if n == 0:
+        return []
+    width = min(int(width), n)
+    # Default: last width nt (CDS-proximal for RefSeq UTRs / truncated negs).
+    start = n - width
+    motif_start, motif_end = detect_shine_dalgarno(sequence)
+    # If a real SD motif is found away from the trivial 3' fallback, cover it.
+    trivial_fallback = motif_start >= n - 10
+    if not trivial_fallback:
+        if motif_end - motif_start + 1 >= width:
+            start = max(0, motif_end - width + 1)
+        else:
+            start = max(0, min(motif_start, n - width))
+            if motif_end >= start + width:
+                start = max(0, motif_end - width + 1)
+    return list(range(start, start + width))
+
+
+def _mononucleotide_shuffle(sequence: str, rng: random.Random) -> str:
+    chars = list(sequence)
+    rng.shuffle(chars)
+    return "".join(chars)
+
+
+def dinucleotide_shuffle(sequence: str, rng: random.Random | None = None) -> tuple[str, str]:
+    """Altschul–Erikson dinucleotide shuffle with mononucleotide fallback.
+
+    Returns (shuffled_sequence, mode) where mode is 'dinuc' or 'mono'.
+    """
+    rng = rng or random.Random()
+    sequence = normalize_sequence(sequence)
+    n = len(sequence)
+    if n < 2:
+        return sequence, "mono"
+    try:
+        successors: dict[str, list[str]] = defaultdict(list)
+        for i in range(n - 1):
+            successors[sequence[i]].append(sequence[i + 1])
+        for node in successors:
+            rng.shuffle(successors[node])
+
+        start = sequence[0]
+        stack = [start]
+        path: list[str] = []
+        edges = {k: list(v) for k, v in successors.items()}
+        while stack:
+            node = stack[-1]
+            if edges.get(node):
+                nxt = edges[node].pop()
+                stack.append(nxt)
+            else:
+                path.append(stack.pop())
+        path.reverse()
+        if len(path) != n:
+            raise ValueError("Eulerian path length mismatch")
+        out = "".join(path)
+        if out[0] != sequence[0] or out[-1] != sequence[-1]:
+            raise ValueError("endpoints not preserved")
+        return out, "dinuc"
+    except Exception:
+        return _mononucleotide_shuffle(sequence, rng), "mono"
+
+
+def mean_unpaired_in_window(unpaired_profile, indices) -> float | None:
+    return window_mean(unpaired_profile, indices)
+
+
+def positional_entropy_from_bpp(bpp, n: int) -> float:
+    """Mean positional entropy from Vienna bpp; log-safe for zero probabilities."""
+    unpaired = mean_unpaired_from_pair_matrix(bpp, n)
+    entropies = []
+    eps = 1e-12
+    for i in range(n):
+        probs = []
+        if isinstance(bpp, np.ndarray):
+            if i < bpp.shape[0]:
+                for j in range(bpp.shape[1]):
+                    if i == j:
+                        continue
+                    p = float(bpp[i, j])
+                    if p > eps:
+                        probs.append(p)
+        else:
+            row = bpp[i] if i < len(bpp) else ()
+            for j, p in enumerate(row):
+                if i == j:
+                    continue
+                p = float(p)
+                if p > eps:
+                    probs.append(p)
+            for k in range(i):
+                row_k = bpp[k] if k < len(bpp) else ()
+                if i < len(row_k):
+                    p = float(row_k[i])
+                    if p > eps:
+                        probs.append(p)
+        p_un = float(unpaired[i]) if i < len(unpaired) else 0.0
+        if p_un > eps:
+            probs.append(p_un)
+        if not probs:
+            entropies.append(0.0)
+            continue
+        arr = np.asarray(probs, dtype=float)
+        entropies.append(float(-np.sum(arr * np.log2(arr))))
+    return float(np.mean(entropies)) if entropies else 0.0
+
+
 def extract_pair_probability(matrix, i, j):
     """Read pair probability from Vienna bpp rows or a square numpy matrix."""
     if matrix is None:
@@ -349,6 +470,14 @@ def append_feature_table(
         feature_columns, extra_columns, join_columns=join_columns, include_label=include_label
     )
     write_header = not output_path.exists() or output_path.stat().st_size == 0
+    if not write_header:
+        # Match existing header order so resume-appends cannot shift columns.
+        existing_cols = list(pd.read_csv(output_path, nrows=0).columns)
+        for col in existing_cols:
+            if col not in df.columns:
+                df = df.copy()
+                df[col] = pd.NA
+        columns = existing_cols
     df[columns].to_csv(output_path, mode="a", header=write_header, index=False)
     return output_path
 
