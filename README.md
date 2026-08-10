@@ -10,6 +10,10 @@
 
 This project computationally classifies and engineers **prokaryotic RNA thermoswitches** (RNA thermometers). These are highly structured *cis*-regulatory non-coding RNA elements, typically in the 5' UTR, that sequester the Shine-Dalgarno (SD) sequence at low temperature and expose it upon melting as temperature rises.
 
+**Labelled corpus (current baseline):**
+- **Positives** — Rfam thermoswitch families (CD-HIT–deduplicated).
+- **Negatives** — housekeeping **5′ UTRs from NCBI RefSeq** complete genomes (Pseudomonadota + Bacillota), length/GC-matched to positives. Short Rfam “non-switch” fragments are **not** used as production negatives (they caused a severe length confound).
+
 **Engineering goal:** Build a Random Forest classifier for non-leaky thermoswitches at a target temperature, with a longer-term objective of engineering synthetic switches that activate near 55°C with minimal low-temperature leakiness and a sharp Hill coefficient.
 
 ## Repository Architecture
@@ -19,13 +23,13 @@ The codebase is organized as domain subpackages under `src/`. Configuration is s
 | Package | Module | Role |
 |---------|--------|------|
 | `data_engineering/` | `paths.py` | `PROJECT_ROOT` and `resolve_path()` for portable file I/O |
-| `data_engineering/` | `data_extraction.py` | Rfam SQL extraction (positives and negatives) |
-| `data_engineering/` | `sequence_retrieval.py` | NCBI Entrez FASTA fetch (reads `EMAIL`, `NCBI_API_KEY` from `.env`) |
-| `data_engineering/` | `cd_hit_sequence_similarity.py` | CD-HIT homology filtering |
-| `data_engineering/` | `knn_undersample.py` | k-mer ENN + RUS balancing |
-| `data_engineering/` | `refseq_utr_extract.py` | Housekeeping 5′ UTR negatives from RefSeq genomes |
+| `data_engineering/` | `data_extraction.py` | Rfam SQL extraction (**positives**; legacy Rfam negatives retired) |
+| `data_engineering/` | `sequence_retrieval.py` | NCBI Entrez FASTA fetch for Rfam coordinates (`EMAIL`, `NCBI_API_KEY`) |
+| `data_engineering/` | `cd_hit_sequence_similarity.py` | CD-HIT homology filtering (positives) |
+| `data_engineering/` | `knn_undersample.py` | Legacy k-mer ENN + RUS balancing (pre–RefSeq path) |
+| `data_engineering/` | `refseq_utr_extract.py` | **Production negatives:** housekeeping 5′ UTRs from RefSeq |
 | `data_engineering/` | `cmscan_decontaminate.py` | Infernal `cmscan --cut_ga` scrub of thermoswitch/riboswitch hits |
-| `data_engineering/` | `length_gc_match.py` | Z-space / cKDTree / Hungarian length–GC matching |
+| `data_engineering/` | `length_gc_match.py` | Pair each Rfam positive to a RefSeq UTR twin (Z-space / Hungarian) |
 | `thermo_sim/` | `thermo_common.py` | Shared dataset loading, temperature grid, Hill fitting, dinuc shuffle |
 | `thermo_sim/` | `vienna_rna.py` | ViennaRNA melting, unpaired-probability, and dynamic features |
 | `thermo_sim/` | `nupack_engine.py` | NUPACK test-tube ensemble features |
@@ -48,20 +52,45 @@ EMAIL=your.email@university.edu
 NCBI_API_KEY=your_ncbi_api_key_here
 ```
 
-`sequence_retrieval.py` loads these at runtime with `load_dotenv()` and `os.environ.get()`. All pipeline scripts use repo-relative paths (for example `data/processed/balanced/balanced_dataset.csv`) resolved through `resolve_path()`, so the same code runs locally and on a remote VM without path edits.
+`sequence_retrieval.py` loads these at runtime with `load_dotenv()` and `os.environ.get()`. All pipeline scripts use repo-relative paths (for example `data/processed/fused_features_refseq_dynamic.csv`) resolved through `resolve_path()`, so the same code runs locally and on a remote VM without path edits.
 
 ---
 
-## Phase 1: Data Extraction and Balancing
+## Phase 1: Dataset Construction (Rfam positives + RefSeq negatives)
 
-1. **Rfam SQL extraction** — positives (~2,960 prokaryotic heat-shock thermoswitches) and negatives (~168,000 bacterial 5' UTRs and cis-regulatory elements).
-2. **FASTA retrieval** — Biopython `Entrez` fetch using Rfam coordinates (`seq_start`, `seq_end`).
-3. **Homology filtering (CD-HIT)** — independent deduplication of positives and negatives at 80% identity to reduce leakage.
-4. **K-mer ENN + RUS balancing** — Edited Nearest Neighbors on k-mer features, then Random Under-Sampling to a 1:1 class ratio.
+### Why RefSeq controls
 
-Output: `data/processed/balanced/balanced_dataset.{csv,fasta}` (~2,396 sequences).
+The first balanced set used Rfam non-switch / cis-regulatory fragments as negatives. Those sequences were systematically **shorter** than thermoswitch positives (~162 nt vs ~346 nt). Vienna/NUPACK raw MFE scaled with length (r ≈ −0.89), so the RF reached ~0.95 stratified AUC largely as a **length detector**. Production negatives now come from a different RNA resource — **NCBI RefSeq genomic 5′ UTRs** — so controls are long, structured, non-regulatory housekeeping regions from the same bacterial phyla as the positives.
 
-For the **length-controlled baseline**, short Rfam negatives are replaced by RefSeq housekeeping 5′ UTRs and globally length/GC-matched (see [Length-bias remediation](#length-bias-remediation-refseq-5-utr-baseline) below).
+### 1a. Positives (Rfam)
+
+1. **Rfam SQL extraction** — prokaryotic heat-shock thermoswitch families (~2,960 before dedup).
+2. **FASTA retrieval** — Biopython `Entrez` fetch on Rfam coordinates (`seq_start`, `seq_end`).
+3. **CD-HIT** — deduplicate positives at 80% identity → **1,198** representatives.
+
+### 1b. Negatives (RefSeq housekeeping 5′ UTRs)
+
+1. **Genome download** — capped complete + reference assemblies for **Pseudomonadota** and **Bacillota** (`scripts/download_refseq_genomes.sh`, NCBI Datasets CLI).
+2. **UTR extract** — operon-aware 5′ windows [200–600 nt] upstream of housekeeping CDS (`refseq_utr_extract.py`); CDS-proximal end retained.
+3. **Decontamination** — Infernal `cmscan --cut_ga` against thermoswitch/riboswitch CMs (`cmscan_decontaminate.py`) → clean candidate pool.
+4. **Length/GC match** — each Rfam positive is paired 1:1 to a RefSeq UTR in standardized (length, GC) space (`length_gc_match.py --all-positives --cds-truncate`): cKDTree top-K + Hungarian assignment, gates `|ΔL|≤40`, `|ΔGC|≤0.05`, with CDS-proximal truncation for exact length.
+
+**Primary training table:** `data/processed/fused_features_refseq_dynamic.csv` (1,198 pos + 1,198 RefSeq-matched neg after thermo fold + dynamic enrichment).
+
+**Legacy (do not use for new RF claims):** `data/processed/balanced/balanced_dataset.{csv,fasta}` and `fused_features.csv` — Rfam-vs-Rfam ENN/RUS balance that embeds the length trap.
+
+```bash
+# RefSeq negative bank → match to CD-HIT positives
+bash scripts/download_refseq_genomes.sh
+PYTHONPATH=src python src/data_engineering/refseq_utr_extract.py
+PYTHONPATH=src python src/data_engineering/cmscan_decontaminate.py
+PYTHONPATH=src python src/data_engineering/length_gc_match.py \
+  --all-positives --cds-truncate \
+  --negatives-csv data/processed/refseq_utr/candidates_clean.csv \
+  --negatives-fasta data/processed/refseq_utr/candidates_clean.fasta
+```
+
+See [Length-bias remediation](#length-bias-remediation-refseq-5-utr-baseline) for metrics and feature details.
 
 ---
 
@@ -74,10 +103,14 @@ For the **length-controlled baseline**, short Rfam negatives are replaced by Ref
 
 Both tracks fit melting/exposure curves to a Hill sigmoid to extract **Tm**, **Hill coefficient**, and **amplitude**.
 
-**Outputs:**
+**Outputs (legacy Rfam-balanced melt):**
 - `data/processed/viennarna/features.csv`
 - `data/processed/nupack/features.csv`
-- `data/processed/fused_features.csv` (after fusion)
+- `data/processed/fused_features.csv`
+
+**Outputs (RefSeq-matched production path):**
+- `data/processed/viennarna/refseq_matched_features.csv` / `nupack/refseq_matched_features.csv`
+- `data/processed/fused_features_refseq_matched.csv` → after enrich: `fused_features_refseq_dynamic.csv`
 
 > **License note:** NUPACK requires a paid subscription per the [NUPACK 4 license](https://docs.nupack.org/4.1/). Install the local wheel from `nupack-4.1.0.1/package/` (gitignored) into your venv before running thermodynamic jobs.
 
@@ -130,18 +163,17 @@ python scripts/rf_length_bias_diagnostics.py \
 
 ## Length-bias remediation (RefSeq 5′ UTR baseline)
 
-The legacy RF (~0.95 stratified AUC) was largely a **length detector**: positives averaged ~346 nt vs short Rfam negatives ~162 nt, and raw MFE correlated with length (r ≈ −0.89; length-alone AUC ≈ 0.94).
+Summary of why the RefSeq control bank exists and what the rematched RF reports. Dataset construction steps live in [Phase 1](#phase-1-dataset-construction-rfam-positives--refseq-negatives).
 
-### Dataset pivot
-1. Decommission short Rfam non-switch fragments as negatives.
-2. Extract housekeeping 5′ UTRs [200–600 nt] from RefSeq complete genomes (Pseudomonadota + Bacillota) via `scripts/download_refseq_genomes.sh` + `refseq_utr_extract.py`.
-3. Scrub thermoswitch/riboswitch hits with Infernal `cmscan --cut_ga` (`cmscan_decontaminate.py`).
-4. Globally match each CD-HIT positive to a RefSeq negative in Z(length, GC) space (`length_gc_match.py --all-positives --cds-truncate`): cKDTree top-K + Hungarian assignment, `|ΔL|≤40`, `|ΔGC|≤0.05`, CDS-proximal truncation for exact length.
+### Problem
+Legacy RF (~0.95 stratified AUC) with **Rfam negatives** was largely a length detector: positives ~346 nt vs Rfam negatives ~162 nt; raw MFE vs length r ≈ −0.89; length-alone AUC ≈ 0.94.
 
-### Feature and validation changes
-- Intensive features only (no raw MFE in the production RF path).
-- Dynamic Vienna enrichment (`enrich_dynamic_features.py`): dinucleotide-shuffle MFE Z, ΔP_RBS (last 30 nt), ΔΔG, ensemble diversity Q, mean positional entropy S.
-- Group hold-out CV: family / assembly boundaries (not random stratified alone).
+### Fix
+Swap negatives to **RefSeq housekeeping 5′ UTRs**, match length/GC globally, train on intensive + dynamic Vienna features, evaluate with `StratifiedGroupKFold` (Rfam family / RefSeq assembly groups).
+
+### Feature set on the rematched corpus
+- Intensive: `*_MFE_per_nt`, stem/loop fractions; Tm / Hill / amplitude kept.
+- Dynamic (`enrich_dynamic_features.py`): dinucleotide-shuffle MFE Z, ΔP_RBS (last 30 nt), ΔΔG, ensemble diversity Q, mean positional entropy S.
 
 ### Current honest metrics (n=2396, dynamic intensive set)
 | Test | AUC |
@@ -152,19 +184,10 @@ The legacy RF (~0.95 stratified AUC) was largely a **length detector**: positive
 
 Mean MFE Z: positives ≈ −2.54 vs RefSeq controls ≈ −1.34 (composition-relative structure signal present; still fails group CV).
 
-Narrative for stakeholders: [`notebooks/05_BUSINESS_BRIEF_thermo_rf_results.md`](notebooks/05_BUSINESS_BRIEF_thermo_rf_results.md). Release notes: [`CHANGELOG.md`](CHANGELOG.md).
+Narrative: [`notebooks/05_BUSINESS_BRIEF_thermo_rf_results.md`](notebooks/05_BUSINESS_BRIEF_thermo_rf_results.md). Release notes: [`CHANGELOG.md`](CHANGELOG.md).
 
 ```bash
-# Download capped RefSeq assemblies (≥50) then extract + decontaminate UTRs
-bash scripts/download_refseq_genomes.sh
-PYTHONPATH=src python src/data_engineering/refseq_utr_extract.py
-PYTHONPATH=src python src/data_engineering/cmscan_decontaminate.py
-
-# Match all positives; fold negatives; enrich dynamics
-PYTHONPATH=src python src/data_engineering/length_gc_match.py \
-  --all-positives --cds-truncate \
-  --negatives-csv data/processed/refseq_utr/candidates_clean.csv \
-  --negatives-fasta data/processed/refseq_utr/candidates_clean.fasta
+# After Phase 1 matching + thermo fold of matched negatives:
 PYTHONPATH=src python src/thermo_sim/enrich_dynamic_features.py --workers 4
 ```
 
@@ -193,7 +216,7 @@ Operator details and required API/AWS keys: [`cluster/EVA_RUNPOD.md`](cluster/EV
 
 ### GenerRNA memorization (key finding)
 
-The Random Forest is trained **only** on the Rfam balanced corpus (~2,396 sequences). GenerRNA was then used to propose de novo candidates, which were scored by the RF and filtered for biophysical plausibility. A novelty screen of the top **99** RF-filtered candidates against Rfam 14.9 (`blastn` + `nhmmer`, ≥90% identity threshold) found that **98 of 99** were identical or near-identical to known sequences — i.e. **memorized training/regurgitated strands**, not genuinely new RNA. Only **1** sequence qualified as a remote homolog (<90% identity, E≤0.1); **0** had no hit.
+Early RF scoring used the **legacy Rfam-balanced** corpus (~2,396 sequences with short Rfam negatives). GenerRNA proposals scored by that RF and novelty-screened against Rfam 14.9 (`blastn` + `nhmmer`, ≥90% identity) showed **98 of 99** top hits were identical or near-identical to known sequences — memorized/regurgitated strands, not new RNA. Only **1** was a remote homolog; **0** had no hit. New RF work should train on the **RefSeq-matched** fused table instead; novelty screening remains mandatory for any generative output.
 
 See `notebooks/06_novelty_rfam_analysis.ipynb` and `data/processed/novelty/novelty_summary.json` for the full breakdown.
 
@@ -236,8 +259,9 @@ The same scripts run on a cloud GPU without code changes when CUDA is available.
 
 **EC2 `aws-thermo-ec2`** (`c7i-flex.large`, 2 workers): already running. Two separate thermo jobs:
 
-1. **Train** — 2,396 Rfam balanced sequences → `fused_features.csv` → Random Forest (no hallucinated sequences in training)
-2. **Predict** — 10k GenerRNA FASTA (SCP'd from Mac) → `denovo_predictions.csv` → novelty filter on top hits
+1. **Train (current)** — RefSeq-matched panel → `fused_features_refseq_dynamic.csv` → intensive/dynamic RF (Rfam positives + RefSeq UTR negatives)
+2. **Train (legacy)** — Rfam-balanced `fused_features.csv` — length-confounded; keep for comparison only
+3. **Predict** — 10k GenerRNA/EVA FASTA → predictions → novelty filter on top hits
 
 ```bash
 # Mac → RunPod
@@ -275,15 +299,25 @@ pip install -r requirements.txt
 
 cp .env.example .env
 
+# Positives from Rfam (legacy ENN/RUS balance optional; not the production negative bank)
 python src/data_engineering/data_extraction.py
 python src/data_engineering/sequence_retrieval.py --all
 python src/data_engineering/cd_hit_sequence_similarity.py --all
-python src/data_engineering/knn_undersample.py
+
+# Production negatives: RefSeq housekeeping 5′ UTRs → match → fold → enrich
+bash scripts/download_refseq_genomes.sh
+PYTHONPATH=src python src/data_engineering/refseq_utr_extract.py
+PYTHONPATH=src python src/data_engineering/cmscan_decontaminate.py
+PYTHONPATH=src python src/data_engineering/length_gc_match.py \
+  --all-positives --cds-truncate \
+  --negatives-csv data/processed/refseq_utr/candidates_clean.csv \
+  --negatives-fasta data/processed/refseq_utr/candidates_clean.fasta
 
 python src/thermo_sim/vienna_rna.py --dry-run
 python src/thermo_sim/nupack_engine.py --dry-run
 ```
 
-**Phase 2 dependencies:**
+**Phase 1–2 dependencies:**
 - `viennarna` — bioconda or `pip install viennarna`
 - `nupack` — local wheel from `nupack-4.1.0.1/package/`
+- `infernal` + `ncbi-datasets-cli` — via `environment.yml` (RefSeq UTR path)
