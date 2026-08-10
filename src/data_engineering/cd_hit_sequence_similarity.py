@@ -108,14 +108,40 @@ def parse_fasta_header(header):
     if len(parts) < 4:
         raise ValueError(f"Unexpected FASTA header format: {header}")
 
-    coord_parts = parts[3].split("-")
-    if len(coord_parts) != 2:
+    # Drop trailing label= if present; locate start-end coordinates from the right.
+    if parts[-1].startswith("label="):
+        parts = parts[:-1]
+    if len(parts) < 4:
+        raise ValueError(f"Unexpected FASTA header format: {header}")
+
+    coord_idx = None
+    for i in range(len(parts) - 1, -1, -1):
+        if len(parts[i].split("-")) == 2:
+            a, b = parts[i].split("-", 1)
+            if a.lstrip("-").isdigit() and b.lstrip("-").isdigit():
+                coord_idx = i
+                break
+    if coord_idx is None or coord_idx < 3:
         raise ValueError(f"Could not parse coordinates from header: {header}")
 
+    coord_parts = parts[coord_idx].split("-")
+    # Standard layout: rfam_acc | rfam_id | rfamseq_acc | start-end
+    # If extra pipes appear inside rfam_acc (legacy REFSEQ|GCF), keep rfam_id as the
+    # token immediately before rfamseq_acc (which itself may contain pipes).
+    rfam_id = parts[coord_idx - 2]
+    rfamseq_acc = parts[coord_idx - 1]
+    rfam_acc = "|".join(parts[: coord_idx - 2])
+    # Prefer sanitized REFSEQ:GCF form when legacy pipe form is detected
+    if rfam_acc.startswith("REFSEQ|"):
+        rfam_acc = rfam_acc.replace("REFSEQ|", "REFSEQ:", 1)
+    if "|" in rfamseq_acc and ":" not in rfamseq_acc:
+        # assembly|contig → assembly:contig
+        rfamseq_acc = rfamseq_acc.replace("|", ":", 1)
+
     return {
-        "rfam_acc": parts[0],
-        "rfam_id": parts[1],
-        "rfamseq_acc": parts[2],
+        "rfam_acc": rfam_acc,
+        "rfam_id": rfam_id,
+        "rfamseq_acc": rfamseq_acc,
         "seq_start": int(coord_parts[0]),
         "seq_end": int(coord_parts[1]),
         "header": cleaned,
