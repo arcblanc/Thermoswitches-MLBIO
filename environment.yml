@@ -7,6 +7,8 @@ dependencies:
   - cd-hit
   - blast
   - hmmer
+  - infernal
+  - ncbi-datasets-cli
   - pandas
   - biopython
   - mysql-connector-python
