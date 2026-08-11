@@ -22,3 +22,4 @@ dependencies:
   - seaborn
   - pip:
     - nupack  # install from local nupack-4.1.0.1/package/*.whl if pip index unavailable
+    - xgboost

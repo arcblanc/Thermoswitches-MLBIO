@@ -157,11 +157,12 @@ python scripts/verify_batch_outputs.py 10
 
 ## Phase 3: Machine Learning Classification
 
-- **Algorithm:** Random Forest Classifier
+- **Algorithms:** Random Forest (baseline) and monotonic **XGBoost** (`train-xgb`)
 - **Default feature set (intensive):** length-normalized MFE (`*_MFE_per_nt`), stem/loop fractions, Tm / Hill / amplitude, plus Vienna dynamic columns (MFE Z-score, ΔP_RBS, ΔΔG, ensemble diversity, mean positional entropy)
 - **Legacy feature set:** raw MFE + absolute stem/loop (`--legacy-features`) retained for comparison only
+- **XGBoost monotone_constraints:** aligned to `PHYSICS_FEATURE_COLUMNS` via `MONOTONE_CONSTRAINTS_BY_FEATURE` in `thermo_classifier.py` (Z / MFE_per_nt / ΔΔG = −1; ΔP_RBS / Q / S / NUPACK amplitude & hill = +1; stem/loop fracs and other intensive cols = 0)
 - **Inputs:** dual feature blocks (`viennarna_*`, `nupack_*`) joined on `(rfamseq_acc, seq_start, seq_end)`
-- **Honest CV:** `StratifiedGroupKFold` by `rfam_acc` (positives) / `REFSEQ:{assembly}` (RefSeq negatives) via `scripts/rf_length_bias_diagnostics.py`
+- **Honest CV:** `StratifiedGroupKFold` by `rfam_acc` (positives) / `REFSEQ:{assembly}` (RefSeq negatives) via `scripts/rf_length_bias_diagnostics.py` and `scripts/xgb_monotonic_diagnostics.py`
 
 ```bash
 # Train intensive RF on RefSeq-matched + dynamic fused features
@@ -172,8 +173,19 @@ python src/thermo_sim/thermo_classifier.py train \
 python scripts/rf_length_bias_diagnostics.py \
   --fused-csv data/processed/fused_features_refseq_dynamic.csv \
   --output-json data/processed/refseq_dynamic_rf_diagnostics.json
+
+# Monotonic XGBoost (same panel) + GroupKFold vs RF baseline
+python src/thermo_sim/thermo_classifier.py train-xgb \
+  --fused-csv data/processed/fused_features_refseq_dynamic.csv \
+  --model-path data/processed/models/xgb_thermoswitch_refseq_dynamic.joblib
+
+PYTHONPATH=src python scripts/xgb_monotonic_diagnostics.py \
+  --fused-csv data/processed/fused_features_refseq_dynamic.csv \
+  --output-json data/processed/xgb_refseq_dynamic_diagnostics.json \
+  --rf-baseline-json data/processed/refseq_dynamic_rf_diagnostics.json
 ```
 
+On the RefSeq-dynamic panel (n=2396), unconstrained RF GroupKFold AUC ≈ **0.19** and monotonic XGB GroupKFold AUC ≈ **0.20** (Δ ≈ +0.01); length-alone gate still passes (~0.20).
 ---
 
 ## Length-bias remediation (RefSeq 5′ UTR baseline)

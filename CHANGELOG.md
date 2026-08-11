@@ -15,8 +15,9 @@ where version tags are applied.
 - Intensive RF feature path in `thermo_classifier.py`: `*_MFE_per_nt`, stem/loop fractions; legacy raw-MFE set retained via `--legacy-features`.
 - Vienna dynamic enrichment (`src/thermo_sim/enrich_dynamic_features.py` + helpers in `thermo_common.py` / `vienna_rna.py`): dinucleotide-shuffle MFE Z-score, ΔP_RBS, ΔΔG, ensemble diversity Q, mean positional entropy S.
 - Leakage-aware diagnostics (`scripts/rf_length_bias_diagnostics.py`): length-alone gate, stratified contrast, and `StratifiedGroupKFold` by `rfam_acc` / `REFSEQ:{assembly}`.
-- Stakeholder remediation write-up: `notebooks/05_BUSINESS_BRIEF_thermo_rf_results.md` (§8b–§8d).
-- Conda deps for the UTR path: `infernal`, `ncbi-datasets-cli` in `environment.yml`.
+- Monotonic XGBoost path (`thermo_classifier.py train-xgb` + `scripts/xgb_monotonic_diagnostics.py`): physical `monotone_constraints` on intensive+dynamic features; diagnostic JSON `xgb_refseq_dynamic_diagnostics.json`.
+- Stakeholder remediation write-up: `notebooks/05_BUSINESS_BRIEF_thermo_rf_results.md` (§8b–§8e).
+- Conda deps for the UTR path: `infernal`, `ncbi-datasets-cli` in `environment.yml`; `xgboost` in pip deps.
 
 ### Changed
 
@@ -32,10 +33,11 @@ where version tags are applied.
 
 - Length-alone AUC ≈ **0.20** (length shortcut removed).
 - Stratified intensive AUC ≈ **0.80** (optimistic / family leakage).
-- StratifiedGroupKFold AUC ≈ **0.19** (no transferable out-of-family thermoswitch detector under unconstrained RF).
+- StratifiedGroupKFold AUC ≈ **0.19** (unconstrained RF; no transferable out-of-family detector).
+- Monotonic XGBoost StratifiedGroupKFold AUC ≈ **0.20** (Δ ≈ +0.01 vs RF) — monotone physical invariants do not rescue out-of-family performance.
 - Mean MFE Z: positives ≈ **−2.54** vs RefSeq negatives ≈ **−1.34**.
 
 ### Notes
 
 - Large regenerated artifacts (`fused_features_*.csv`, Vienna/NUPACK feature tables, `.joblib` models) remain gitignored under `data/processed/`; rebuild with the commands in `README.md`.
-- Follow-up if GroupKFold plateaus near 0.55–0.60 after further modeling: consider XGBoost with monotonic constraints on `viennarna_mfe_zscore` (negative) and `viennarna_delta_P_RBS` (positive).
+- Monotonic XGBoost GroupKFold plateau near chance (~0.20) suggests remaining signal is family-specific / non-monotonic rather than a global monotone direction in the current feature space.

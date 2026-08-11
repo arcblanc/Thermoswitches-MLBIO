@@ -237,9 +237,27 @@ Enrichment of the RefSeq-matched panel with composition-relative / differential 
 | Intensive + stratified CV | **0.80** | +0.06 |
 | Intensive + **StratifiedGroupKFold** (primary) | **0.19** | ~flat (still no transferable detector) |
 
-Dynamic features improve leakage-prone stratified CV slightly but **do not** lift out-of-family GroupKFold toward the 0.55–0.70 target. Next experimental step if pursuing further: XGBoost with monotonic constraints on Z (negative) and ΔP_RBS (positive).
+Dynamic features improve leakage-prone stratified CV slightly but **do not** lift out-of-family GroupKFold toward the 0.55–0.70 target. See §8e for the monotonic XGBoost follow-up.
 
 Artifacts: `data/processed/fused_features_refseq_dynamic.csv`, `data/processed/models/rf_thermoswitch_refseq_dynamic.joblib`, `data/processed/refseq_dynamic_rf_diagnostics.json`, `data/processed/refseq_dynamic_enrich_report.json`.
+
+---
+
+## 8e. Monotonic XGBoost (physical constraints) — Aug 2026
+
+Same RefSeq-dynamic panel (n=2396, 20 intensive+dynamic features) with `XGBClassifier` and explicit `monotone_constraints`: Z / MFE_per_nt / ΔΔG (−1); ΔP_RBS / Q / S / NUPACK amplitude & hill (+1); stem/loop fracs and remaining intensive cols unconstrained (0).
+
+### Honest metrics vs RF baseline
+
+| Test | RF AUC | Monotonic XGB AUC |
+|------|--------|-------------------|
+| Length-alone (gate) | **0.20** | **0.20** (passed) |
+| Intensive + stratified CV | **0.80** | **0.80** |
+| Intensive + **StratifiedGroupKFold** (primary) | **0.19** | **0.20** (Δ ≈ +0.01) |
+
+**Thesis outcome:** Enforcing monotonic physical invariants does **not** unlock a transferable out-of-family detector; GroupKFold stays near chance (~0.20), consistent with the signal living in non-monotonic / family-specific pockets rather than global monotone directions in this feature space.
+
+Artifacts: `data/processed/models/xgb_thermoswitch_refseq_dynamic.joblib`, `data/processed/xgb_refseq_dynamic_diagnostics.json`.
 
 ---
 
@@ -279,6 +297,8 @@ Artifacts: `data/processed/fused_features_refseq_dynamic.csv`, `data/processed/m
 | RefSeq dynamic fused features | `data/processed/fused_features_refseq_dynamic.csv` |
 | RefSeq dynamic CV diagnostics | `data/processed/refseq_dynamic_rf_diagnostics.json` |
 | RefSeq dynamic RF model | `data/processed/models/rf_thermoswitch_refseq_dynamic.joblib` |
+| Monotonic XGB diagnostics | `data/processed/xgb_refseq_dynamic_diagnostics.json` |
+| Monotonic XGB model | `data/processed/models/xgb_thermoswitch_refseq_dynamic.joblib` |
 
 ---
 
