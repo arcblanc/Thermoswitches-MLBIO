@@ -127,6 +127,64 @@ def run_diagnostics(
     return report
 
 
+def run_noncircular_diagnostics(
+    fused_csv="data/processed/fused_features_refseq_dynamic.csv",
+    output_json="data/processed/rf_noncircular_diagnostics.json",
+    group_col="rfam_acc",
+    dataset_csv="data/processed/balanced/length_gc_matched_refseq_dataset.csv",
+    dataset_fasta="data/processed/balanced/length_gc_matched_refseq_dataset.fasta",
+):
+    """Score the non-circular RF matrix (does not replace the intensive-20 report)."""
+    from thermo_sim.noncircular_features import (
+        build_noncircular_matrix,
+        grouped_permutation_importance,
+        noncircular_feature_columns,
+        physics_dropna_columns,
+    )
+
+    df = pd.read_csv(fused_csv)
+    if group_col not in df.columns:
+        raise SystemExit(f"{fused_csv} missing {group_col} — required for StratifiedGroupKFold")
+    df = add_intensive_features(df)
+    df = build_noncircular_matrix(
+        df,
+        dataset_csv=dataset_csv,
+        dataset_fasta=dataset_fasta,
+        already_intensive=True,
+    )
+    feature_cols = noncircular_feature_columns(df)
+    need = ["label", group_col] + physics_dropna_columns(df)
+    clean = df.dropna(subset=need).copy()
+    y = clean["label"].astype(int)
+    groups = clean[group_col].astype(str)
+    X = clean[feature_cols]
+
+    sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    report = {
+        "n": int(len(clean)),
+        "n_pos": int((y == 1).sum()),
+        "n_neg": int((y == 0).sum()),
+        "n_features": int(len(feature_cols)),
+        "group_col": group_col,
+        "features_noncircular": feature_cols,
+        "length_alone_stratified": _eval_rf(clean[["seq_length"]], y, skf),
+        "noncircular_stratified_group": _eval_rf(X, y, sgkf, groups=groups),
+        "noncircular_stratified": _eval_rf(X, y, skf),
+    }
+    fitted = RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1)
+    fitted.fit(X, y)
+    report["grouped_permutation_importance"] = grouped_permutation_importance(
+        fitted, X, y, n_repeats=5
+    )
+    out = Path(output_json)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, indent=2))
+    print(json.dumps(report, indent=2))
+    print(f"\nSaved → {out}")
+    return report
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--fused-csv", default="data/processed/fused_features_length_matched.csv")
@@ -137,7 +195,29 @@ def main():
         default="rfam_acc",
         help="Column for StratifiedGroupKFold (rfam_acc; RefSeq negs use REFSEQ:assembly).",
     )
+    p.add_argument(
+        "--noncircular",
+        action="store_true",
+        help="Evaluate the non-circular RF matrix instead of the intensive 20-col set.",
+    )
+    p.add_argument(
+        "--dataset-csv",
+        default="data/processed/balanced/length_gc_matched_refseq_dataset.csv",
+    )
+    p.add_argument(
+        "--dataset-fasta",
+        default="data/processed/balanced/length_gc_matched_refseq_dataset.fasta",
+    )
     args = p.parse_args()
+    if args.noncircular:
+        run_noncircular_diagnostics(
+            fused_csv=args.fused_csv,
+            output_json=args.output_json,
+            group_col=args.group_col,
+            dataset_csv=args.dataset_csv,
+            dataset_fasta=args.dataset_fasta,
+        )
+        return
     run_diagnostics(
         fused_csv=args.fused_csv,
         output_json=args.output_json,

@@ -28,6 +28,7 @@ from thermo_sim.thermo_common import (
     get_stable_seed,
     load_balanced_dataset,
     max_loop_length,
+    max_stem_length,
     mean_unpaired_from_pair_matrix,
     mean_unpaired_in_window,
     normalize_sequence,
@@ -43,14 +44,22 @@ VIENNA_FEATURE_COLUMNS = [
     "viennarna_Tm",
     "viennarna_hill_coeff",
     "viennarna_amplitude",
+    "viennarna_hill_bottom",
+    "viennarna_hill_top",
     "viennarna_mean_unpaired_prob",
     "viennarna_sd_pair_prob_10C",
     "viennarna_sd_pair_prob_80C",
     "viennarna_MFE",
     "viennarna_max_loop_length",
+    "viennarna_max_stem_length",
     "viennarna_gc_content",
     "viennarna_dangles_model",
     "viennarna_fit_status",
+]
+
+VIENNA_P_OPEN_COLUMNS = [
+    "viennarna_P_open_RBS_37",
+    "viennarna_P_open_RBS_55",
 ]
 
 VIENNA_DYNAMIC_FEATURE_COLUMNS = [
@@ -59,6 +68,7 @@ VIENNA_DYNAMIC_FEATURE_COLUMNS = [
     "viennarna_delta_delta_G",
     "viennarna_ensemble_diversity",
     "viennarna_mean_positional_entropy",
+    *VIENNA_P_OPEN_COLUMNS,
 ]
 
 
@@ -166,7 +176,10 @@ def extract_dynamic_vienna_features(
     sequence = normalize_sequence(row["sequence"])
     n = len(sequence)
     if n == 0:
-        return {col: None for col in VIENNA_DYNAMIC_FEATURE_COLUMNS}
+        empty = {col: None for col in VIENNA_DYNAMIC_FEATURE_COLUMNS}
+        empty["viennarna_mfe_zscore_shuffle_mode"] = None
+        empty["viennarna_MFE"] = None
+        return empty
 
     join_key = (
         f"{row.get('rfamseq_acc', '')}|{int(row.get('seq_start', 0))}|"
@@ -211,8 +224,40 @@ def extract_dynamic_vienna_features(
         "viennarna_delta_delta_G": float(mfe55 - mfe37),
         "viennarna_ensemble_diversity": diversity,
         "viennarna_mean_positional_entropy": mean_s,
+        "viennarna_P_open_RBS_37": None if p_rbs_37 is None else float(p_rbs_37),
+        "viennarna_P_open_RBS_55": None if p_rbs_55 is None else float(p_rbs_55),
         "viennarna_mfe_zscore_shuffle_mode": shuffle_mode,
         "viennarna_MFE": mfe37,  # keep native MFE consistent if caller wants it
+    }
+
+
+def extract_p_open_rbs(
+    row,
+    *,
+    dangles: int = 2,
+    temp_low: float = 37.0,
+    temp_high: float = 55.0,
+    rbs_width: int = 30,
+):
+    """Cheap RBS unpaired probabilities at 37/55 °C (no dinucleotide shuffles)."""
+    sequence = normalize_sequence(row["sequence"])
+    n = len(sequence)
+    empty = {col: None for col in VIENNA_P_OPEN_COLUMNS}
+    if n == 0:
+        return empty
+
+    cfg37 = ViennaConfig(dangles=dangles, temperature_c=temp_low)
+    cfg55 = ViennaConfig(dangles=dangles, temperature_c=temp_high)
+    _mfe37, _struct37, _div37, bpp37 = _pf_bundle(sequence, cfg37)
+    _mfe55, _struct55, _div55, bpp55 = _pf_bundle(sequence, cfg55)
+    unpaired37 = mean_unpaired_from_pair_matrix(bpp37, n)
+    unpaired55 = mean_unpaired_from_pair_matrix(bpp55, n)
+    rbs_idx = rbs_window_indices(sequence, width=rbs_width)
+    p_rbs_37 = mean_unpaired_in_window(unpaired37, rbs_idx)
+    p_rbs_55 = mean_unpaired_in_window(unpaired55, rbs_idx)
+    return {
+        "viennarna_P_open_RBS_37": None if p_rbs_37 is None else float(p_rbs_37),
+        "viennarna_P_open_RBS_55": None if p_rbs_55 is None else float(p_rbs_55),
     }
 
 
@@ -238,11 +283,14 @@ def extract_vienna_features(row, temp_range, config=None):
         "viennarna_Tm": hill["Tm"],
         "viennarna_hill_coeff": hill["hill_coeff"],
         "viennarna_amplitude": hill["amplitude"],
+        "viennarna_hill_bottom": hill.get("bottom"),
+        "viennarna_hill_top": hill.get("top"),
         "viennarna_mean_unpaired_prob": sum(unpaired_profile) / len(unpaired_profile),
         "viennarna_sd_pair_prob_10C": temp_to_value.get(10, hill_input[0] if hill_input else None),
         "viennarna_sd_pair_prob_80C": temp_to_value.get(80, hill_input[-1] if hill_input else None),
         "viennarna_MFE": mfe_energy,
         "viennarna_max_loop_length": max_loop_length(dot_bracket),
+        "viennarna_max_stem_length": max_stem_length(dot_bracket),
         "viennarna_gc_content": gc_content(sequence),
         "viennarna_dangles_model": config.dangles,
         "viennarna_fit_status": hill["fit_status"],
