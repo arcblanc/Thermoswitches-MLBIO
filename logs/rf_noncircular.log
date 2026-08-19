@@ -1,0 +1,144 @@
+Trained RandomForest on 2396 rows, 92 features
+  feature_set: noncircular
+  features: viennarna_MFE_per_nt, nupack_MFE_per_nt, viennarna_ensemble_diversity, viennarna_mean_positional_entropy, nupack_max_stem_length, nupack_max_loop_length, viennarna_max_loop_length, seq_length, viennarna_gc_content, P_paired_RBS_37, dinuc_AA, dinuc_AU, dinuc_AG, dinuc_AC, dinuc_UA, dinuc_UU, dinuc_UG, dinuc_UC, dinuc_GA, dinuc_GU, dinuc_GG, dinuc_GC, dinuc_CA, dinuc_CU, dinuc_CG, dinuc_CC, trinuc_AAA, trinuc_AAU, trinuc_AAG, trinuc_AAC, trinuc_AUA, trinuc_AUU, trinuc_AUG, trinuc_AUC, trinuc_AGA, trinuc_AGU, trinuc_AGG, trinuc_AGC, trinuc_ACA, trinuc_ACU, trinuc_ACG, trinuc_ACC, trinuc_UAA, trinuc_UAU, trinuc_UAG, trinuc_UAC, trinuc_UUA, trinuc_UUU, trinuc_UUG, trinuc_UUC, trinuc_UGA, trinuc_UGU, trinuc_UGG, trinuc_UGC, trinuc_UCA, trinuc_UCU, trinuc_UCG, trinuc_UCC, trinuc_GAA, trinuc_GAU, trinuc_GAG, trinuc_GAC, trinuc_GUA, trinuc_GUU, trinuc_GUG, trinuc_GUC, trinuc_GGA, trinuc_GGU, trinuc_GGG, trinuc_GGC, trinuc_GCA, trinuc_GCU, trinuc_GCG, trinuc_GCC, trinuc_CAA, trinuc_CAU, trinuc_CAG, trinuc_CAC, trinuc_CUA, trinuc_CUU, trinuc_CUG, trinuc_CUC, trinuc_CGA, trinuc_CGU, trinuc_CGG, trinuc_CGC, trinuc_CCA, trinuc_CCU, trinuc_CCG, trinuc_CCC, sd_aug_spacing, sd_aug_missing
+  model:    /Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/models/rf_thermoswitch_noncircular.joblib
+Wrote /Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/rf_noncircular_diagnostics.json
+{
+  "written_at": "2026-08-18T15:18:59.567994+00:00",
+  "n": 2396,
+  "n_pos": 1198,
+  "n_neg": 1198,
+  "group_col": "rfam_acc",
+  "bins": {
+    "high_ge_0.80": 6,
+    "mid_0.40_0.60": 297,
+    "low_le_0.20": 1504,
+    "other": 589
+  },
+  "n_high": 6,
+  "gates": {
+    "delta_P_RBS_gt_0": 2294,
+    "hill_gt_1": 2377,
+    "nupack_hill_gt_1": 2383,
+    "tm_42_45": 168,
+    "z_le_minus2": 1128
+  },
+  "spearman_panel_wide_primary": {
+    "n_complete": 2396,
+    "min_n": 25,
+    "underpowered": false,
+    "pairs": {
+      "viennarna_Tm_vs_nupack_Tm": {
+        "n": 2396,
+        "r_s": 0.03537215266179519,
+        "p_value": 0.08343963347502917,
+        "underpowered": false
+      },
+      "viennarna_hill_coeff_vs_nupack_hill_coeff": {
+        "n": 2396,
+        "r_s": 0.03679568529589736,
+        "p_value": 0.07173753220264546,
+        "underpowered": false
+      },
+      "viennarna_amplitude_vs_nupack_amplitude": {
+        "n": 2396,
+        "r_s": 0.03335279016660174,
+        "p_value": 0.10264024430682522,
+        "underpowered": false
+      }
+    }
+  },
+  "spearman_high_bin": {
+    "n_complete": 6,
+    "min_n": 25,
+    "underpowered": true,
+    "pairs": {
+      "viennarna_Tm_vs_nupack_Tm": {
+        "n": 6,
+        "r_s": null,
+        "p_value": null,
+        "underpowered": true,
+        "min_n": 25
+      },
+      "viennarna_hill_coeff_vs_nupack_hill_coeff": {
+        "n": 6,
+        "r_s": null,
+        "p_value": null,
+        "underpowered": true,
+        "min_n": 25
+      },
+      "viennarna_amplitude_vs_nupack_amplitude": {
+        "n": 6,
+        "r_s": null,
+        "p_value": null,
+        "underpowered": true,
+        "min_n": 25
+      }
+    }
+  },
+  "high_bin_spearman_underpowered": true,
+  "bin_tests_high_vs_low": {
+    "viennarna_Tm": {
+      "n_high": 6,
+      "n_low": 1504,
+      "mannwhitney_u": 1641.0,
+      "mannwhitney_p": 0.007083855162870694,
+      "ks_statistic": 0.6937056737588652,
+      "ks_p": 0.002157479460162007
+    },
+    "viennarna_hill_coeff": {
+      "n_high": 6,
+      "n_low": 1504,
+      "mannwhitney_u": 4870.5,
+      "mannwhitney_p": 0.7369383317495857,
+      "ks_statistic": 0.3572695035460993,
+      "ks_p": 0.34540358427362466
+    },
+    "viennarna_amplitude": {
+      "n_high": 6,
+      "n_low": 1504,
+      "mannwhitney_u": 3884.0,
+      "mannwhitney_p": 0.5560820523126744,
+      "ks_statistic": 0.22672872340425532,
+      "ks_p": 0.8581285833240452
+    },
+    "viennarna_mfe_zscore": {
+      "n_high": 6,
+      "n_low": 1504,
+      "mannwhitney_u": 3994.0,
+      "mannwhitney_p": 0.6354406164172905,
+      "ks_statistic": 0.2626329787234043,
+      "ks_p": 0.719225431152224
+    },
+    "viennarna_delta_P_RBS": {
+      "n_high": 6,
+      "n_low": 1504,
+      "mannwhitney_u": 5146.0,
+      "mannwhitney_p": 0.552311718734778,
+      "ks_statistic": 0.33045212765957444,
+      "ks_p": 0.43616730529792663
+    }
+  },
+  "visual_checklist": {
+    "sigmoidal_steepness_snap": 2355,
+    "sigmoidal_ramp": 19,
+    "inflection_tm": 168,
+    "dynamic_range": 699,
+    "baseline_repression": 75,
+    "all_four_pass": 0
+  },
+  "visual_checklist_thresholds": {
+    "n_H_snap": 1.5,
+    "n_H_ramp": 1.0,
+    "n_H_posthoc_gate": 1.0,
+    "Tm_C": [
+      42.0,
+      45.0
+    ],
+    "delta_theta_min": 0.5,
+    "P_open_RBS_37_max": 0.2
+  },
+  "eva_hill_not_available": "EVA stream FASTA triage still uses Z / \u0394P_RBS / E_Rfam only. Full post-hoc Hill/Tm gates need thermo_batch on generated sequences.",
+  "has_hill_columns": true
+}
+Wrote /Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/rf_posthoc_report.json

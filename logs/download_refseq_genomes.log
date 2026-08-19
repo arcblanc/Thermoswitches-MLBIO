@@ -1,0 +1,1032 @@
+=== Skipping Pseudomonadota: already have 40 assemblies ===
+=== Summarizing taxon=Bacillota ===
+Selected 40 accessions for Bacillota
+GCF_000093085.1
+GCF_025149125.1
+GCF_940677205.1
+GCF_022845755.1
+GCF_012317185.1
+=== Downloading 40 assemblies for Bacillota ===
+Collecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [------------------------------------------------]   0% 0/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    847B 3.32MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    847B 3.32MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    847B 3.32MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    847B 3.32MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    847B 3.32MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    847B 3.32MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    847B 3.32MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    847B 3.32MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    847B 3.32MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    941B 10kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    941B 10kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    941B 10kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    941B 10kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    941B 10kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    941B 10kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    941B 10kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    941B 10kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.4kB 180kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.6kB 165kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.6kB 165kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.6kB 165kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.6kB 165kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.6kB 165kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    32.8kB 133kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    65.5kB 257kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    65.5kB 257kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    65.5kB 257kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    65.5kB 257kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    65.5kB 257kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    65.5kB 257kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    65.5kB 257kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    65.5kB 257kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    131kB 381kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    197kB 554kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    197kB 554kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    197kB 554kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    197kB 554kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    197kB 554kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    262kB 645kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    295kB 704kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    393kB 919kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    426kB 980kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    426kB 980kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    426kB 980kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    426kB 980kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    426kB 980kB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    623kB 1.27MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    655kB 1.31MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    655kB 1.31MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    852kB 1.64MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    852kB 1.64MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    852kB 1.64MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    1.02MB 1.82MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    1.18MB 2.08MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    1.54MB 2.65MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    1.74MB 2.95MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    1.74MB 2.95MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    1.74MB 2.95MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    1.74MB 2.95MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    1.97MB 3.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    2.26MB 3.53MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    2.59MB 3.97MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    3.01MB 4.54MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    3.54MB 5.26MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    3.54MB 5.26MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    3.54MB 5.26MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    3.57MB 5.05MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    3.8MB 5.33MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    4.65MB 6.39MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    5.05MB 6.89MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    5.41MB 7.24MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    5.96MB 7.87MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    6.75MB 8.78MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    6.78MB 8.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    7.34MB 9.29MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    7.73MB 9.68MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    8.06MB 9.97MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    8.36MB 10.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    8.52MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    8.59MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    8.59MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    8.59MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    8.59MB 9.93MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    9.01MB 10.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    9.27MB 10.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    9.63MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    10MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    10MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    10.2MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    10.4MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    10.4MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    10.4MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    10.5MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    10.7MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    11.2MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    11.6MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    11.9MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    11.9MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    11.9MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    12.1MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    12.3MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    12.3MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    12.3MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    12.5MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    12.5MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    12.5MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    12.5MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    12.7MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.1MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.1MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.1MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.1MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.1MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.1MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.1MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.3MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.3MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.3MB 10.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.4MB 10.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    13.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    14MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    14MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    14MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    14MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    14.3MB 10.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    14.6MB 10.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    14.8MB 10.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    14.8MB 10.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.1MB 10.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.3MB 10.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.4MB 10.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.4MB 10.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.4MB 10.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.4MB 10.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.5MB 10.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.5MB 10.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.5MB 10.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    15.9MB 10.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    16.2MB 10.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    16.2MB 10.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    16.2MB 10.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    16.2MB 10.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    16.2MB 10.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    16.2MB 10.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    16.2MB 10.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    16.4MB 10.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    16.6MB 10.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    17MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    17MB 10.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    17MB 10.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    17MB 10.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    17.2MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    17.4MB 10.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    18.1MB 10.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    18.3MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    18.3MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    18.4MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    18.9MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    19.3MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    19.6MB 11.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    19.7MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    19.7MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    19.7MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20MB 11.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.6MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    20.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.2MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.2MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.2MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.6MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.6MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.6MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.6MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.6MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.7MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.8MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.8MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    21.8MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    22MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    22.1MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    22.1MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    22.2MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    22.6MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    22.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.6MB 11.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.8MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.9MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.9MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.9MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.9MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.9MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.9MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.9MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    23.9MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    24MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    24.3MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    24.5MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    24.9MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    24.9MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    25.1MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    25.1MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    25.1MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    25.3MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    25.7MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    25.8MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    25.8MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    26MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    26MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    26MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    26.1MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    26.4MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    26.9MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.2MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.3MB 10.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    27.7MB 10.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28.4MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28.4MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28.4MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28.7MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28.8MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28.8MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28.8MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28.8MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    28.9MB 10.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    29.3MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    29.6MB 11MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    29.9MB 11.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    30.2MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    30.2MB 11.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    30.5MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    30.7MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    30.9MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.1MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.1MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.1MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.2MB 11.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.5MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    31.7MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    32.2MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    32.6MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    32.6MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    32.6MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    33.3MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.1MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.2MB 11.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.4MB 11.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.4MB 11.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.4MB 11.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.4MB 11.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.4MB 11.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.4MB 11.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.4MB 11.9MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.4MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    34.6MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.4MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.5MB 11.8MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    35.6MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    36MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    36.3MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    36.7MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    37MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    37MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    37MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    37MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    37MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    37MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    37.1MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    37.6MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    37.9MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.2MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.5MB 11.7MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.9MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.9MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.9MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.9MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.9MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.9MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    38.9MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    39.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    39.6MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    39.6MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    39.6MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    39.6MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    39.6MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    39.8MB 11.1MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    40.3MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    40.5MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    40.5MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    40.6MB 11.2MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    41.1MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    41.4MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    41.7MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    41.7MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42.3MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42.4MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42.7MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42.7MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42.7MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42.9MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42.9MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    42.9MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    43.2MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    43.6MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    43.8MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    43.9MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    43.9MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    43.9MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    43.9MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    43.9MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    44.1MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    44.6MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    44.8MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.1MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.1MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.1MB 11.6MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.1MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.3MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.4MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.4MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.4MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.4MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.4MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.4MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.4MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.4MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    45.8MB 11.3MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    46.7MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    46.9MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.1MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.1MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.2MB 11.4MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.7MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.7MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.7MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.7MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB 11.5MB/s
+[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [------------------------------------------------]   2% 2/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [------------------------------------------------]   2% 2/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [------------------------------------------------]   4% 3/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [>-----------------------------------------------]   5% 4/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=>----------------------------------------------]   7% 6/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==>---------------------------------------------]  10% 8/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==>---------------------------------------------]  10% 8/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===>--------------------------------------------]  12% 10/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===>--------------------------------------------]  12% 10/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=====>------------------------------------------]  14% 12/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [======>-----------------------------------------]  17% 14/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [======>-----------------------------------------]  18% 15/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=======>----------------------------------------]  19% 16/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [========>---------------------------------------]  20% 17/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [========>---------------------------------------]  21% 18/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=========>--------------------------------------]  23% 19/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===========>------------------------------------]  26% 22/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [============>-----------------------------------]  29% 24/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [============>-----------------------------------]  30% 25/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==============>---------------------------------]  32% 27/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===============>--------------------------------]  36% 30/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [================>-------------------------------]  37% 31/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==================>-----------------------------]  40% 34/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==================>-----------------------------]  40% 34/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===================>----------------------------]  43% 36/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [====================>---------------------------]  44% 37/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [====================>---------------------------]  45% 38/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=====================>--------------------------]  48% 40/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=======================>------------------------]  50% 42/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [========================>-----------------------]  52% 44/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [========================>-----------------------]  52% 44/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=========================>----------------------]  55% 46/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==========================>---------------------]  57% 48/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===========================>--------------------]  60% 50/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [============================>-------------------]  61% 51/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [============================>-------------------]  62% 52/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==============================>-----------------]  64% 54/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==============================>-----------------]  64% 54/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===============================>----------------]  67% 56/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [================================>---------------]  69% 58/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [================================>---------------]  69% 58/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=================================>--------------]  70% 59/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=================================>--------------]  71% 60/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==================================>-------------]  74% 62/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===================================>------------]  75% 63/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [====================================>-----------]  76% 64/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [====================================>-----------]  77% 65/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=====================================>----------]  79% 66/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=====================================>----------]  80% 67/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [======================================>---------]  81% 68/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=======================================>--------]  82% 69/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=======================================>--------]  83% 70/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [========================================>-------]  85% 71/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=========================================>------]  87% 73/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [==========================================>-----]  88% 74/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===========================================>----]  90% 76/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [===========================================>----]  92% 77/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [============================================>---]  93% 78/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=============================================>--]  94% 79/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB done
+Validating package files [=============================================>--]  95% 80/84
+[1A[2K[1A[2K[1A[2KCollecting 40 genome records [================================================] 100% 40/40
+Downloading: data/raw/refseq_genomes/Bacillota/genomes.zip    47.8MB valid data package
+Validating package files [================================================] 100% 84/84
+  assemblies on disk: 40
+=== Total assemblies: 80 (minimum 50) ===
+OK: genomes ready under data/raw/refseq_genomes
