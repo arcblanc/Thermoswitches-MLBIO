@@ -45,10 +45,11 @@ def _():
         PROJECT_ROOT,
         StandardScaler,
         TRINUC_COLUMNS,
+        Path,
         add_composition_features,
         alt,
-        aug_missing_by_class,
         attach_sequences,
+        aug_missing_by_class,
         load_balanced_dataset,
         mo,
         np,
@@ -57,51 +58,152 @@ def _():
 
 
 @app.cell
+def _(Path, mo, np, pd):
+    def resolve_project_root(start: Path) -> Path:
+        """Return the repo root containing ``src/``, walking up from *start*."""
+        root = start.resolve()
+        if not (root / "src").exists() and (root.parent / "src").exists():
+            root = root.parent
+        return root
+
+    def cell_status(label: str, ok: bool, detail: str) -> mo.Html:
+        """Render a one-line pass/fail badge for a pipeline checkpoint."""
+        icon = "✅" if ok else "❌"
+        return mo.md(f"{icon} **{label}** — {detail}")
+
+    def load_curation_panel(
+        project_root: Path,
+        *,
+        attach_sequences_fn,
+        load_balanced_dataset_fn,
+        add_composition_features_fn,
+    ) -> tuple[pd.DataFrame, Path, Path, Path]:
+        """Load fused physics, attach sequences, merge taxonomy, add k-mers."""
+        fused = project_root / "data" / "processed" / "fused_features_refseq_dynamic.csv"
+        dataset_csv = (
+            project_root
+            / "data"
+            / "processed"
+            / "balanced"
+            / "length_gc_matched_refseq_dataset.csv"
+        )
+        dataset_fasta = (
+            project_root
+            / "data"
+            / "processed"
+            / "balanced"
+            / "length_gc_matched_refseq_dataset.fasta"
+        )
+        frame = pd.read_csv(fused)
+        frame = attach_sequences_fn(
+            frame,
+            dataset_csv=str(dataset_csv),
+            dataset_fasta=str(dataset_fasta),
+        )
+        panel = load_balanced_dataset_fn(str(dataset_csv), str(dataset_fasta))
+        for col in ("seq_start", "seq_end"):
+            frame[col] = frame[col].astype(int)
+            panel[col] = panel[col].astype(int)
+        tax = panel[
+            ["rfamseq_acc", "seq_start", "seq_end", "tax_string", "description", "type"]
+        ].drop_duplicates(["rfamseq_acc", "seq_start", "seq_end"])
+        frame = frame.merge(tax, on=["rfamseq_acc", "seq_start", "seq_end"], how="left")
+        frame = add_composition_features_fn(frame)
+        frame["class"] = frame["label"].map(
+            {1: "thermoswitch (Rfam)", 0: "RefSeq 5′ UTR"}
+        )
+        frame["family_or_control"] = np.where(
+            frame["label"] == 1, frame["rfam_id"].astype(str), "RefSeq"
+        )
+        frame["gc_pct"] = frame["viennarna_gc_content"] * 100.0
+        return frame, fused, dataset_csv, dataset_fasta
+
+    def class_mean_kmers(
+        frame: pd.DataFrame,
+        cols: list[str],
+        prefix_strip: str,
+    ) -> pd.DataFrame:
+        """Average k-mer frequencies per class into a long heatmap table."""
+        rows: list[dict[str, object]] = []
+        for cls, sub in frame.groupby("class"):
+            means = sub[cols].mean()
+            for col, val in means.items():
+                mer = str(col).replace(prefix_strip, "")
+                rows.append({"class": cls, "k-mer": mer, "frequency": float(val)})
+        return pd.DataFrame(rows)
+
+    def embed_kmer_space(
+        frame: pd.DataFrame,
+        kmer_cols: list[str],
+        *,
+        method: str,
+        pca_cls,
+        scaler_cls,
+    ) -> tuple[np.ndarray, str]:
+        """Embed scaled k-mer frequencies into 2D coordinates (PCA or UMAP)."""
+        matrix = scaler_cls().fit_transform(frame[kmer_cols].fillna(0.0).to_numpy())
+        if method == "UMAP":
+            try:
+                from umap import UMAP
+
+                coords = UMAP(
+                    n_components=2,
+                    random_state=42,
+                    n_neighbors=30,
+                    min_dist=0.2,
+                ).fit_transform(matrix)
+                return coords, "UMAP"
+            except Exception as exc:
+                coords = pca_cls(n_components=2, random_state=42).fit_transform(matrix)
+                return coords, f"PCA (UMAP unavailable: {exc})"
+        coords = pca_cls(n_components=2, random_state=42).fit_transform(matrix)
+        return coords, "PCA"
+
+    return (
+        cell_status,
+        class_mean_kmers,
+        embed_kmer_space,
+        load_curation_panel,
+        np,
+        resolve_project_root,
+    )
+
+
+@app.cell
 def _(
     PROJECT_ROOT,
     add_composition_features,
     attach_sequences,
+    cell_status,
     load_balanced_dataset,
-    np,
-    pd,
+    load_curation_panel,
+    mo,
+    resolve_project_root,
 ):
-    FUSED = PROJECT_ROOT / "data" / "processed" / "fused_features_refseq_dynamic.csv"
-    DATASET_CSV = (
-        PROJECT_ROOT
-        / "data"
-        / "processed"
-        / "balanced"
-        / "length_gc_matched_refseq_dataset.csv"
+    _root = resolve_project_root(PROJECT_ROOT)
+    df, FUSED, DATASET_CSV, DATASET_FASTA = load_curation_panel(
+        _root,
+        attach_sequences_fn=attach_sequences,
+        load_balanced_dataset_fn=load_balanced_dataset,
+        add_composition_features_fn=add_composition_features,
     )
-    DATASET_FASTA = (
-        PROJECT_ROOT
-        / "data"
-        / "processed"
-        / "balanced"
-        / "length_gc_matched_refseq_dataset.fasta"
+    load_checks = mo.vstack(
+        [
+            mo.md("### Pipeline checkpoints"),
+            cell_status("project root", _root.exists(), str(_root)),
+            cell_status("fused CSV", FUSED.exists(), FUSED.name),
+            cell_status("matched CSV", DATASET_CSV.exists(), DATASET_CSV.name),
+            cell_status("matched FASTA", DATASET_FASTA.exists(), DATASET_FASTA.name),
+            cell_status("panel rows", len(df) == 2396, f"N = {len(df):,}"),
+            cell_status(
+                "sequences attached",
+                df["sequence"].notna().all(),
+                f"{int(df['sequence'].notna().sum())} / {len(df)}",
+            ),
+        ]
     )
-
-    fused = pd.read_csv(FUSED)
-    df = attach_sequences(
-        fused,
-        dataset_csv=str(DATASET_CSV),
-        dataset_fasta=str(DATASET_FASTA),
-    )
-    panel = load_balanced_dataset(str(DATASET_CSV), str(DATASET_FASTA))
-    for _col in ("seq_start", "seq_end"):
-        df[_col] = df[_col].astype(int)
-        panel[_col] = panel[_col].astype(int)
-    tax = panel[
-        ["rfamseq_acc", "seq_start", "seq_end", "tax_string", "description", "type"]
-    ].drop_duplicates(["rfamseq_acc", "seq_start", "seq_end"])
-    df = df.merge(tax, on=["rfamseq_acc", "seq_start", "seq_end"], how="left")
-    df = add_composition_features(df)
-    df["class"] = df["label"].map({1: "thermoswitch (Rfam)", 0: "RefSeq 5′ UTR"})
-    df["family_or_control"] = np.where(
-        df["label"] == 1, df["rfam_id"].astype(str), "RefSeq"
-    )
-    df["gc_pct"] = df["viennarna_gc_content"] * 100.0
-    return DATASET_CSV, DATASET_FASTA, FUSED, df
+    load_checks
+    return DATASET_CSV, DATASET_FASTA, FUSED, df, load_checks
 
 
 @app.cell
@@ -110,6 +212,7 @@ def _(aug_missing_by_class, df, mo):
     n = int(len(df))
     n_pos = int((df["label"] == 1).sum())
     n_neg = int((df["label"] == 0).sum())
+    balance_ok = n_pos == n_neg == 1198
     cards = mo.hstack(
         [
             mo.stat(
@@ -145,24 +248,30 @@ Load matched CSV ──► KPI cards (N=2,396, 50/50)
 ```
 """
     )
-    return cards, header, missing, n, n_neg, n_pos
+    kpi_status = mo.md(
+        f"KPI cell: balance **{'OK' if balance_ok else 'FAIL'}** "
+        f"({n_pos} pos / {n_neg} neg); missing AUG {missing['n_missing_aug_neg']} neg vs "
+        f"{missing['n_missing_aug_pos']} pos."
+    )
+    return balance_ok, cards, header, kpi_status, missing, n, n_neg, n_pos
 
 
 @app.cell
-def _(cards, header, mo):
-    mo.vstack([header, cards])
-    return
+def _(cards, header, kpi_status, mo):
+    mo.vstack([header, kpi_status, cards])
 
 
 @app.cell
 def _(alt, df, mo):
-    length_chart = (
+    pos = df.loc[df["label"] == 1]
+    neg = df.loc[df["label"] == 0]
+    length_chart = mo.ui.altair_chart(
         alt.Chart(df)
         .transform_density(
             "seq_length",
             as_=["seq_length", "density"],
             groupby=["class"],
-            extent=[df["seq_length"].min(), df["seq_length"].max()],
+            extent=[float(df["seq_length"].min()), float(df["seq_length"].max())],
         )
         .mark_area(opacity=0.45)
         .encode(
@@ -170,9 +279,11 @@ def _(alt, df, mo):
             y=alt.Y("density:Q", title="Density"),
             color=alt.Color("class:N", title="Class"),
         )
-        .properties(title="Length matching (overlay)", width=420, height=260)
+        .properties(title="Length matching (overlay)", width=420, height=260),
+        chart_selection=False,
+        legend_selection=False,
     )
-    gc_chart = (
+    gc_chart = mo.ui.altair_chart(
         alt.Chart(df)
         .transform_density(
             "gc_pct",
@@ -186,38 +297,46 @@ def _(alt, df, mo):
             y=alt.Y("density:Q", title="Density"),
             color=alt.Color("class:N", title="Class"),
         )
-        .properties(title="%GC matching (overlay)", width=420, height=260)
+        .properties(title="%GC matching (overlay)", width=420, height=260),
+        chart_selection=False,
+        legend_selection=False,
     )
     match_md = mo.md(
         rf"""
 ## Matching diagnostics
 
-Positives: mean L = **{df.loc[df["label"] == 1, "seq_length"].mean():.1f} nt**,
-mean %GC = **{df.loc[df["label"] == 1, "gc_pct"].mean():.1f}**.
-Negatives: mean L = **{df.loc[df["label"] == 0, "seq_length"].mean():.1f} nt**,
-mean %GC = **{df.loc[df["label"] == 0, "gc_pct"].mean():.1f}**.
+Positives: mean L = **{pos['seq_length'].mean():.1f} nt**,
+mean %GC = **{pos['gc_pct'].mean():.1f}**.
+Negatives: mean L = **{neg['seq_length'].mean():.1f} nt**,
+mean %GC = **{neg['gc_pct'].mean():.1f}**.
 Overlays should sit on top of each other if matching worked (`|ΔL|≤40`, `|ΔGC|≤0.05`).
+
+Diagnostics cell: length Δ = **{pos['seq_length'].mean() - neg['seq_length'].mean():+.1f} nt**,
+%GC Δ = **{pos['gc_pct'].mean() - neg['gc_pct'].mean():+.2f}**.
 """
     )
     mo.vstack([match_md, mo.hstack([length_chart, gc_chart], gap=1)])
-    return gc_chart, length_chart, match_md
 
 
 @app.cell
 def _(df, mo):
-    families = sorted(df["rfam_acc"].dropna().astype(str).unique())
+    rfam_families = sorted(
+        df.loc[df["label"] == 1, "rfam_acc"].dropna().astype(str).unique()
+    )
     family_dropdown = mo.ui.dropdown(
-        options=families,
-        value=families[0] if families else None,
+        options=rfam_families,
+        value=rfam_families[0] if rfam_families else None,
         label="Rfam family (rfam_acc)",
     )
     mo.vstack(
         [
-            mo.md("## Rfam family explorer"),
+            mo.md(
+                f"## Rfam family explorer ({len(rfam_families)} thermoswitch families)"
+            ),
             family_dropdown,
         ]
     )
-    return families, family_dropdown
+    return family_dropdown, rfam_families
 
 
 @app.cell
@@ -245,36 +364,31 @@ def _(df, family_dropdown, mo):
         table["seq_preview"] = table["sequence"].astype(str).str.slice(0, 80)
         table = table.drop(columns=["sequence"])
     stats = fam_df["seq_length"].describe()
+    fam_label = (
+        fam_df["rfam_id"].dropna().astype(str).iloc[0]
+        if fam_df["rfam_id"].dropna().shape[0]
+        else str(fam)
+    )
     fam_md = mo.md(
         rf"""
-**{fam}** — {fam_df["rfam_id"].dropna().astype(str).iloc[0] if fam_df["rfam_id"].dropna().shape[0] else str(fam)}
-({len(fam_df)} sequences). Length mean **{stats.get("mean", float("nan")):.1f} nt**,
-std **{stats.get("std", float("nan")):.1f}**, range
-**{stats.get("min", float("nan")):.0f}–{stats.get("max", float("nan")):.0f}**.
+**{fam}** — {fam_label} ({len(fam_df)} sequences).
+Length mean **{stats.get('mean', float('nan')):.1f} nt**,
+std **{stats.get('std', float('nan')):.1f}**,
+range **{stats.get('min', float('nan')):.0f}–{stats.get('max', float('nan')):.0f}**.
 
-Stem/loop columns are NUPACK MFE motifs; `sd_aug_spacing = -1` means no AUG (sentinel).
+Family cell: table rows = **{len(table)}**; stem/loop from NUPACK MFE;
+`sd_aug_spacing = -1` = no AUG (sentinel).
 """
     )
     mo.vstack([fam_md, mo.ui.table(table, page_size=12)])
-    return fam, fam_df, fam_md, show_cols, stats, table
 
 
 @app.cell
-def _(DINUC_COLUMNS, TRINUC_COLUMNS, alt, df, mo, pd):
-    def _class_mean(cols: list[str], prefix_strip: str) -> pd.DataFrame:
-        """Average k-mer frequencies per class into a long heatmap table."""
-        rows = []
-        for cls, sub in df.groupby("class"):
-            means = sub[cols].mean()
-            for col, val in means.items():
-                mer = col.replace(prefix_strip, "")
-                rows.append({"class": cls, "k-mer": mer, "frequency": float(val)})
-        return pd.DataFrame(rows)
-
-    dinuc_long = _class_mean(DINUC_COLUMNS, "dinuc_")
+def _(DINUC_COLUMNS, TRINUC_COLUMNS, alt, class_mean_kmers, df, mo):
+    dinuc_long = class_mean_kmers(df, DINUC_COLUMNS, "dinuc_")
     dinuc_long["b1"] = dinuc_long["k-mer"].str[0]
     dinuc_long["b2"] = dinuc_long["k-mer"].str[1]
-    dinuc_hm = (
+    dinuc_hm = mo.ui.altair_chart(
         alt.Chart(dinuc_long)
         .mark_rect()
         .encode(
@@ -284,11 +398,13 @@ def _(DINUC_COLUMNS, TRINUC_COLUMNS, alt, df, mo, pd):
             facet=alt.Facet("class:N", columns=2),
             tooltip=["k-mer", "class", "frequency"],
         )
-        .properties(title="Dinucleotide frequencies (16)", width=220, height=200)
+        .properties(title="Dinucleotide frequencies (16)", width=220, height=200),
+        chart_selection=False,
+        legend_selection=False,
     )
 
-    trinuc_long = _class_mean(TRINUC_COLUMNS, "trinuc_")
-    trinuc_hm = (
+    trinuc_long = class_mean_kmers(df, TRINUC_COLUMNS, "trinuc_")
+    trinuc_hm = mo.ui.altair_chart(
         alt.Chart(trinuc_long)
         .mark_rect()
         .encode(
@@ -297,16 +413,21 @@ def _(DINUC_COLUMNS, TRINUC_COLUMNS, alt, df, mo, pd):
             color=alt.Color("frequency:Q", title="mean freq"),
             tooltip=["k-mer", "class", "frequency"],
         )
-        .properties(title="Trinucleotide frequencies (64)", width=640, height=120)
+        .properties(title="Trinucleotide frequencies (64)", width=640, height=120),
+        chart_selection=False,
+        legend_selection=False,
+    )
+    kmer_status = mo.md(
+        f"K-mer cell: dinuc rows = **{len(dinuc_long)}**, trinuc rows = **{len(trinuc_long)}**."
     )
     mo.vstack(
         [
             mo.md("## Dinucleotide / trinucleotide frequency heatmaps"),
+            kmer_status,
             dinuc_hm,
             trinuc_hm,
         ]
     )
-    return dinuc_hm, dinuc_long, trinuc_hm, trinuc_long
 
 
 @app.cell
@@ -334,34 +455,23 @@ def _(
     alt,
     color_by,
     df,
+    embed_kmer_space,
     mo,
     reducer,
 ):
     kmer_cols = [c for c in DINUC_COLUMNS + TRINUC_COLUMNS if c in df.columns]
-    X = StandardScaler().fit_transform(df[kmer_cols].fillna(0.0).to_numpy())
-    if reducer.value == "UMAP":
-        try:
-            from umap import UMAP
-
-            coords = UMAP(
-                n_components=2,
-                random_state=42,
-                n_neighbors=30,
-                min_dist=0.2,
-            ).fit_transform(X)
-            method = "UMAP"
-        except Exception as exc:
-            coords = PCA(n_components=2, random_state=42).fit_transform(X)
-            method = f"PCA (UMAP unavailable: {exc})"
-    else:
-        coords = PCA(n_components=2, random_state=42).fit_transform(X)
-        method = "PCA"
-
+    coords, method = embed_kmer_space(
+        df,
+        kmer_cols,
+        method=reducer.value,
+        pca_cls=PCA,
+        scaler_cls=StandardScaler,
+    )
     plot_df = df[["class", "family_or_control", "rfam_acc", "seq_length"]].copy()
     plot_df["dim1"] = coords[:, 0]
     plot_df["dim2"] = coords[:, 1]
     color_col = color_by.value
-    scatter = (
+    scatter = mo.ui.altair_chart(
         alt.Chart(plot_df)
         .mark_circle(size=40, opacity=0.7)
         .encode(
@@ -374,8 +484,13 @@ def _(
             title=f"k-mer sequence space ({method}; 16 dinuc + 64 trinuc)",
             width=720,
             height=420,
-        )
-        .interactive()
+        ),
+        chart_selection="point",
+        legend_selection=True,
+    )
+    embed_status = mo.md(
+        f"Embedding cell: **{method}** on **{len(kmer_cols)}** k-mer features, "
+        f"**{plot_df[color_col].nunique()}** {color_col} groups."
     )
     mo.vstack(
         [
@@ -388,10 +503,10 @@ Color by **class** to check Rfam vs RefSeq overlap, or by **family_or_control**
 to see whether Rfam families form homology blobs against a mixed RefSeq cloud.
 """
             ),
+            embed_status,
             scatter,
         ]
     )
-    return X, color_col, coords, kmer_cols, method, plot_df, scatter
 
 
 if __name__ == "__main__":

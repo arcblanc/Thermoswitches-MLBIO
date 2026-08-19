@@ -21,6 +21,7 @@ dependencies = [
     "altair>=6.2.2",
     "plotly>=6.9.0",
     "umap-learn>=0.5.12",
+    "pyarrow>=25.0.1",
 ]
 
 [tool.ruff]
