@@ -4,6 +4,8 @@ Hybrid workflow: **RunPod** (GenerRNA *or* **EVA** + BiRNA → S3) then **EC2 `a
 
 **EVA smoke / full panel runbook:** [`EVA_RUNPOD.md`](EVA_RUNPOD.md) (Option B TaxIDs, 512-chunk gates, `llm-batch/eva/v1`).
 
+**EVA Docker bake (M3 SSH → Linux VM → Hub):** on a temporary Linux x86_64 VM run `bash scripts/build_push_eva_docker.sh --push` to publish `arcblanc/eva-model:v1`. Do not bake CUDA EVA images on Apple Silicon.
+
 ## Architecture
 
 | Step | Machine | Action |
