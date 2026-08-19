@@ -65,11 +65,11 @@ The previous 20-column intensive + dynamic set included **Tm, Hill, amplitude, Z
 
 **Static 37 °C biophysics (Vienna / NUPACK):** `MFE_per_nt`, ensemble diversity, mean positional entropy, max stem length, max loop length.
 
-**Composition:** `%GC`, sequence length, baseline \(P_{\mathrm{paired,RBS}}(37^\circ\mathrm{C}) = 1 - P_{\mathrm{open,RBS}}^{37}\).
+**Composition:** `%GC`, sequence length, baseline $P_{\mathrm{paired,RBS}}(37^\circ\mathrm{C}) = 1 - P_{\mathrm{open,RBS}}^{37}$.
 
 **Motifs (from the matched FASTA, intensive frequencies so length is not a count proxy):** 16 dinucleotides, 64 trinucleotides, SD-to-AUG spacer. Missing AUG is **not** dropped (RefSeq UTRs can lack an initiator more often than Rfam positives): spacer = `-1` plus binary `sd_aug_missing`.
 
-k-mers and SD–AUG are joined from `data/processed/balanced/length_gc_matched_refseq_dataset.{csv,fasta}`. Persist \(P_{\mathrm{open}}\) without a 100-shuffle re-run:
+k-mers and SD–AUG are joined from `data/processed/balanced/length_gc_matched_refseq_dataset.{csv,fasta}`. Persist $P_{\mathrm{open}}$ without a 100-shuffle re-run:
 
 ```bash
 PYTHONPATH=src python src/thermo_sim/enrich_dynamic_features.py --p-open-only --workers 4
@@ -99,14 +99,14 @@ python src/thermo_sim/thermo_classifier.py posthoc \
 
 The RF is a **ranking aid**. Attribution in notebook 07 §4 is **grouped permutation importance** (static biophysics / composition / dinucleotides / trinucleotides / SD–AUG), not Gini/MDI — 64 trinucleotides would dilute impurity across correlated k-mers.
 
-**Post-hoc (not X),** out-of-fold \(\hat{y}\):
+**Post-hoc (not X),** out-of-fold $\hat{y}$:
 
-- Confidence bins: \(\hat{y} \ge 0.80\), \(0.40 < \hat{y} < 0.60\), \(\hat{y} \le 0.20\)
-- \(\Delta P_{\mathrm{RBS}} > 0\); Hill \(n_H > 1.0\); \(T_m \in [42, 45]^\circ\mathrm{C}\); \(Z \le -2\)
-- Vienna–NUPACK Spearman \(r_s\) is **panel-wide primary**; high-bin \(r_s\) only if \(N \ge 25\)
-- Mann–Whitney \(U\) and KS between high vs low bins
+- Confidence bins: $\hat{y} \ge 0.80$, $0.40 < \hat{y} < 0.60$, $\hat{y} \le 0.20$
+- $\Delta P_{\mathrm{RBS}} > 0$; Hill $n_H > 1.0$; $T_m \in [42, 45]^\circ\mathrm{C}$; $Z \le -2$
+- Vienna–NUPACK Spearman $r_s$ is **panel-wide primary**; high-bin $r_s$ only if $N \ge 25$
+- Mann–Whitney $U$ and KS between high vs low bins
 
-**Visual diagnostic checklist** (notebook 07 §7): snap \(n_H > 1.5\), \(T_m\) 42–45 °C, \(\Delta\theta \ge 0.50\), baseline \(P_{\mathrm{open,RBS}}(37^\circ\mathrm{C})\) near 0.
+**Visual diagnostic checklist** (notebook 07 §7): snap $n_H > 1.5$, $T_m$ 42–45 °C, $\Delta\theta \ge 0.50$, baseline $P_{\mathrm{open,RBS}}(37^\circ\mathrm{C})$ near 0.
 
 Yield of generated RNA is still the locked three-gate formula below, not RF probability. EVA stream FASTA does not yet have Hill/Tm; full post-hoc on de novo RNA needs `thermo_batch`.
 
@@ -254,7 +254,7 @@ When generation is done, `exit` the `srun` to free the MIG, then `tmux kill-sess
 
 | Path | Contents |
 |------|----------|
-| `data/processed/fused_features_refseq_dynamic.csv` | Labelled panel (physics + dynamic + \(P_{\mathrm{open}}\)) |
+| `data/processed/fused_features_refseq_dynamic.csv` | Labelled panel (physics + dynamic + $P_{\mathrm{open}}$) |
 | `data/processed/models/rf_thermoswitch_noncircular.joblib` | Non-circular RF |
 | `data/processed/rf_noncircular_feature_log.json` | X columns, AUG-missing rates by class |
 | `data/processed/rf_noncircular_diagnostics.json` | GroupKFold AUC + grouped permutation importance |
