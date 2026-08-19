@@ -40,7 +40,7 @@ Mac CPU ──► Vienna Z / ΔP_RBS + Rfam novelty ──► yield candidates
 | **3. RF** | `sklearn` Random Forest (200 trees) | Bootstrap / rank; **not** a wet-lab gate |
 | **4. Post-hoc** | ŷ bins, ΔP_RBS, n_H, Tm, Z, Vienna–NUPACK Spearman, MW/KS | Melting phenotype scored after ŷ |
 | **5. EVA** | Pretrained CLM, TaxID-conditioned `mRNA` | De novo RNA on Macleod MIG |
-| **6. Triage** | \(Z\le-2 \land \Delta P_{\mathrm{RBS}}>0 \land E_{\mathrm{Rfam}}>10^{-3}\) | Yield of switch-like, novel sequences |
+| **6. Triage** | Z ≤ −2 ∧ ΔP_RBS > 0 ∧ E_Rfam > 10⁻³ *(full eq. in §4)* | Yield of switch-like, novel sequences |
 
 Code lives under `src/` (`data_engineering/`, `thermo_sim/`, `de_novo_hallucinations/`). Paths resolve from the repo root via `data_engineering.paths.resolve_path()`. Secrets go in `.env`.
 
@@ -126,7 +126,11 @@ tmux lives on **macleod1** (not gpu02) so an SSH drop does not kill the GPU job.
 | Top-up | 1,488 | 74 / 1,488 = **4.97%** |
 | **All** | **2,000** | **105 / 2,000 = 5.25%** |
 
-Yield gate: \(Z\le-2 \land \Delta P_{\mathrm{RBS}}>0 \land E_{\mathrm{Rfam}}>10^{-3}\) (no Rfam hit ⇒ \(E=\infty\)). Stream novelty no-hit stayed ~50%. Candidates: `data/processed/eva_pilot/top_candidates.fasta` and `data/processed/eva_stream/top_candidates.fasta`.
+Yield gate:
+
+$$Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}$$
+
+(no Rfam hit ⇒ $E=\infty$). Stream novelty no-hit stayed ~50%. Candidates: `data/processed/eva_pilot/top_candidates.fasta` and `data/processed/eva_stream/top_candidates.fasta`.
 
 ---
 
