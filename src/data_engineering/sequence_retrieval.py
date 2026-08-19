@@ -30,7 +30,7 @@ FAILURE_COLUMNS = [
 ]
 
 
-def configure_entrez():
+def configure_entrez() -> None:
     """Load NCBI credentials from environment and configure Entrez client."""
     email = os.environ.get("EMAIL")
     api_key = os.environ.get("NCBI_API_KEY")
@@ -46,7 +46,8 @@ def configure_entrez():
     Entrez.sleep_between_tries = 15
 
 
-def _read_checkpoint(checkpoint_path):
+def _read_checkpoint(checkpoint_path: Path) -> int:
+    """Return the last completed row index from a checkpoint file, or -1."""
     if not checkpoint_path.exists():
         return -1
     with checkpoint_path.open() as handle:
@@ -54,13 +55,17 @@ def _read_checkpoint(checkpoint_path):
     return int(data.get("last_index", -1))
 
 
-def _write_checkpoint(checkpoint_path, index):
+def _write_checkpoint(checkpoint_path: Path, index: int) -> None:
+    """Persist the last successfully fetched row index."""
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     with checkpoint_path.open("w") as handle:
         json.dump({"last_index": index}, handle)
 
 
-def _log_failure(failures_path, row, index, error):
+def _log_failure(
+    failures_path: Path, row: pd.Series, index: int, error: BaseException
+) -> None:
+    """Append a failed Entrez fetch to the failures CSV."""
     failures_path.parent.mkdir(parents=True, exist_ok=True)
     write_header = not failures_path.exists()
     with failures_path.open("a", newline="") as handle:
@@ -80,7 +85,8 @@ def _log_failure(failures_path, row, index, error):
         )
 
 
-def _parse_fasta_sequence(fasta_text):
+def _parse_fasta_sequence(fasta_text: str) -> str:
+    """Extract concatenated sequence lines from an Entrez FASTA payload."""
     lines = [line.strip() for line in fasta_text.strip().splitlines() if line.strip()]
     if not lines:
         raise ValueError("Empty FASTA response from Entrez")
@@ -90,7 +96,8 @@ def _parse_fasta_sequence(fasta_text):
     return "".join(sequence_lines)
 
 
-def _build_header(row, index):
+def _build_header(row: pd.Series, index: int) -> str:
+    """Build a FASTA header from Rfam coordinates and the row index."""
     return (
         f">{row['rfam_acc']}|{row['rfam_id']}|{row['rfamseq_acc']}|"
         f"{row['seq_start']}-{row['seq_end']}|idx={index}"
@@ -98,14 +105,14 @@ def _build_header(row, index):
 
 
 def fetch_fasta_from_df(
-    df,
-    output_fasta,
-    checkpoint_path,
-    failures_path,
-    fresh=False,
-    limit=None,
-    sleep_sec=DEFAULT_SLEEP_SEC,
-):
+    df: pd.DataFrame,
+    output_fasta: str | Path,
+    checkpoint_path: str | Path,
+    failures_path: str | Path,
+    fresh: bool = False,
+    limit: int | None = None,
+    sleep_sec: float = DEFAULT_SLEEP_SEC,
+) -> int:
     """Fetch coordinate-sliced nucleotide sequences and append them to a FASTA file."""
     configure_entrez()
 
@@ -182,11 +189,12 @@ def fetch_fasta_from_df(
 
 
 def fetch_positive_fasta(
-    csv_path="data/raw/rfam_positives.csv",
-    output_fasta="data/raw/positives.fasta",
-    fresh=False,
-    limit=None,
-):
+    csv_path: str | Path = "data/raw/rfam_positives.csv",
+    output_fasta: str | Path = "data/raw/positives.fasta",
+    fresh: bool = False,
+    limit: int | None = None,
+) -> int:
+    """Fetch positive thermoswitch sequences from NCBI Entrez."""
     df = pd.read_csv(csv_path)
     return fetch_fasta_from_df(
         df=df,
@@ -199,11 +207,12 @@ def fetch_positive_fasta(
 
 
 def fetch_negative_fasta(
-    csv_path="data/raw/rfam_negatives.csv",
-    output_fasta="data/raw/negatives.fasta",
-    fresh=False,
-    limit=None,
-):
+    csv_path: str | Path = "data/raw/rfam_negatives.csv",
+    output_fasta: str | Path = "data/raw/negatives.fasta",
+    fresh: bool = False,
+    limit: int | None = None,
+) -> int:
+    """Fetch negative-control sequences from NCBI Entrez."""
     df = pd.read_csv(csv_path)
     return fetch_fasta_from_df(
         df=df,
@@ -215,14 +224,21 @@ def fetch_negative_fasta(
     )
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the Entrez FASTA retrieval CLI parser."""
     parser = argparse.ArgumentParser(
         description="Fetch Rfam coordinate slices from NCBI Entrez as FASTA files."
     )
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--positives", action="store_true", help="Fetch positive thermoswitches.")
-    group.add_argument("--negatives", action="store_true", help="Fetch negative controls.")
-    group.add_argument("--all", action="store_true", help="Fetch positives then negatives.")
+    group.add_argument(
+        "--positives", action="store_true", help="Fetch positive thermoswitches."
+    )
+    group.add_argument(
+        "--negatives", action="store_true", help="Fetch negative controls."
+    )
+    group.add_argument(
+        "--all", action="store_true", help="Fetch positives then negatives."
+    )
     parser.add_argument(
         "--fresh",
         action="store_true",
@@ -237,7 +253,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Parse CLI arguments and fetch the selected FASTA pool."""
     args = _build_parser().parse_args()
 
     if args.all:

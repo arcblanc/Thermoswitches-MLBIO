@@ -1,4 +1,5 @@
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
+from pathlib import Path
 
 import torch
 from transformers import AutoTokenizer
@@ -6,11 +7,13 @@ from transformers import AutoTokenizer
 from de_novo_hallucinations.genererna.model import GPT, GPTConfig
 
 
-def get_device():
+def get_device() -> torch.device:
+    """Return CUDA when available, otherwise CPU."""
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def load_tokenizer(tokenizer_path):
+def load_tokenizer(tokenizer_path: Path | str) -> AutoTokenizer:
+    """Load a GenerRNA tokenizer and verify AUGC round-trip encoding."""
     tokenizer = AutoTokenizer.from_pretrained(str(tokenizer_path))
     probe = "AUGC"
     ids = tokenizer.encode(probe)
@@ -20,7 +23,10 @@ def load_tokenizer(tokenizer_path):
     return tokenizer
 
 
-def load_generna_model(ckpt_path, device=None):
+def load_generna_model(
+    ckpt_path: Path | str, device: torch.device | None = None
+) -> tuple[GPT, torch.device]:
+    """Load a GenerRNA GPT checkpoint and move it to the given device."""
     device = device or get_device()
     checkpoint = torch.load(ckpt_path, map_location=device, weights_only=False)
     gptconf = GPTConfig(**checkpoint["model_args"])
@@ -36,7 +42,8 @@ def load_generna_model(ckpt_path, device=None):
     return model, device
 
 
-def autocast_context(device):
+def autocast_context(device: torch.device) -> AbstractContextManager[object]:
+    """Return a CUDA autocast context, or a no-op context on CPU."""
     if device.type == "cuda":
         return torch.amp.autocast(device_type="cuda", dtype=torch.float32)
     return nullcontext()

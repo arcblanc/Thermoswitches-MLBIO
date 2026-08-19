@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -83,6 +82,7 @@ PHYSICS_DROPNA_CANDIDATES = [
 
 
 def kmer_frequency_columns(k: int) -> list[str]:
+    """Return dinucleotide or trinucleotide feature column names."""
     if k == 2:
         return list(DINUC_COLUMNS)
     if k == 3:
@@ -122,7 +122,8 @@ def sd_aug_features(sequence: str) -> dict[str, int]:
     return {"sd_aug_spacing": int(aug - sd_end - 1), "sd_aug_missing": 0}
 
 
-def p_paired_rbs_37(p_open) -> float | None:
+def p_paired_rbs_37(p_open: object) -> float | None:
+    """Convert RBS unpaired probability at 37 °C to paired probability."""
     if p_open is None or (isinstance(p_open, float) and np.isnan(p_open)):
         return None
     return float(1.0 - float(p_open))
@@ -154,9 +155,13 @@ def attach_sequences(
                 out[c] = out[c].astype(int)
                 panel[c] = panel[c].astype(int)
             seq_map = panel[JOIN_COLUMNS + ["sequence"]].drop_duplicates(JOIN_COLUMNS)
-            out = out.merge(seq_map, on=JOIN_COLUMNS, how="left", suffixes=("", "_panel"))
+            out = out.merge(
+                seq_map, on=JOIN_COLUMNS, how="left", suffixes=("", "_panel")
+            )
             if "sequence_panel" in out.columns:
-                out["sequence"] = out["sequence"].where(out["sequence"].notna(), out["sequence_panel"])
+                out["sequence"] = out["sequence"].where(
+                    out["sequence"].notna(), out["sequence_panel"]
+                )
                 out = out.drop(columns=["sequence_panel"])
             joined = out["sequence"].notna().any()
 
@@ -165,14 +170,18 @@ def attach_sequences(
         if fa_path.exists() and "record_id" in out.columns:
             fasta_df = load_fasta_dataset(denovo_fasta)
             out = out.merge(
-                fasta_df[["record_id", "sequence"]].rename(columns={"sequence": "_fa_seq"}),
+                fasta_df[["record_id", "sequence"]].rename(
+                    columns={"sequence": "_fa_seq"}
+                ),
                 on="record_id",
                 how="left",
             )
             if "sequence" not in out.columns:
                 out["sequence"] = out["_fa_seq"]
             else:
-                out["sequence"] = out["sequence"].where(out["sequence"].notna(), out["_fa_seq"])
+                out["sequence"] = out["sequence"].where(
+                    out["sequence"].notna(), out["_fa_seq"]
+                )
             out = out.drop(columns=["_fa_seq"])
             joined = out["sequence"].notna().any()
 
@@ -229,6 +238,7 @@ def noncircular_feature_columns(df: pd.DataFrame) -> list[str]:
 
 
 def physics_dropna_columns(df: pd.DataFrame) -> list[str]:
+    """Return physics columns whose NaNs should drop training rows."""
     return [c for c in PHYSICS_DROPNA_CANDIDATES if c in df.columns]
 
 
@@ -276,9 +286,9 @@ def feature_groups(feature_cols: list[str]) -> dict[str, list[str]]:
 
 
 def grouped_permutation_importance(
-    model,
+    model: object,
     X: pd.DataFrame,
-    y,
+    y: pd.Series,
     *,
     groups: dict[str, list[str]] | None = None,
     n_repeats: int = 5,
@@ -315,8 +325,11 @@ def grouped_permutation_importance(
 
 
 def aug_missing_by_class(df: pd.DataFrame) -> dict:
+    """Count SD–AUG missing sentinels overall and split by class label."""
     stats = {
-        "n_missing_aug": int((df["sd_aug_missing"] == 1).sum()) if "sd_aug_missing" in df.columns else 0,
+        "n_missing_aug": int((df["sd_aug_missing"] == 1).sum())
+        if "sd_aug_missing" in df.columns
+        else 0,
         "n_missing_aug_pos": None,
         "n_missing_aug_neg": None,
     }
@@ -338,6 +351,7 @@ def write_feature_log(
     dataset_fasta: str = DEFAULT_DATASET_FASTA,
     extra: dict | None = None,
 ) -> dict:
+    """Write the noncircular feature inventory JSON sidecar and return it."""
     log = {
         "written_at": datetime.now(timezone.utc).isoformat(),
         "n_rows": int(len(df)),

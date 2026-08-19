@@ -1,5 +1,4 @@
 import argparse
-import os
 import random
 import sys
 from dataclasses import dataclass
@@ -20,7 +19,6 @@ from thermo_sim.thermo_common import (
     DEFAULT_TEMP_STEP,
     VIENNA_OUTPUT_DIR,
     build_temp_range,
-    detect_shine_dalgarno,
     dinucleotide_shuffle,
     extract_pair_probability,
     fit_hill_curve,
@@ -78,7 +76,8 @@ class ViennaConfig:
     temperature_c: float = 37.0
 
 
-def require_vienna_rna():
+def require_vienna_rna() -> None:
+    """Raise if ViennaRNA Python bindings are not importable."""
     try:
         import RNA  # noqa: F401
     except ImportError as exc:
@@ -88,7 +87,8 @@ def require_vienna_rna():
         ) from exc
 
 
-def _build_model(config):
+def _build_model(config: ViennaConfig) -> object:
+    """Build a ViennaRNA model-details object from config."""
     import RNA
 
     md = RNA.md()
@@ -97,7 +97,8 @@ def _build_model(config):
     return md
 
 
-def _partition_unpaired(sequence, config):
+def _partition_unpaired(sequence: str, config: ViennaConfig) -> list[float]:
+    """Compute per-base unpaired probabilities at the config temperature."""
     import RNA
 
     md = _build_model(config)
@@ -107,7 +108,12 @@ def _partition_unpaired(sequence, config):
     return mean_unpaired_from_pair_matrix(bpp, len(sequence))
 
 
-def simulate_melting_curve(sequence, temp_range, config=None):
+def simulate_melting_curve(
+    sequence: str,
+    temp_range: list[int],
+    config: ViennaConfig | None = None,
+) -> list[float]:
+    """Return mean unpaired probability at each temperature."""
     config = config or ViennaConfig()
     values = []
     for temp in temp_range:
@@ -117,12 +123,22 @@ def simulate_melting_curve(sequence, temp_range, config=None):
     return values
 
 
-def compute_unpaired_profile(sequence, config=None):
+def compute_unpaired_profile(
+    sequence: str, config: ViennaConfig | None = None
+) -> list[float]:
+    """Return the unpaired-probability profile at 37 °C by default."""
     config = config or ViennaConfig(temperature_c=37.0)
     return _partition_unpaired(sequence, config)
 
 
-def pair_probability_at_sd(sequence, temp_range, sd_i, sd_j, config=None):
+def pair_probability_at_sd(
+    sequence: str,
+    temp_range: list[int],
+    sd_i: int,
+    sd_j: int,
+    config: ViennaConfig | None = None,
+) -> list[float | None]:
+    """Track Shine-Dalgarno pair probability across a temperature grid."""
     import RNA
 
     config = config or ViennaConfig()
@@ -136,7 +152,8 @@ def pair_probability_at_sd(sequence, temp_range, sd_i, sd_j, config=None):
     return values
 
 
-def _fold_mfe(sequence, config):
+def _fold_mfe(sequence: str, config: ViennaConfig) -> tuple[float, str]:
+    """Fold the MFE structure and return (energy, dot-bracket)."""
     import RNA
 
     md = _build_model(config)
@@ -145,7 +162,9 @@ def _fold_mfe(sequence, config):
     return float(mfe), str(structure)
 
 
-def _pf_bundle(sequence, config):
+def _pf_bundle(
+    sequence: str, config: ViennaConfig
+) -> tuple[float, str, float | None, object]:
     """Return (mfe, structure, ensemble_diversity, bpp) from one fold_compound."""
     import RNA
 
@@ -163,7 +182,7 @@ def _pf_bundle(sequence, config):
 
 
 def extract_dynamic_vienna_features(
-    row,
+    row: pd.Series | dict,
     *,
     n_shuffles: int = 100,
     dangles: int = 2,
@@ -171,7 +190,7 @@ def extract_dynamic_vienna_features(
     temp_high: float = 55.0,
     rbs_width: int = 30,
     sigma_floor: float = 1e-6,
-):
+) -> dict:
     """Composition-relative / differential Vienna features (no full melting curve)."""
     sequence = normalize_sequence(row["sequence"])
     n = len(sequence)
@@ -197,9 +216,7 @@ def extract_dynamic_vienna_features(
     p_rbs_37 = mean_unpaired_in_window(unpaired37, rbs_idx)
     p_rbs_55 = mean_unpaired_in_window(unpaired55, rbs_idx)
     delta_p = (
-        None
-        if p_rbs_37 is None or p_rbs_55 is None
-        else float(p_rbs_55 - p_rbs_37)
+        None if p_rbs_37 is None or p_rbs_55 is None else float(p_rbs_55 - p_rbs_37)
     )
 
     mean_s = positional_entropy_from_bpp(bpp37, n)
@@ -232,13 +249,13 @@ def extract_dynamic_vienna_features(
 
 
 def extract_p_open_rbs(
-    row,
+    row: pd.Series | dict,
     *,
     dangles: int = 2,
     temp_low: float = 37.0,
     temp_high: float = 55.0,
     rbs_width: int = 30,
-):
+) -> dict:
     """Cheap RBS unpaired probabilities at 37/55 °C (no dinucleotide shuffles)."""
     sequence = normalize_sequence(row["sequence"])
     n = len(sequence)
@@ -261,18 +278,27 @@ def extract_p_open_rbs(
     }
 
 
-def extract_vienna_features(row, temp_range, config=None):
+def extract_vienna_features(
+    row: pd.Series,
+    temp_range: list[int],
+    config: ViennaConfig | None = None,
+) -> dict:
+    """Extract Hill, MFE, and unpaired ViennaRNA features for one sequence."""
     config = config or ViennaConfig()
     sequence = row["sequence"]
-    sd_start, sd_end = detect_shine_dalgarno(sequence)
-    sd_mid_i = sd_start
-    sd_mid_j = min(sd_end, sd_start + 1)
 
     melting_values = simulate_melting_curve(sequence, temp_range, config)
-    unpaired_profile = compute_unpaired_profile(sequence, ViennaConfig(dangles=config.dangles))
+    unpaired_profile = compute_unpaired_profile(
+        sequence, ViennaConfig(dangles=config.dangles)
+    )
     sd_window = sd_window_indices(sequence)
     hill_input = [
-        window_mean(_partition_unpaired(sequence, ViennaConfig(dangles=config.dangles, temperature_c=temp)), sd_window)
+        window_mean(
+            _partition_unpaired(
+                sequence, ViennaConfig(dangles=config.dangles, temperature_c=temp)
+            ),
+            sd_window,
+        )
         for temp in temp_range
     ]
     hill = fit_hill_curve(temp_range, hill_input)
@@ -286,8 +312,12 @@ def extract_vienna_features(row, temp_range, config=None):
         "viennarna_hill_bottom": hill.get("bottom"),
         "viennarna_hill_top": hill.get("top"),
         "viennarna_mean_unpaired_prob": sum(unpaired_profile) / len(unpaired_profile),
-        "viennarna_sd_pair_prob_10C": temp_to_value.get(10, hill_input[0] if hill_input else None),
-        "viennarna_sd_pair_prob_80C": temp_to_value.get(80, hill_input[-1] if hill_input else None),
+        "viennarna_sd_pair_prob_10C": temp_to_value.get(
+            10, hill_input[0] if hill_input else None
+        ),
+        "viennarna_sd_pair_prob_80C": temp_to_value.get(
+            80, hill_input[-1] if hill_input else None
+        ),
         "viennarna_MFE": mfe_energy,
         "viennarna_max_loop_length": max_loop_length(dot_bracket),
         "viennarna_max_stem_length": max_stem_length(dot_bracket),
@@ -299,13 +329,18 @@ def extract_vienna_features(row, temp_range, config=None):
     }
 
 
-def compare_dangles_for_sequence(sequence, temp_range):
+def compare_dangles_for_sequence(
+    sequence: str, temp_range: list[int]
+) -> tuple[int, dict[int, dict]]:
+    """Pick the dangles model with the lower Hill-fit RMSE."""
     results = {}
     for dangles in (2, 3):
         sd_window = sd_window_indices(sequence)
         curve = [
             window_mean(
-                _partition_unpaired(sequence, ViennaConfig(dangles=dangles, temperature_c=temp)),
+                _partition_unpaired(
+                    sequence, ViennaConfig(dangles=dangles, temperature_c=temp)
+                ),
                 sd_window,
             )
             for temp in temp_range
@@ -314,14 +349,17 @@ def compare_dangles_for_sequence(sequence, temp_range):
         results[dangles] = {"curve": curve, "hill": hill}
     winner = min(
         results,
-        key=lambda d: results[d]["hill"]["rmse"]
-        if results[d]["hill"]["rmse"] is not None
-        else float("inf"),
+        key=lambda d: (
+            results[d]["hill"]["rmse"]
+            if results[d]["hill"]["rmse"] is not None
+            else float("inf")
+        ),
     )
     return winner, results
 
 
-def run_vienna_worker(row_dict, temp_range, dangles):
+def run_vienna_worker(row_dict: dict, temp_range: list[int], dangles: int) -> dict:
+    """Extract public ViennaRNA features and attach melting-curve sidecar data."""
     require_vienna_rna()
     row = pd.Series(row_dict)
     features = extract_vienna_features(row, temp_range, ViennaConfig(dangles=dangles))
@@ -335,15 +373,16 @@ def run_vienna_worker(row_dict, temp_range, dangles):
 
 
 def run_vienna_pipeline(
-    input_csv=DEFAULT_BALANCED_CSV,
-    input_fasta=DEFAULT_BALANCED_FASTA,
-    output_csv=f"{VIENNA_OUTPUT_DIR}/features.csv",
-    temp_min=DEFAULT_TEMP_MIN,
-    temp_max=DEFAULT_TEMP_MAX,
-    temp_step=DEFAULT_TEMP_STEP,
-    dangles=2,
-    dry_run=True,
-):
+    input_csv: str | Path = DEFAULT_BALANCED_CSV,
+    input_fasta: str | Path = DEFAULT_BALANCED_FASTA,
+    output_csv: str | Path = f"{VIENNA_OUTPUT_DIR}/features.csv",
+    temp_min: int = DEFAULT_TEMP_MIN,
+    temp_max: int = DEFAULT_TEMP_MAX,
+    temp_step: int = DEFAULT_TEMP_STEP,
+    dangles: int = 2,
+    dry_run: bool = True,
+) -> pd.DataFrame | Path:
+    """Extract ViennaRNA features for a dataset, or print a dry-run plan."""
     dataset = load_balanced_dataset(input_csv, input_fasta)
     temp_range = build_temp_range(temp_min, temp_max, temp_step)
     output_path = resolve_path(output_csv)
@@ -361,16 +400,28 @@ def run_vienna_pipeline(
     require_vienna_rna()
     feature_rows = []
     for _, row in dataset.iterrows():
-        features = extract_vienna_features(row, temp_range, ViennaConfig(dangles=dangles))
-        feature_rows.append({**row.to_dict(), **{k: v for k, v in features.items() if not k.startswith("_")}})
+        features = extract_vienna_features(
+            row, temp_range, ViennaConfig(dangles=dangles)
+        )
+        feature_rows.append(
+            {
+                **row.to_dict(),
+                **{k: v for k, v in features.items() if not k.startswith("_")},
+            }
+        )
 
-    result = write_feature_table(pd.DataFrame(feature_rows), output_path, VIENNA_FEATURE_COLUMNS)
+    result = write_feature_table(
+        pd.DataFrame(feature_rows), output_path, VIENNA_FEATURE_COLUMNS
+    )
     print(f"Wrote ViennaRNA features: {result}")
     return result
 
 
-def _build_parser():
-    parser = argparse.ArgumentParser(description="Extract ViennaRNA thermodynamic features.")
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the CLI parser for ViennaRNA feature extraction."""
+    parser = argparse.ArgumentParser(
+        description="Extract ViennaRNA thermodynamic features."
+    )
     parser.add_argument("--input-csv", default=DEFAULT_BALANCED_CSV)
     parser.add_argument("--input-fasta", default=DEFAULT_BALANCED_FASTA)
     parser.add_argument("--output-csv", default=f"{VIENNA_OUTPUT_DIR}/features.csv")
@@ -383,7 +434,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Parse CLI arguments and run the ViennaRNA feature pipeline."""
     args = _build_parser().parse_args()
     run_vienna_pipeline(
         input_csv=args.input_csv,

@@ -23,6 +23,7 @@ class PanelHost:
 
 
 def _env_int(name: str, default: int) -> int:
+    """Parse an integer environment variable, falling back to default."""
     value = os.environ.get(name)
     if value is None or value.strip() == "":
         return default
@@ -85,6 +86,7 @@ def load_panel_hosts(*, smoke: bool = False) -> list[PanelHost]:
 
 
 def rna_type() -> str:
+    """Return the EVA RNA type, rejecting sRNA values."""
     value = os.environ.get("EVA_RNA_TYPE", DEFAULT_RNA_TYPE).strip() or DEFAULT_RNA_TYPE
     if value.lower() in {"srna", "s_rna", "small_rna"}:
         raise ValueError("Do not use sRNA for EVA thermoswitch generation; use mRNA")
@@ -92,5 +94,6 @@ def rna_type() -> str:
 
 
 def panel_total(hosts: list[PanelHost] | None = None) -> int:
+    """Return the total sequence quota across the host panel."""
     hosts = hosts if hosts is not None else load_panel_hosts(smoke=False)
     return sum(h.n_seqs for h in hosts)

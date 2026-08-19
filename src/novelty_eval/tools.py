@@ -3,7 +3,8 @@
 import shutil
 
 
-def require_blast():
+def require_blast() -> None:
+    """Raise if BLAST+ binaries are missing from PATH."""
     if shutil.which("makeblastdb") is None or shutil.which("blastn") is None:
         raise EnvironmentError(
             "BLAST+ not found on PATH (makeblastdb, blastn). "
@@ -11,7 +12,8 @@ def require_blast():
         )
 
 
-def require_hmmer():
+def require_hmmer() -> None:
+    """Raise if nhmmer is missing from PATH."""
     if shutil.which("nhmmer") is None:
         raise EnvironmentError(
             "nhmmer not found on PATH. "

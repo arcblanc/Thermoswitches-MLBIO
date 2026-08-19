@@ -10,15 +10,17 @@ from __future__ import annotations
 
 import argparse
 import subprocess
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def main():
+def main() -> None:
+    """Launch a command detached from the terminal and record its PID."""
     parser = argparse.ArgumentParser(description="Detach a long-running command.")
-    parser.add_argument("--log", required=True, help="Append stdout/stderr to this file")
+    parser.add_argument(
+        "--log", required=True, help="Append stdout/stderr to this file"
+    )
     parser.add_argument("--pid-file", default=None, help="Write child PID here")
     parser.add_argument("--cwd", default=str(ROOT))
     parser.add_argument("command", nargs=argparse.REMAINDER, help="Command after --")

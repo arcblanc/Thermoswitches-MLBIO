@@ -18,6 +18,7 @@ _SSH_USER_POD_ID = re.compile(r"^([a-zA-Z0-9]+)-[a-fA-F0-9]{6,}$")
 
 
 def normalize_pod_id(pod_id: str | None) -> str | None:
+    """Strip SSH-username suffixes so the REST API receives a pod id."""
     if not pod_id:
         return None
     pod_id = pod_id.strip()
@@ -28,6 +29,7 @@ def normalize_pod_id(pod_id: str | None) -> str | None:
 
 
 def should_skip_terminate() -> bool:
+    """Return whether orchestrator children should skip pod termination."""
     return os.environ.get(SKIP_TERMINATE_ENV, "").strip().lower() in {
         "1",
         "true",

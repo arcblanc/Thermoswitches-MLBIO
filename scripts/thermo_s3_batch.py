@@ -42,19 +42,22 @@ THERMO_DENOVO_PREFIX = "thermo/denovo"
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
+    """Parse a boolean environment variable, returning default when unset."""
     value = os.environ.get(name)
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _s3_client():
+def _s3_client() -> object:
+    """Build an S3 client using AWS_REGION (default us-east-1)."""
     import boto3
 
     return boto3.client("s3", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 
 
 def _bucket() -> str:
+    """Return AWS_S3_BUCKET or raise if it is not set."""
     bucket = os.environ.get("AWS_S3_BUCKET")
     if not bucket:
         raise ValueError("AWS_S3_BUCKET is required for thermo S3 upload")
@@ -62,6 +65,7 @@ def _bucket() -> str:
 
 
 def upload_to_s3(local_path: str | Path, s3_key: str) -> bool:
+    """Upload a local file to S3; return False if the path is missing."""
     local_path = resolve_path(local_path)
     if not local_path.exists():
         print(f"WARNING: skip upload, missing {local_path}")
@@ -74,13 +78,17 @@ def upload_to_s3(local_path: str | Path, s3_key: str) -> bool:
 
 
 def upload_training_artifacts() -> None:
+    """Upload fused features, RF model, and engine CSVs for the training run."""
     upload_to_s3(FUSED_OUTPUT, f"{THERMO_TRAINING_PREFIX}/fused_features.csv")
-    upload_to_s3(DEFAULT_MODEL_PATH, f"{THERMO_TRAINING_PREFIX}/models/rf_thermoswitch.joblib")
+    upload_to_s3(
+        DEFAULT_MODEL_PATH, f"{THERMO_TRAINING_PREFIX}/models/rf_thermoswitch.joblib"
+    )
     upload_to_s3(VIENNA_TRAINING, f"{THERMO_TRAINING_PREFIX}/viennarna/features.csv")
     upload_to_s3(NUPACK_TRAINING, f"{THERMO_TRAINING_PREFIX}/nupack/features.csv")
 
 
 def upload_denovo_artifacts() -> None:
+    """Upload fused features, predictions, and engine CSVs for the de novo run."""
     upload_to_s3(DENOVO_FUSED_OUTPUT, f"{THERMO_DENOVO_PREFIX}/fused_features.csv")
     upload_to_s3(DEFAULT_PREDICTIONS, f"{THERMO_DENOVO_PREFIX}/predictions.csv")
     upload_to_s3(VIENNA_DENOVO, f"{THERMO_DENOVO_PREFIX}/viennarna/features.csv")
@@ -88,6 +96,7 @@ def upload_denovo_artifacts() -> None:
 
 
 def _metadata(path: str) -> str | None:
+    """Fetch an EC2 instance metadata value, or None if unavailable."""
     try:
         url = f"http://169.254.169.254/latest/meta-data/{path}"
         with urllib.request.urlopen(url, timeout=2) as response:
@@ -97,10 +106,12 @@ def _metadata(path: str) -> str | None:
 
 
 def _instance_id_from_metadata() -> str | None:
+    """Return this instance's EC2 instance-id from metadata, if present."""
     return _metadata("instance-id")
 
 
 def _region_from_metadata() -> str | None:
+    """Return this instance's region from metadata, derived from AZ if needed."""
     # Prefer explicit region; fall back to AZ (e.g. eu-west-2a -> eu-west-2).
     region = _metadata("placement/region")
     if region:
@@ -112,6 +123,7 @@ def _region_from_metadata() -> str | None:
 
 
 def stop_ec2_if_configured() -> None:
+    """Stop this EC2 instance when EC2_AUTO_SHUTDOWN is enabled."""
     if not _env_bool("EC2_AUTO_SHUTDOWN", default=True):
         print("EC2_AUTO_SHUTDOWN=false — leaving instance running")
         return
@@ -140,12 +152,13 @@ def stop_ec2_if_configured() -> None:
 
 
 def run_train(
-    dry_run=False,
-    resume=True,
-    workers=2,
-    batch_size=1,
-    limit=BALANCED_LIMIT,
-):
+    dry_run: bool = False,
+    resume: bool = True,
+    workers: int = 2,
+    batch_size: int = 1,
+    limit: int = BALANCED_LIMIT,
+) -> None:
+    """Train the RF, upload training artifacts, then optionally stop EC2."""
     run_thermo_batch(
         limit=limit,
         batch_size=batch_size,
@@ -165,12 +178,13 @@ def run_train(
 
 
 def run_predict(
-    dry_run=False,
-    resume=True,
-    workers=2,
-    batch_size=1,
-    limit=DENOVO_LIMIT,
-):
+    dry_run: bool = False,
+    resume: bool = True,
+    workers: int = 2,
+    batch_size: int = 1,
+    limit: int = DENOVO_LIMIT,
+) -> None:
+    """Predict on de novo FASTA, upload artifacts, then optionally stop EC2."""
     run_thermo_batch(
         limit=limit,
         batch_size=batch_size,
@@ -194,7 +208,8 @@ def run_predict(
     stop_ec2_if_configured()
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the thermo S3-batch argument parser."""
     parser = argparse.ArgumentParser(
         description="EC2 thermo + Random Forest pipeline with S3 upload and optional stop."
     )
@@ -209,7 +224,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Parse CLI args and run train or predict (dry-run unless --run)."""
     args = _build_parser().parse_args()
     dry_run = args.dry_run or not args.run
     resume = not args.no_resume

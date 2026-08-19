@@ -29,7 +29,8 @@ BALANCED_LIMIT = 2396
 DENOVO_LIMIT = 10000
 
 
-def run_train(dry_run=False):
+def run_train(dry_run: bool = False) -> None:
+    """Train the RF on the balanced thermo feature set."""
     run_thermo_batch(
         limit=BALANCED_LIMIT,
         batch_size=1,
@@ -46,7 +47,8 @@ def run_train(dry_run=False):
     train_random_forest(fused_csv=FUSED_OUTPUT, model_path=DEFAULT_MODEL_PATH)
 
 
-def run_predict(dry_run=False):
+def run_predict(dry_run: bool = False) -> None:
+    """Score de novo sequences with the trained RF thermoswitch model."""
     run_thermo_batch(
         limit=DENOVO_LIMIT,
         batch_size=1,
@@ -68,7 +70,8 @@ def run_predict(dry_run=False):
     )
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the EC2 thermo-batch argument parser."""
     parser = argparse.ArgumentParser(description="EC2 thermo + Random Forest pipeline.")
     parser.add_argument("command", choices=["train", "predict"])
     parser.add_argument("--dry-run", action="store_true")
@@ -76,7 +79,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Parse CLI args and run train or predict (dry-run unless --run)."""
     args = _build_parser().parse_args()
     dry_run = args.dry_run or not args.run
     if args.command == "train":

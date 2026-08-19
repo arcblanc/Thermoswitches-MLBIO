@@ -11,11 +11,14 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score
-from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold, cross_val_predict
+from sklearn.model_selection import (
+    StratifiedGroupKFold,
+    StratifiedKFold,
+    cross_val_predict,
+)
 
 SRC_ROOT = Path(__file__).resolve().parent.parent / "src"
 if str(SRC_ROOT) not in sys.path:
@@ -30,13 +33,21 @@ from thermo_sim.thermo_classifier import (
 LENGTH_ALONE_AUC_GATE = 0.65
 
 
-def _eval_rf(X, y, cv, groups=None):
+def _eval_rf(
+    X: pd.DataFrame,
+    y: pd.Series,
+    cv: StratifiedGroupKFold | StratifiedKFold,
+    groups: pd.Series | None = None,
+) -> dict[str, float]:
+    """Cross-validate an RF and return ROC-AUC and accuracy."""
     rf = RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1)
     if groups is None:
         proba = cross_val_predict(rf, X, y, cv=cv, method="predict_proba")[:, 1]
     else:
         # cross_val_predict supports groups=
-        proba = cross_val_predict(rf, X, y, cv=cv, groups=groups, method="predict_proba")[:, 1]
+        proba = cross_val_predict(
+            rf, X, y, cv=cv, groups=groups, method="predict_proba"
+        )[:, 1]
     pred = (proba >= 0.5).astype(int)
     return {
         "roc_auc": float(roc_auc_score(y, proba)),
@@ -45,15 +56,18 @@ def _eval_rf(X, y, cv, groups=None):
 
 
 def run_diagnostics(
-    fused_csv="data/processed/fused_features_length_matched.csv",
-    legacy_fused_csv="data/processed/fused_features.csv",
-    output_json="data/processed/length_matched_rf_diagnostics.json",
-    length_alone_gate=LENGTH_ALONE_AUC_GATE,
-    group_col="rfam_acc",
-):
+    fused_csv: str = "data/processed/fused_features_length_matched.csv",
+    legacy_fused_csv: str = "data/processed/fused_features.csv",
+    output_json: str = "data/processed/length_matched_rf_diagnostics.json",
+    length_alone_gate: float = LENGTH_ALONE_AUC_GATE,
+    group_col: str = "rfam_acc",
+) -> dict[str, object]:
+    """Compare length-alone vs intensive RF under grouped and ungrouped CV."""
     df = pd.read_csv(fused_csv)
     if group_col not in df.columns:
-        raise SystemExit(f"{fused_csv} missing {group_col} — required for StratifiedGroupKFold")
+        raise SystemExit(
+            f"{fused_csv} missing {group_col} — required for StratifiedGroupKFold"
+        )
     df = add_intensive_features(df)
     feature_cols = [c for c in PHYSICS_FEATURE_COLUMNS if c in df.columns]
     need = ["label", "seq_length", group_col] + feature_cols
@@ -70,9 +84,12 @@ def run_diagnostics(
         "mean_len_pos": float(clean.loc[y == 1, "seq_length"].mean()),
         "mean_len_neg": float(clean.loc[y == 0, "seq_length"].mean()),
         "delta_mu_length": float(
-            clean.loc[y == 1, "seq_length"].mean() - clean.loc[y == 0, "seq_length"].mean()
+            clean.loc[y == 1, "seq_length"].mean()
+            - clean.loc[y == 0, "seq_length"].mean()
         ),
-        "corr_length_viennarna_MFE": float(clean["seq_length"].corr(clean["viennarna_MFE"]))
+        "corr_length_viennarna_MFE": float(
+            clean["seq_length"].corr(clean["viennarna_MFE"])
+        )
         if "viennarna_MFE" in clean.columns
         else None,
         "corr_length_viennarna_MFE_per_nt": float(
@@ -81,7 +98,9 @@ def run_diagnostics(
         "corr_length_nupack_MFE": float(clean["seq_length"].corr(clean["nupack_MFE"]))
         if "nupack_MFE" in clean.columns
         else None,
-        "corr_length_nupack_MFE_per_nt": float(clean["seq_length"].corr(clean["nupack_MFE_per_nt"])),
+        "corr_length_nupack_MFE_per_nt": float(
+            clean["seq_length"].corr(clean["nupack_MFE_per_nt"])
+        ),
         "features_intensive": feature_cols,
     }
 
@@ -128,12 +147,14 @@ def run_diagnostics(
 
 
 def run_noncircular_diagnostics(
-    fused_csv="data/processed/fused_features_refseq_dynamic.csv",
-    output_json="data/processed/rf_noncircular_diagnostics.json",
-    group_col="rfam_acc",
-    dataset_csv="data/processed/balanced/length_gc_matched_refseq_dataset.csv",
-    dataset_fasta="data/processed/balanced/length_gc_matched_refseq_dataset.fasta",
-):
+    fused_csv: str = "data/processed/fused_features_refseq_dynamic.csv",
+    output_json: str = "data/processed/rf_noncircular_diagnostics.json",
+    group_col: str = "rfam_acc",
+    dataset_csv: str = "data/processed/balanced/length_gc_matched_refseq_dataset.csv",
+    dataset_fasta: str = (
+        "data/processed/balanced/length_gc_matched_refseq_dataset.fasta"
+    ),
+) -> dict[str, object]:
     """Score the non-circular RF matrix (does not replace the intensive-20 report)."""
     from thermo_sim.noncircular_features import (
         build_noncircular_matrix,
@@ -144,7 +165,9 @@ def run_noncircular_diagnostics(
 
     df = pd.read_csv(fused_csv)
     if group_col not in df.columns:
-        raise SystemExit(f"{fused_csv} missing {group_col} — required for StratifiedGroupKFold")
+        raise SystemExit(
+            f"{fused_csv} missing {group_col} — required for StratifiedGroupKFold"
+        )
     df = add_intensive_features(df)
     df = build_noncircular_matrix(
         df,
@@ -185,10 +208,15 @@ def run_noncircular_diagnostics(
     return report
 
 
-def main():
+def main() -> None:
+    """Parse CLI args and run intensive or non-circular RF diagnostics."""
     p = argparse.ArgumentParser()
-    p.add_argument("--fused-csv", default="data/processed/fused_features_length_matched.csv")
-    p.add_argument("--output-json", default="data/processed/length_matched_rf_diagnostics.json")
+    p.add_argument(
+        "--fused-csv", default="data/processed/fused_features_length_matched.csv"
+    )
+    p.add_argument(
+        "--output-json", default="data/processed/length_matched_rf_diagnostics.json"
+    )
     p.add_argument("--length-alone-gate", type=float, default=LENGTH_ALONE_AUC_GATE)
     p.add_argument(
         "--group-col",

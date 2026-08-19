@@ -1,4 +1,3 @@
-import argparse
 import sys
 from pathlib import Path
 
@@ -20,12 +19,14 @@ RFAM_CONFIG = {
 }
 
 
-def connect():
+def connect() -> mysql.connector.MySQLConnection:
     """Open a read-only connection to the public Rfam MySQL instance."""
     return mysql.connector.connect(**RFAM_CONFIG)
 
 
-def fetch_rfam_thermoswitches(output_path="data/raw/rfam_positives.csv"):
+def fetch_rfam_thermoswitches(
+    output_path: str = "data/raw/rfam_positives.csv",
+) -> pd.DataFrame:
     """Connects to the public EMBL-EBI Rfam instance to isolate heat-dependent, prokaryotic RNA thermometers."""
     connection = connect()
 
@@ -114,7 +115,9 @@ def fetch_rfam_thermoswitches(output_path="data/raw/rfam_positives.csv"):
     return df
 
 
-def fetch_rfam_negative_controls(output_path="data/raw/rfam_negatives.csv"):
+def fetch_rfam_negative_controls(
+    output_path: str = "data/raw/rfam_negatives.csv",
+) -> pd.DataFrame:
     """
     Connects to the public EMBL-EBI Rfam instance to isolate standard,
     non-thermoswitch bacterial 5' UTRs and Cis-regulatory elements as negative controls.

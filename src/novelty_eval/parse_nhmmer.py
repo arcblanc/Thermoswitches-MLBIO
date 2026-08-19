@@ -23,7 +23,8 @@ NHMMER_COLUMNS = [
 ]
 
 
-def _parse_tblout_line(line):
+def _parse_tblout_line(line: str) -> dict[str, str] | None:
+    """Parse one nhmmer tblout line into a column dict, or None if skipped."""
     if not line.strip() or line.startswith("#"):
         return None
 
@@ -36,7 +37,9 @@ def _parse_tblout_line(line):
     return row
 
 
-def best_nhmmer_hits_from_tbl(tbl_path, evalue_max=0.1):
+def best_nhmmer_hits_from_tbl(
+    tbl_path: Path | str, evalue_max: float = 0.1
+) -> pd.DataFrame:
     """Stream tblout and return only the best hit per query (memory-safe)."""
     path = Path(tbl_path)
     if not path.exists() or path.stat().st_size == 0:
@@ -78,7 +81,10 @@ def best_nhmmer_hits_from_tbl(tbl_path, evalue_max=0.1):
                 "nhmmer_alignment_length": alignment_length,
             }
             prev = best.get(query)
-            if prev is None or (evalue, -score) < (prev["nhmmer_evalue"], -prev["nhmmer_bitscore"]):
+            if prev is None or (evalue, -score) < (
+                prev["nhmmer_evalue"],
+                -prev["nhmmer_bitscore"],
+            ):
                 best[query] = candidate
 
     if not best:
@@ -98,7 +104,8 @@ def best_nhmmer_hits_from_tbl(tbl_path, evalue_max=0.1):
     return df.assign(nhmmer_identity_frac=0.0, nhmmer_identity_pct=0.0)
 
 
-def load_nhmmer_hits(tbl_path, evalue_max=0.1):
+def load_nhmmer_hits(tbl_path: Path | str, evalue_max: float = 0.1) -> pd.DataFrame:
+    """Load all nhmmer tblout hits at or below evalue_max."""
     path = Path(tbl_path)
     if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame(columns=NHMMER_COLUMNS + ["description"])
@@ -114,7 +121,15 @@ def load_nhmmer_hits(tbl_path, evalue_max=0.1):
         return pd.DataFrame(columns=NHMMER_COLUMNS + ["description"])
 
     df = pd.DataFrame(rows)
-    for col in ("score", "evalue", "ali_from", "ali_to", "hmm_from", "hmm_to", "sq_len"):
+    for col in (
+        "score",
+        "evalue",
+        "ali_from",
+        "ali_to",
+        "hmm_from",
+        "hmm_to",
+        "sq_len",
+    ):
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     df = df[df["evalue"] <= evalue_max].copy()
@@ -126,7 +141,8 @@ def load_nhmmer_hits(tbl_path, evalue_max=0.1):
     return df
 
 
-def _load_query_sequences(fasta_path):
+def _load_query_sequences(fasta_path: Path | str) -> dict[str, str]:
+    """Load FASTA records as a mapping from header id to sequence."""
     queries = {}
     header = None
     parts = []
@@ -147,7 +163,9 @@ def _load_query_sequences(fasta_path):
     return queries
 
 
-def _fetch_rfam_sequences(fasta_path, entry_ids):
+def _fetch_rfam_sequences(
+    fasta_path: Path | str, entry_ids: list[str]
+) -> dict[str, str]:
     """Load only requested Rfam FASTA records (single pass)."""
     wanted = set(entry_ids)
     found = {}
@@ -175,7 +193,8 @@ def _fetch_rfam_sequences(fasta_path, entry_ids):
     return found
 
 
-def _pairwise_identity(query_seq, target_seq):
+def _pairwise_identity(query_seq: str, target_seq: str) -> float:
+    """Return global pairwise identity between query and target RNA."""
     from Bio.Align import PairwiseAligner
 
     query_seq = query_seq.upper().replace("T", "U")
@@ -201,11 +220,11 @@ def _pairwise_identity(query_seq, target_seq):
 
 
 def enrich_nhmmer_identity(
-    tbl_df,
-    query_fasta,
-    rfam_fasta,
-    max_rows=None,
-):
+    tbl_df: pd.DataFrame,
+    query_fasta: Path | str,
+    rfam_fasta: Path | str,
+    max_rows: int | None = None,
+) -> pd.DataFrame:
     """Compute identity for nhmmer hits via FASTA fetch + pairwise alignment."""
     tbl_df = tbl_df.copy()
     if tbl_df.empty:
@@ -215,13 +234,21 @@ def enrich_nhmmer_identity(
 
     queries = _load_query_sequences(query_fasta)
     rows = tbl_df if max_rows is None else tbl_df.head(max_rows)
-    target_ids = rows["target_name"].tolist() if "target_name" in rows.columns else rows["nhmmer_target_id"].tolist()
+    target_ids = (
+        rows["target_name"].tolist()
+        if "target_name" in rows.columns
+        else rows["nhmmer_target_id"].tolist()
+    )
     targets = _fetch_rfam_sequences(rfam_fasta, target_ids)
 
     identity_values = []
     for row in rows.itertuples():
-        query_seq = queries.get(row.query_name if hasattr(row, "query_name") else row.record_id)
-        target_id = row.target_name if hasattr(row, "target_name") else row.nhmmer_target_id
+        query_seq = queries.get(
+            row.query_name if hasattr(row, "query_name") else row.record_id
+        )
+        target_id = (
+            row.target_name if hasattr(row, "target_name") else row.nhmmer_target_id
+        )
         target_seq = targets.get(target_id)
         if not query_seq or not target_seq:
             identity_values.append(0.0)
@@ -239,7 +266,10 @@ def enrich_nhmmer_identity(
     return tbl_df
 
 
-def enrich_nhmmer_identity_for_best(best_df, query_fasta, rfam_fasta):
+def enrich_nhmmer_identity_for_best(
+    best_df: pd.DataFrame, query_fasta: Path | str, rfam_fasta: Path | str
+) -> pd.DataFrame:
+    """Fill identity columns for a best-hit-per-query nhmmer table."""
     if best_df.empty:
         return best_df
     enriched = enrich_nhmmer_identity(
@@ -259,7 +289,8 @@ def enrich_nhmmer_identity_for_best(best_df, query_fasta, rfam_fasta):
     return best_df
 
 
-def best_nhmmer_hit_per_query(df):
+def best_nhmmer_hit_per_query(df: pd.DataFrame) -> pd.DataFrame:
+    """Return the best nhmmer hit per query by e-value then score."""
     if df.empty:
         return pd.DataFrame(
             columns=[
@@ -273,7 +304,9 @@ def best_nhmmer_hit_per_query(df):
             ]
         )
 
-    ranked = df.sort_values(["query_name", "evalue", "score"], ascending=[True, True, False])
+    ranked = df.sort_values(
+        ["query_name", "evalue", "score"], ascending=[True, True, False]
+    )
     best = ranked.groupby("query_name", as_index=False).first()
     return best.rename(
         columns={

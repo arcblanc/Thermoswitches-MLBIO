@@ -31,7 +31,8 @@ IDENTITY_NEAR_THRESHOLD = 0.90
 EVALUE_MAX = 0.1
 
 
-def _categorize(identity_frac, has_hit):
+def _categorize(identity_frac: float, has_hit: bool) -> str:
+    """Map identity and hit presence to a novelty category label."""
     if not has_hit:
         return "no_hit"
     if identity_frac >= IDENTITY_NEAR_THRESHOLD:
@@ -39,7 +40,10 @@ def _categorize(identity_frac, has_hit):
     return "remote_homolog"
 
 
-def _pick_combined_best(blast_row, nhmmer_row):
+def _pick_combined_best(
+    blast_row: pd.Series, nhmmer_row: pd.Series
+) -> dict[str, object]:
+    """Choose the better of BLAST and nhmmer hits by identity then e-value."""
     candidates = []
     if pd.notna(blast_row.get("blast_evalue")):
         candidates.append(
@@ -87,16 +91,17 @@ def _pick_combined_best(blast_row, nhmmer_row):
 
 
 def build_novelty_report(
-    candidates_csv=DEFAULT_CANDIDATES_CSV,
-    query_fasta=DEFAULT_QUERY_FASTA,
-    rfam_fasta=DEFAULT_RFAM_FA,
-    blast_tsv=DEFAULT_BLAST_TSV,
-    nhmmer_tbl=DEFAULT_NHMMER_TBL,
-    report_csv=DEFAULT_REPORT_CSV,
-    summary_json=DEFAULT_SUMMARY_JSON,
-    by_category_csv=DEFAULT_BY_CATEGORY_CSV,
-    evalue_max=EVALUE_MAX,
-):
+    candidates_csv: Path | str = DEFAULT_CANDIDATES_CSV,
+    query_fasta: Path | str = DEFAULT_QUERY_FASTA,
+    rfam_fasta: Path | str = DEFAULT_RFAM_FA,
+    blast_tsv: Path | str = DEFAULT_BLAST_TSV,
+    nhmmer_tbl: Path | str = DEFAULT_NHMMER_TBL,
+    report_csv: Path | str = DEFAULT_REPORT_CSV,
+    summary_json: Path | str = DEFAULT_SUMMARY_JSON,
+    by_category_csv: Path | str = DEFAULT_BY_CATEGORY_CSV,
+    evalue_max: float = EVALUE_MAX,
+) -> tuple[Path, Path]:
+    """Merge BLAST/nhmmer hits, categorize novelty, and write report files."""
     candidates_csv = resolve_path(candidates_csv)
     query_fasta = resolve_path(query_fasta)
     rfam_fasta = resolve_path(rfam_fasta)
@@ -158,7 +163,14 @@ def build_novelty_report(
     summary_json.write_text(json.dumps(summary, indent=2))
 
     by_category = report[
-        ["record_id", "novelty_category", "best_tool", "best_target_id", "best_identity_pct", "best_evalue"]
+        [
+            "record_id",
+            "novelty_category",
+            "best_tool",
+            "best_target_id",
+            "best_identity_pct",
+            "best_evalue",
+        ]
     ].sort_values(["novelty_category", "best_identity_pct"], ascending=[True, False])
     by_category.to_csv(by_category_csv, index=False)
 
@@ -166,12 +178,17 @@ def build_novelty_report(
     print(f"Summary: {summary_json}")
     print(f"By category: {by_category_csv}")
     for key in ("identical_near", "remote_homolog", "no_hit"):
-        print(f"  {key}: {summary['categories'][key]['count']} ({summary['categories'][key]['fraction']:.1%})")
+        print(
+            f"  {key}: {summary['categories'][key]['count']} ({summary['categories'][key]['fraction']:.1%})"
+        )
     return report_csv, summary_json
 
 
-def _build_parser():
-    parser = argparse.ArgumentParser(description="Build novelty report from BLAST and nhmmer outputs.")
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the CLI parser for novelty report generation."""
+    parser = argparse.ArgumentParser(
+        description="Build novelty report from BLAST and nhmmer outputs."
+    )
     parser.add_argument("--candidates-csv", default=DEFAULT_CANDIDATES_CSV)
     parser.add_argument("--blast-tsv", default=DEFAULT_BLAST_TSV)
     parser.add_argument("--nhmmer-tbl", default=DEFAULT_NHMMER_TBL)
@@ -184,7 +201,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Build a novelty report from BLAST and nhmmer outputs."""
     args = _build_parser().parse_args()
     build_novelty_report(
         candidates_csv=args.candidates_csv,

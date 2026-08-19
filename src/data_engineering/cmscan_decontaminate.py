@@ -18,14 +18,13 @@ SRC_ROOT = Path(__file__).resolve().parent.parent
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from data_engineering.cd_hit_sequence_similarity import JOIN_COLUMNS
-from data_engineering.knn_undersample import METADATA_COLUMNS, write_dataset
 from data_engineering.paths import resolve_path
 
 TOOLS_BIN = Path(__file__).resolve().parents[2] / ".tools" / "bin"
 
 
 def _resolve_tool(name: str) -> str:
+    """Return a local tools-bin path for name, else the bare command."""
     local = TOOLS_BIN / name
     if local.exists():
         return str(local)
@@ -96,6 +95,7 @@ def build_target_cm(
 
 
 def press_cm(cm_path: Path) -> Path:
+    """Press a covariance model with cmpress if not already pressed."""
     cmpress = _resolve_tool("cmpress")
     # cmpress refuses if already pressed
     for suffix in (".i1m", ".i1i", ".i1f", ".i1p"):
@@ -111,6 +111,7 @@ def run_cmscan(
     tblout: Path,
     cpu: int = 4,
 ) -> Path:
+    """Run Infernal cmscan against a query FASTA and write tblout."""
     cmscan = _resolve_tool("cmscan")
     tblout.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -161,6 +162,7 @@ def parse_tblout_hits(tblout: Path, evalue_max: float = 1e-3) -> set[str]:
 
 
 def fasta_headers(path: Path) -> list[str]:
+    """Return FASTA header strings without the leading '>'."""
     headers = []
     with path.open() as handle:
         for line in handle:
@@ -180,12 +182,12 @@ def decontaminate(
     evalue_max: float = 1e-3,
     cpu: int = 4,
 ) -> dict:
+    """Drop candidate UTRs with significant Rfam cmscan hits."""
     rfam_cm = download_rfam_cms(positives_csv=positives_csv)
     subset = resolve_path("data/raw/rfam_cms/thermoswitch_riboswitch.cm")
     cm_path = build_target_cm(rfam_cm, positives_csv, subset)
     press_cm(cm_path)
 
-    query_fa = resolve_path(candidates_fasta)
     # Rewrite FASTA headers to simple unique IDs for cmscan parsing
     df = pd.read_csv(resolve_path(candidates_csv))
     for col in ("seq_start", "seq_end"):
@@ -211,7 +213,7 @@ def decontaminate(
     with out_fa.open("w") as handle:
         for _, row in clean.iterrows():
             header = (
-                f"{row.get('rfam_acc','REFSEQ')}|{row.get('rfam_id','refseq_utr')}|"
+                f"{row.get('rfam_acc', 'REFSEQ')}|{row.get('rfam_id', 'refseq_utr')}|"
                 f"{row['rfamseq_acc']}|{int(row['seq_start'])}-{int(row['seq_end'])}|label=0"
             )
             handle.write(">" + header.lstrip(">") + "\n")
@@ -232,7 +234,8 @@ def decontaminate(
     return report
 
 
-def main():
+def main() -> None:
+    """Parse CLI arguments and run cmscan decontamination."""
     p = argparse.ArgumentParser()
     p.add_argument("--cpu", type=int, default=4)
     p.add_argument("--evalue-max", type=float, default=1e-3)

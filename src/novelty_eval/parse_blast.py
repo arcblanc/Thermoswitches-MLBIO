@@ -20,7 +20,8 @@ BLAST_COLUMNS = [
 ]
 
 
-def load_blast_hits(tsv_path, evalue_max=0.1):
+def load_blast_hits(tsv_path: Path | str, evalue_max: float = 0.1) -> pd.DataFrame:
+    """Load BLAST tabular hits and keep rows at or below evalue_max."""
     path = Path(tsv_path)
     if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame(columns=BLAST_COLUMNS)
@@ -36,7 +37,8 @@ def load_blast_hits(tsv_path, evalue_max=0.1):
     return df
 
 
-def best_blast_hit_per_query(df):
+def best_blast_hit_per_query(df: pd.DataFrame) -> pd.DataFrame:
+    """Return the best BLAST hit per query by e-value then identity."""
     if df.empty:
         return pd.DataFrame(
             columns=[
@@ -50,7 +52,9 @@ def best_blast_hit_per_query(df):
             ]
         )
 
-    ranked = df.sort_values(["qseqid", "evalue", "identity_frac"], ascending=[True, True, False])
+    ranked = df.sort_values(
+        ["qseqid", "evalue", "identity_frac"], ascending=[True, True, False]
+    )
     best = ranked.groupby("qseqid", as_index=False).first()
     return best.rename(
         columns={

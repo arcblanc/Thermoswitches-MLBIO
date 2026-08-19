@@ -13,7 +13,11 @@ import numpy as np
 import pandas as pd
 from scipy.stats import ks_2samp, mannwhitneyu, spearmanr
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold, cross_val_predict
+from sklearn.model_selection import (
+    StratifiedGroupKFold,
+    StratifiedKFold,
+    cross_val_predict,
+)
 
 from data_engineering.paths import resolve_path
 
@@ -51,6 +55,7 @@ BIN_TEST_COLUMNS = [
 
 
 def confidence_bin(yhat: float) -> str:
+    """Map an OOF probability to a high/mid/low confidence bin."""
     if yhat >= HIGH_CONF:
         return "high"
     if yhat <= LOW_CONF:
@@ -61,34 +66,44 @@ def confidence_bin(yhat: float) -> str:
 
 
 def confidence_bins(yhat: np.ndarray | pd.Series) -> pd.Series:
+    """Map each OOF probability to a high/mid/low/other confidence bin."""
     return pd.Series(yhat).map(confidence_bin)
 
 
-def gate_delta_p_rbs(delta_p) -> bool:
+def gate_delta_p_rbs(delta_p: object) -> bool:
+    """Return True when ΔP_RBS is defined and strictly positive."""
     return pd.notna(delta_p) and float(delta_p) > DELTA_P_MIN
 
 
-def gate_hill(n_h, *, threshold: float = HILL_GATE) -> bool:
+def gate_hill(n_h: object, *, threshold: float = HILL_GATE) -> bool:
+    """Return True when the Hill coefficient exceeds the threshold."""
     return pd.notna(n_h) and float(n_h) > threshold
 
 
-def gate_tm(tm, *, lo: float = TM_MIN, hi: float = TM_MAX) -> bool:
+def gate_tm(tm: object, *, lo: float = TM_MIN, hi: float = TM_MAX) -> bool:
+    """Return True when Tm falls inside the inclusive temperature window."""
     return pd.notna(tm) and lo <= float(tm) <= hi
 
 
-def gate_zscore(z, *, z_max: float = Z_MAX) -> bool:
+def gate_zscore(z: object, *, z_max: float = Z_MAX) -> bool:
+    """Return True when the MFE Z-score is at or below z_max."""
     return pd.notna(z) and float(z) <= z_max
 
 
-def gate_amplitude(amp, *, minimum: float = AMPLITUDE_MIN) -> bool:
+def gate_amplitude(amp: object, *, minimum: float = AMPLITUDE_MIN) -> bool:
+    """Return True when melting amplitude meets the minimum dynamic range."""
     return pd.notna(amp) and float(amp) >= minimum
 
 
-def gate_baseline_repression(p_open, *, maximum: float = P_OPEN_LOCKED_MAX) -> bool:
+def gate_baseline_repression(
+    p_open: object, *, maximum: float = P_OPEN_LOCKED_MAX
+) -> bool:
+    """Return True when 37 °C RBS unpaired probability is locked down."""
     return pd.notna(p_open) and float(p_open) <= maximum
 
 
 def visual_checklist_flags(row: pd.Series) -> dict[str, bool]:
+    """Score a row against the visual melting-curve checklist gates."""
     n_h = row.get("viennarna_hill_coeff")
     tm = row.get("viennarna_Tm")
     amp = row.get("viennarna_amplitude")
@@ -104,7 +119,8 @@ def visual_checklist_flags(row: pd.Series) -> dict[str, bool]:
     }
 
 
-def _spearman_pair(a: pd.Series, b: pd.Series) -> dict:
+def _spearman_pair(a: pd.Series, b: pd.Series) -> dict[str, object]:
+    """Compute Spearman correlation for one Vienna vs NUPACK feature pair."""
     mask = a.notna() & b.notna()
     n = int(mask.sum())
     if n < 3:
@@ -163,6 +179,7 @@ def spearman_consensus(
 
 
 def two_sample_tests(high: pd.Series, low: pd.Series) -> dict:
+    """Run Mann–Whitney U and KS tests comparing high vs low confidence bins."""
     high = pd.to_numeric(high, errors="coerce").dropna()
     low = pd.to_numeric(low, errors="coerce").dropna()
     if len(high) < 2 or len(low) < 2:
@@ -186,13 +203,22 @@ def two_sample_tests(high: pd.Series, low: pd.Series) -> dict:
     }
 
 
-def _oof_proba(X, y, groups, random_state=42, n_estimators=200):
+def _oof_proba(
+    X: pd.DataFrame,
+    y: pd.Series,
+    groups: pd.Series | None,
+    random_state: int = 42,
+    n_estimators: int = 200,
+) -> np.ndarray:
+    """Compute out-of-fold positive-class probabilities for a Random Forest."""
     rf = RandomForestClassifier(
         n_estimators=n_estimators, random_state=random_state, n_jobs=-1
     )
     if groups is not None:
         cv = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=random_state)
-        return cross_val_predict(rf, X, y, cv=cv, groups=groups, method="predict_proba")[:, 1]
+        return cross_val_predict(
+            rf, X, y, cv=cv, groups=groups, method="predict_proba"
+        )[:, 1]
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
     return cross_val_predict(rf, X, y, cv=cv, method="predict_proba")[:, 1]
 
@@ -207,6 +233,7 @@ def evaluate_posthoc(
     n_estimators: int = 200,
     random_state: int = 42,
 ) -> dict:
+    """Write post-hoc confidence bins, melting gates, and consensus tests."""
     need = ["label"] + [c for c in feature_cols if c in df.columns]
     work = df.dropna(subset=need).copy()
     y = work["label"].astype(int)
@@ -214,7 +241,9 @@ def evaluate_posthoc(
     groups = work[group_col].astype(str) if group_col in work.columns else None
 
     if yhat is None:
-        yhat = _oof_proba(X, y, groups, random_state=random_state, n_estimators=n_estimators)
+        yhat = _oof_proba(
+            X, y, groups, random_state=random_state, n_estimators=n_estimators
+        )
     work = work.copy()
     work["yhat"] = np.asarray(yhat, dtype=float)
     work["confidence_bin"] = confidence_bins(work["yhat"])
@@ -234,7 +263,11 @@ def evaluate_posthoc(
 
     gates = {
         "delta_P_RBS_gt_0": int(dp.map(gate_delta_p_rbs).sum()),
-        "hill_gt_1": int(work.get("viennarna_hill_coeff", pd.Series(dtype=float)).map(gate_hill).sum())
+        "hill_gt_1": int(
+            work.get("viennarna_hill_coeff", pd.Series(dtype=float))
+            .map(gate_hill)
+            .sum()
+        )
         if "viennarna_hill_coeff" in work.columns
         else None,
         "nupack_hill_gt_1": int(work["nupack_hill_coeff"].map(gate_hill).sum())
@@ -273,9 +306,14 @@ def evaluate_posthoc(
     for col in BIN_TEST_COLUMNS:
         if col not in work.columns:
             continue
-        bin_tests[col] = two_sample_tests(work.loc[high_mask, col], work.loc[low_mask, col])
+        bin_tests[col] = two_sample_tests(
+            work.loc[high_mask, col], work.loc[low_mask, col]
+        )
 
-    has_hill = "viennarna_hill_coeff" in work.columns and work["viennarna_hill_coeff"].notna().any()
+    has_hill = (
+        "viennarna_hill_coeff" in work.columns
+        and work["viennarna_hill_coeff"].notna().any()
+    )
     spearman_panel = spearman_consensus(work, require_min_n=False)
     spearman_high = spearman_consensus(
         work, mask=high_mask, min_n=SPEARMAN_MIN_N, require_min_n=True

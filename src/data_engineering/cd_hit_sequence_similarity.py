@@ -19,7 +19,7 @@ DEFAULT_IDENTITY = 0.8
 DEFAULT_THREADS = 0
 
 
-def require_cd_hit():
+def require_cd_hit() -> None:
     """Ensure cd-hit-est is available on PATH."""
     if shutil.which("cd-hit-est") is None:
         raise EnvironmentError(
@@ -28,7 +28,9 @@ def require_cd_hit():
         )
 
 
-def stage_inputs(fasta_src, csv_src, label):
+def stage_inputs(
+    fasta_src: str | Path, csv_src: str | Path, label: str
+) -> tuple[Path, Path]:
     """A safety mechanism.Copy raw FASTA/CSV into processed staging; return staged paths."""
     fasta_src = resolve_path(fasta_src)
     csv_src = resolve_path(csv_src)
@@ -48,7 +50,7 @@ def stage_inputs(fasta_src, csv_src, label):
     return staged_fasta, staged_csv
 
 
-def consolidate_cdhit_outputs():
+def consolidate_cdhit_outputs() -> Path:
     """Move legacy CD-HIT artifacts from data/processed/ into cdhitoutput/."""
     processed_dir = resolve_path("data/processed")
     output_dir = resolve_path(CDHIT_OUTPUT_DIR)
@@ -95,11 +97,11 @@ def consolidate_cdhit_outputs():
     return output_dir
 
 
-def parse_fasta_header(header):
-    """Acts as a translator. The FASTA sequences have long, 
-    complicated name tags (e.g., >RF00114|sRNA|AB12345|10-50). 
+def parse_fasta_header(header: str) -> dict[str, str | int]:
+    """Acts as a translator. The FASTA sequences have long,
+    complicated name tags (e.g., >RF00114|sRNA|AB12345|10-50).
     This function chops that text up and turns it into clean, distinct variables."""
-    
+
     cleaned = header.strip()
     if cleaned.startswith(">"):
         cleaned = cleaned[1:]
@@ -148,11 +150,11 @@ def parse_fasta_header(header):
     }
 
 
-def parse_representatives_from_fasta(cdhit_fasta):
+def parse_representatives_from_fasta(cdhit_fasta: str | Path) -> pd.DataFrame:
     """parse_representatives_from_fasta(cdhit_fasta)
-    Reads the final FASTA file that CD-HIT spits out (the survivors). 
+    Reads the final FASTA file that CD-HIT spits out (the survivors).
     It takes all those unique genetic sequences and organizes them into a clean pandas data table."""
-    
+
     cdhit_fasta = resolve_path(cdhit_fasta)
     records = []
     header = None
@@ -181,9 +183,9 @@ def parse_representatives_from_fasta(cdhit_fasta):
     return pd.DataFrame(records)
 
 
-def parse_cluster_file(clstr_path):
-    """Reads the .clstr file, which is basically CD-HIT's receipt. 
-    It calculates the statistics for your final report, 
+def parse_cluster_file(clstr_path: str | Path) -> dict[str, int]:
+    """Reads the .clstr file, which is basically CD-HIT's receipt.
+    It calculates the statistics for your final report,
     such as how many duplicate clusters were formed and the size of the largest cluster."""
     clstr_path = resolve_path(clstr_path)
     cluster_sizes = []
@@ -211,14 +213,16 @@ def parse_cluster_file(clstr_path):
         "singletons": sum(size == 1 for size in cluster_sizes),
     }
 
-#Core Engine - CD-HIT 
+
+# Core Engine - CD-HIT
+
 
 def run_cd_hit_est(
-    input_fasta,
-    output_fasta,
-    identity=DEFAULT_IDENTITY,
-    threads=DEFAULT_THREADS,
-):
+    input_fasta: str | Path,
+    output_fasta: str | Path,
+    identity: float = DEFAULT_IDENTITY,
+    threads: int = DEFAULT_THREADS,
+) -> Path:
     """Run cd-hit-est on a nucleotide FASTA file."""
     require_cd_hit()
 
@@ -244,7 +248,9 @@ def run_cd_hit_est(
     return output_fasta
 
 
-def relink_metadata(representatives_df, csv_df):
+def relink_metadata(
+    representatives_df: pd.DataFrame, csv_df: pd.DataFrame
+) -> pd.DataFrame:
     """Inner-join CD-HIT survivors back to the original Rfam metadata CSV."""
     csv_df = csv_df.copy()
     representatives_df = representatives_df.copy()
@@ -266,7 +272,9 @@ def relink_metadata(representatives_df, csv_df):
     return merged
 
 
-def write_deduped_outputs(merged_df, output_fasta, output_csv):
+def write_deduped_outputs(
+    merged_df: pd.DataFrame, output_fasta: str | Path, output_csv: str | Path
+) -> tuple[Path, Path]:
     """Write deduplicated FASTA and CSV outputs with full metadata."""
     output_fasta = resolve_path(output_fasta)
     output_csv = resolve_path(output_csv)
@@ -297,15 +305,15 @@ def write_deduped_outputs(merged_df, output_fasta, output_csv):
 
 
 def _digest_cd_hit_pool(
-    label,
-    input_fasta,
-    input_csv,
-    output_fasta,
-    output_csv,
-    cdhit_fasta,
-    identity=DEFAULT_IDENTITY,
-    threads=DEFAULT_THREADS,
-):
+    label: str,
+    input_fasta: str | Path,
+    input_csv: str | Path,
+    output_fasta: str | Path,
+    output_csv: str | Path,
+    cdhit_fasta: str | Path,
+    identity: float = DEFAULT_IDENTITY,
+    threads: int = DEFAULT_THREADS,
+) -> pd.DataFrame:
     """
     Stage inputs → Run CD-HIT → Parse results → Relink metadata → Write outputs → Print statistics.
     """
@@ -350,14 +358,14 @@ def _digest_cd_hit_pool(
 
 
 def digest_positives_cd_hit(
-    input_fasta="data/raw/positives.fasta",
-    input_csv="data/raw/rfam_positives.csv",
-    output_fasta=f"{CDHIT_OUTPUT_DIR}/positives_deduped.fasta",
-    output_csv=f"{CDHIT_OUTPUT_DIR}/positives_deduped.csv",
-    cdhit_fasta=f"{CDHIT_OUTPUT_DIR}/positives_cdhit.fasta",
-    identity=DEFAULT_IDENTITY,
-    threads=DEFAULT_THREADS,
-):
+    input_fasta: str | Path = "data/raw/positives.fasta",
+    input_csv: str | Path = "data/raw/rfam_positives.csv",
+    output_fasta: str | Path = f"{CDHIT_OUTPUT_DIR}/positives_deduped.fasta",
+    output_csv: str | Path = f"{CDHIT_OUTPUT_DIR}/positives_deduped.csv",
+    cdhit_fasta: str | Path = f"{CDHIT_OUTPUT_DIR}/positives_cdhit.fasta",
+    identity: float = DEFAULT_IDENTITY,
+    threads: int = DEFAULT_THREADS,
+) -> pd.DataFrame:
     """Run CD-HIT on positive thermoswitches and relink metadata."""
     return _digest_cd_hit_pool(
         label="Positives",
@@ -372,14 +380,14 @@ def digest_positives_cd_hit(
 
 
 def digest_negatives_cd_hit(
-    input_fasta="data/raw/negatives.fasta",
-    input_csv="data/raw/rfam_negatives.csv",
-    output_fasta=f"{CDHIT_OUTPUT_DIR}/negatives_deduped.fasta",
-    output_csv=f"{CDHIT_OUTPUT_DIR}/negatives_deduped.csv",
-    cdhit_fasta=f"{CDHIT_OUTPUT_DIR}/negatives_cdhit.fasta",
-    identity=DEFAULT_IDENTITY,
-    threads=DEFAULT_THREADS,
-):
+    input_fasta: str | Path = "data/raw/negatives.fasta",
+    input_csv: str | Path = "data/raw/rfam_negatives.csv",
+    output_fasta: str | Path = f"{CDHIT_OUTPUT_DIR}/negatives_deduped.fasta",
+    output_csv: str | Path = f"{CDHIT_OUTPUT_DIR}/negatives_deduped.csv",
+    cdhit_fasta: str | Path = f"{CDHIT_OUTPUT_DIR}/negatives_cdhit.fasta",
+    identity: float = DEFAULT_IDENTITY,
+    threads: int = DEFAULT_THREADS,
+) -> pd.DataFrame:
     """Run CD-HIT on negative controls and relink metadata."""
     return _digest_cd_hit_pool(
         label="Negatives",
@@ -393,14 +401,21 @@ def digest_negatives_cd_hit(
     )
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the CD-HIT deduplication CLI parser."""
     parser = argparse.ArgumentParser(
         description="Run CD-HIT deduplication and relink Rfam metadata."
     )
     group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument("--positives", action="store_true", help="Deduplicate positives.")
-    group.add_argument("--negatives", action="store_true", help="Deduplicate negatives.")
-    group.add_argument("--all", action="store_true", help="Deduplicate positives then negatives.")
+    group.add_argument(
+        "--positives", action="store_true", help="Deduplicate positives."
+    )
+    group.add_argument(
+        "--negatives", action="store_true", help="Deduplicate negatives."
+    )
+    group.add_argument(
+        "--all", action="store_true", help="Deduplicate positives then negatives."
+    )
     parser.add_argument(
         "--migrate",
         action="store_true",
@@ -423,9 +438,11 @@ def _build_parser():
     return parser
 
 
-#Main Function
+# Main Function
 
-def main():
+
+def main() -> None:
+    """Run CD-HIT deduplication for the selected sequence pool."""
     args = _build_parser().parse_args()
     kwargs = {"identity": args.identity, "threads": args.threads}
 
@@ -450,5 +467,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
-

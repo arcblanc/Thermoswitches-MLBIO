@@ -3,7 +3,19 @@
 **Author:** Amier Zuhri  
 **Domain:** RNA thermoswitches — biophysics, Random Forest ranking, de novo EVA generation
 
-Prokaryotic RNA thermoswitches (RNA thermometers) sit in the 5′ UTR, sequester the Shine-Dalgarno sequence at low temperature, and expose it as temperature rises. This repo builds a labelled physics panel, trains a Random Forest on **non-circular 37 °C physics + k-mers + SD–AUG spacing**, then generates new sequences with **EVA** on Macleod GPU and triages them on the Mac. Melting scalars (Tm, Hill, Z, ΔP_RBS) are **post-hoc gates**, not RF inputs. The previous 20-column matrix put those scalars in X and was circular; that story is in [`notebooks/07_classifier_architecture_ladder.ipynb`](notebooks/07_classifier_architecture_ladder.ipynb) §§1–3.
+Prokaryotic RNA thermoswitches (RNA thermometers) sit in the 5′ UTR, sequester the Shine-Dalgarno sequence at low temperature, and expose it as temperature rises. This repo builds a labelled physics panel, trains a Random Forest on **non-circular 37 °C physics + k-mers + SD–AUG spacing**, then generates new sequences with **EVA** on Macleod GPU and triages them on the Mac. Melting scalars (Tm, Hill, Z, ΔP_RBS) are **post-hoc gates**, not RF inputs. The previous 20-column matrix put those scalars in X and was circular; that story is in [`notebooks/06_classifier_architecture_ladder.py`](notebooks/06_classifier_architecture_ladder.py) §§1–3.
+
+Open the reactive apps with `uv run marimo edit notebooks/<file>.py`.
+
+| App | File |
+|-----|------|
+| 1. Rfam & RefSeq dataset curation | [`notebooks/marimo_dataset_curation.py`](notebooks/marimo_dataset_curation.py) |
+| 2. Prototype benchmark | [`notebooks/02_prototype_benchmark.py`](notebooks/02_prototype_benchmark.py) |
+| 3. LLM smoke test | [`notebooks/03_llm_smoke_test_results.py`](notebooks/03_llm_smoke_test_results.py) |
+| 4. Full thermo RF analysis | [`notebooks/04_full_thermo_rf_analysis.py`](notebooks/04_full_thermo_rf_analysis.py) |
+| 5. Rfam novelty | [`notebooks/05_novelty_rfam_analysis.py`](notebooks/05_novelty_rfam_analysis.py) |
+| 6. Classifier architecture ladder | [`notebooks/06_classifier_architecture_ladder.py`](notebooks/06_classifier_architecture_ladder.py) |
+| 7. Non-circular RF results | [`notebooks/07_noncircular_rf_results.py`](notebooks/07_noncircular_rf_results.py) |
 
 ---
 
@@ -136,6 +148,14 @@ cp .env.example .env   # set EMAIL and NCBI_API_KEY
 
 Install the NUPACK 4.1 wheel from `nupack-4.1.0.1/package/` (paid license; gitignored).
 
+Lint with uv (Ruff covers `src/`, `scripts/`, Marimo `.py` apps, and Jupyter `.ipynb`; Marimo check validates reactive notebooks):
+
+```bash
+uv run ruff check --fix .
+uv run ruff format
+uv run marimo check notebooks/*.py
+```
+
 ### Mac — corpus + non-circular features + RF
 
 ```bash
@@ -235,8 +255,8 @@ When generation is done, `exit` the `srun` to free the MIG, then `tmux kill-sess
 | `data/processed/rf_noncircular_feature_log.json` | X columns, AUG-missing rates by class |
 | `data/processed/rf_noncircular_diagnostics.json` | GroupKFold AUC + grouped permutation importance |
 | `data/processed/rf_posthoc_report.json` | ŷ bins, gates, panel-wide Spearman, checklist |
-| `notebooks/08_noncircular_rf_model_update.md` | Model update + results brief |
-| `notebooks/08_noncircular_rf_results.ipynb` | Same numbers, loaded from JSON |
+| `notebooks/07_noncircular_rf_model_update.md` | Model update + results brief |
+| `notebooks/07_noncircular_rf_results.py` | Same numbers, loaded from JSON |
 | `notebooks/figures/07_classifier/melting_visual_checklist.png` | Visual diagnostic overlay |
 | `data/processed/de_novo/generated.fasta` | EVA accepted sequences (cluster) |
 | `data/processed/eva_pilot/top_candidates.fasta` | 31 pilot passers |

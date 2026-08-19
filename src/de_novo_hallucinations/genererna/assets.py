@@ -6,7 +6,9 @@ from huggingface_hub import hf_hub_download, snapshot_download
 GENERNA_REPO = "pfnet/GenerRNA"
 
 
-def ensure_generna_assets(cache_dir: Path, hf_token=None) -> dict:
+def ensure_generna_assets(
+    cache_dir: Path, hf_token: str | None = None
+) -> dict[str, Path]:
     """Download checkpoint and BPE tokenizer if missing."""
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)

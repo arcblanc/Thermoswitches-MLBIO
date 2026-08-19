@@ -38,11 +38,13 @@ DEFAULT_TOP_K = 50
 LARGE_COST = 1e6
 
 
-def _join_key(row) -> tuple:
+def _join_key(row: pd.Series) -> tuple[str, int, int]:
+    """Return the (rfamseq_acc, seq_start, seq_end) join key for a row."""
     return (str(row["rfamseq_acc"]), int(row["seq_start"]), int(row["seq_end"]))
 
 
 def _annotate_length_gc(df: pd.DataFrame) -> pd.DataFrame:
+    """Add seq_length and gc_content columns derived from sequence."""
     out = df.copy()
     out["seq_length"] = out["sequence"].str.len().astype(int)
     out["gc_content"] = out["sequence"].map(gc_content).astype(float)
@@ -50,6 +52,7 @@ def _annotate_length_gc(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _zscore_fit(values: np.ndarray) -> tuple[float, float]:
+    """Return mean and std of values, using std=1.0 when variance is ~0."""
     mean = float(np.mean(values))
     std = float(np.std(values))
     if std < 1e-12:
@@ -58,6 +61,7 @@ def _zscore_fit(values: np.ndarray) -> tuple[float, float]:
 
 
 def _transform(values: np.ndarray, mean: float, std: float) -> np.ndarray:
+    """Standardize values as (x - mean) / std."""
     return (values - mean) / std
 
 
@@ -104,18 +108,24 @@ def match_negatives_cds_truncate(
         "mean_len_neg_pool": float(neg["seq_length"].mean()) if len(neg) else None,
         "mean_gc_pos": float(pos["gc_content"].mean()),
         "mean_gc_neg_pool": float(neg["gc_content"].mean()) if len(neg) else None,
-        "delta_mu_length_pre": float(pos["seq_length"].mean() - neg["seq_length"].mean())
+        "delta_mu_length_pre": float(
+            pos["seq_length"].mean() - neg["seq_length"].mean()
+        )
         if len(neg)
         else None,
         "mode": "cds_truncate",
     }
     if len(neg) == 0:
-        return pos.iloc[0:0], neg.iloc[0:0], {
-            **pre,
-            "n_matched": 0,
-            "n_unmatched": int(len(pos)),
-            "error": "empty negative pool",
-        }
+        return (
+            pos.iloc[0:0],
+            neg.iloc[0:0],
+            {
+                **pre,
+                "n_matched": 0,
+                "n_unmatched": int(len(pos)),
+                "error": "empty negative pool",
+            },
+        )
 
     neg_seqs = neg["sequence"].astype(str).tolist()
     neg_lens = neg["seq_length"].to_numpy(int)
@@ -142,13 +152,17 @@ def match_negatives_cds_truncate(
 
     unique_neg = sorted({j for pairs in candidate_pairs for _, j in pairs})
     if not unique_neg:
-        return pos.iloc[0:0], neg.iloc[0:0], {
-            **pre,
-            "n_matched": 0,
-            "n_unmatched": int(len(pos)),
-            "delta_gc_gate": delta_gc,
-            "error": "no eligible truncate candidates within GC gate",
-        }
+        return (
+            pos.iloc[0:0],
+            neg.iloc[0:0],
+            {
+                **pre,
+                "n_matched": 0,
+                "n_unmatched": int(len(pos)),
+                "delta_gc_gate": delta_gc,
+                "error": "no eligible truncate candidates within GC gate",
+            },
+        )
     neg_local = {g: i for i, g in enumerate(unique_neg)}
     cost = np.full((n_p, len(unique_neg)), LARGE_COST, dtype=float)
     for i, pairs in enumerate(candidate_pairs):
@@ -210,11 +224,19 @@ def match_negatives_cds_truncate(
 
     matched_pos = pd.DataFrame(matched_pos_rows).reset_index(drop=True)
     matched_neg = pd.DataFrame(matched_neg_rows).reset_index(drop=True)
-    unmatched_pos = pos.loc[~pos.index.isin(list(matched_pos_idx))].reset_index(drop=True)
+    unmatched_pos = pos.loc[~pos.index.isin(list(matched_pos_idx))].reset_index(
+        drop=True
+    )
     if len(matched_pos) and len(matched_neg):
-        delta_mu_l = float(matched_pos["seq_length"].mean() - matched_neg["seq_length"].mean())
-        delta_mu_gc = float(matched_pos["gc_content"].mean() - matched_neg["gc_content"].mean())
-        delta_sigma_l = float(matched_pos["seq_length"].std() - matched_neg["seq_length"].std())
+        delta_mu_l = float(
+            matched_pos["seq_length"].mean() - matched_neg["seq_length"].mean()
+        )
+        delta_mu_gc = float(
+            matched_pos["gc_content"].mean() - matched_neg["gc_content"].mean()
+        )
+        delta_sigma_l = float(
+            matched_pos["seq_length"].std() - matched_neg["seq_length"].std()
+        )
     else:
         delta_mu_l = delta_mu_gc = delta_sigma_l = None
     report = {
@@ -225,17 +247,21 @@ def match_negatives_cds_truncate(
         "delta_mu_length_post": delta_mu_l,
         "delta_mu_gc_post": delta_mu_gc,
         "delta_sigma_length_post": delta_sigma_l,
-        "mean_assignment_z_distance": float(np.mean(assignment_dists)) if assignment_dists else None,
+        "mean_assignment_z_distance": float(np.mean(assignment_dists))
+        if assignment_dists
+        else None,
         "delta_l_gate": 0.0,
         "delta_gc_gate": delta_gc,
         "top_k": top_k,
         "long_positive_truncation_risk": bool(
-            len(unmatched_pos) > 0 and bool((unmatched_pos["seq_length"] > int(neg_lens.max())).any())
+            len(unmatched_pos) > 0
+            and bool((unmatched_pos["seq_length"] > int(neg_lens.max())).any())
         ),
     }
     if len(unmatched_pos):
         report["unmatched_length_quantiles"] = {
-            str(q): float(unmatched_pos["seq_length"].quantile(q)) for q in (0.5, 0.75, 0.9, 1.0)
+            str(q): float(unmatched_pos["seq_length"].quantile(q))
+            for q in (0.5, 0.75, 0.9, 1.0)
         }
     return matched_pos, matched_neg, report
 
@@ -264,7 +290,9 @@ def match_negatives_to_positives(
         "mean_len_neg_pool": float(neg["seq_length"].mean()) if len(neg) else None,
         "mean_gc_pos": float(pos["gc_content"].mean()),
         "mean_gc_neg_pool": float(neg["gc_content"].mean()) if len(neg) else None,
-        "delta_mu_length_pre": float(pos["seq_length"].mean() - neg["seq_length"].mean())
+        "delta_mu_length_pre": float(
+            pos["seq_length"].mean() - neg["seq_length"].mean()
+        )
         if len(neg)
         else None,
     }
@@ -279,8 +307,12 @@ def match_negatives_to_positives(
         }
         return pos.iloc[0:0], neg.iloc[0:0], report
 
-    pooled_len = np.concatenate([pos["seq_length"].to_numpy(float), neg["seq_length"].to_numpy(float)])
-    pooled_gc = np.concatenate([pos["gc_content"].to_numpy(float), neg["gc_content"].to_numpy(float)])
+    pooled_len = np.concatenate(
+        [pos["seq_length"].to_numpy(float), neg["seq_length"].to_numpy(float)]
+    )
+    pooled_gc = np.concatenate(
+        [pos["gc_content"].to_numpy(float), neg["gc_content"].to_numpy(float)]
+    )
     len_mean, len_std = _zscore_fit(pooled_len)
     gc_mean, gc_std = _zscore_fit(pooled_gc)
 
@@ -362,7 +394,9 @@ def match_negatives_to_positives(
                 if d_l <= delta_l and d_gc <= delta_gc:
                     matched_pos_rows.append(prow)
                     matched_neg_rows.append(nrow)
-                    assignment_dists.append(float(np.linalg.norm(pos_xy[i] - neg_xy[g])))
+                    assignment_dists.append(
+                        float(np.linalg.norm(pos_xy[i] - neg_xy[g]))
+                    )
                     used_neg.add(g)
                     matched_pos_idx.add(i)
                     break
@@ -372,14 +406,24 @@ def match_negatives_to_positives(
     unmatched_pos = pos.loc[~pos.index.isin(matched_pos_idx)].reset_index(drop=True)
 
     if len(matched_pos) and len(matched_neg):
-        delta_mu_l = float(matched_pos["seq_length"].mean() - matched_neg["seq_length"].mean())
-        delta_mu_gc = float(matched_pos["gc_content"].mean() - matched_neg["gc_content"].mean())
-        delta_sigma_l = float(matched_pos["seq_length"].std() - matched_neg["seq_length"].std())
+        delta_mu_l = float(
+            matched_pos["seq_length"].mean() - matched_neg["seq_length"].mean()
+        )
+        delta_mu_gc = float(
+            matched_pos["gc_content"].mean() - matched_neg["gc_content"].mean()
+        )
+        delta_sigma_l = float(
+            matched_pos["seq_length"].std() - matched_neg["seq_length"].std()
+        )
     else:
         delta_mu_l = delta_mu_gc = delta_sigma_l = None
 
-    unmatched_len = unmatched_pos["seq_length"].to_numpy() if len(unmatched_pos) else np.array([])
-    matched_len = matched_pos["seq_length"].to_numpy() if len(matched_pos) else np.array([])
+    unmatched_len = (
+        unmatched_pos["seq_length"].to_numpy() if len(unmatched_pos) else np.array([])
+    )
+    matched_len = (
+        matched_pos["seq_length"].to_numpy() if len(matched_pos) else np.array([])
+    )
     truncation_risk = False
     if len(unmatched_len) and len(matched_len):
         truncation_risk = bool(np.median(unmatched_len) > np.quantile(matched_len, 0.9))
@@ -394,19 +438,19 @@ def match_negatives_to_positives(
         "delta_mu_length_post": delta_mu_l,
         "delta_mu_gc_post": delta_mu_gc,
         "delta_sigma_length_post": delta_sigma_l,
-        "mean_assignment_z_distance": float(np.mean(assignment_dists)) if assignment_dists else None,
+        "mean_assignment_z_distance": float(np.mean(assignment_dists))
+        if assignment_dists
+        else None,
         "delta_l_gate": delta_l,
         "delta_gc_gate": delta_gc,
         "top_k": k,
         "unmatched_length_quantiles": {
-            str(q): float(np.quantile(unmatched_len, q))
-            for q in (0.5, 0.75, 0.9, 1.0)
+            str(q): float(np.quantile(unmatched_len, q)) for q in (0.5, 0.75, 0.9, 1.0)
         }
         if len(unmatched_len)
         else {},
         "matched_length_quantiles": {
-            str(q): float(np.quantile(matched_len, q))
-            for q in (0.5, 0.75, 0.9, 1.0)
+            str(q): float(np.quantile(matched_len, q)) for q in (0.5, 0.75, 0.9, 1.0)
         }
         if len(matched_len)
         else {},
@@ -433,6 +477,7 @@ def build_matched_dataset(
     matched_pos: pd.DataFrame,
     matched_neg: pd.DataFrame,
 ) -> pd.DataFrame:
+    """Concatenate matched positives and negatives with labels and metadata."""
     pos = matched_pos.copy()
     neg = matched_neg.copy()
     pos["label"] = 1
@@ -463,6 +508,7 @@ def run_length_gc_match(
     require_fused_positives: bool = True,
     cds_truncate: bool = False,
 ) -> dict:
+    """Match negatives to positives by length/GC and write dataset plus report."""
     pos_pool = load_labeled_pool(positives_csv, positives_fasta, label=1)
     for col in ("seq_start", "seq_end"):
         pos_pool[col] = pos_pool[col].astype(int)
@@ -477,7 +523,10 @@ def run_length_gc_match(
         positives = pos_pool
 
     neg_csv_path = resolve_path(negatives_csv)
-    if neg_csv_path.exists() and "sequence" in pd.read_csv(neg_csv_path, nrows=1).columns:
+    if (
+        neg_csv_path.exists()
+        and "sequence" in pd.read_csv(neg_csv_path, nrows=1).columns
+    ):
         neg_pool = pd.read_csv(neg_csv_path)
         if "label" not in neg_pool.columns:
             neg_pool["label"] = 0
@@ -488,7 +537,9 @@ def run_length_gc_match(
         try:
             neg_pool = load_labeled_pool(negatives_csv, negatives_fasta, label=0)
         except Exception:
-            neg_pool = load_labeled_pool(fallback_negatives_csv, fallback_negatives_fasta, label=0)
+            neg_pool = load_labeled_pool(
+                fallback_negatives_csv, fallback_negatives_fasta, label=0
+            )
     if "label" in neg_pool.columns:
         neg_pool = neg_pool.loc[neg_pool["label"] == 0].copy()
     for col in ("seq_start", "seq_end"):
@@ -514,19 +565,31 @@ def run_length_gc_match(
         )
 
     # Escalation: rematch unmatched longs against long-only negative subset
-    if (
-        not cds_truncate
-        and (report.get("long_positive_truncation_risk") or report.get("unmatched_fraction", 0) > 0.05)
+    if not cds_truncate and (
+        report.get("long_positive_truncation_risk")
+        or report.get("unmatched_fraction", 0) > 0.05
     ):
-        matched_keys = {_join_key(r) for _, r in matched_pos.iterrows()} if len(matched_pos) else set()
+        matched_keys = (
+            {_join_key(r) for _, r in matched_pos.iterrows()}
+            if len(matched_pos)
+            else set()
+        )
         unmatched = _annotate_length_gc(
-            positives.loc[~positives.apply(_join_key, axis=1).isin(matched_keys)].reset_index(drop=True)
+            positives.loc[
+                ~positives.apply(_join_key, axis=1).isin(matched_keys)
+            ].reset_index(drop=True)
         )
         if len(unmatched):
             long_negs = escalate_long_candidates(unmatched, neg_pool)
             # Exclude already-used negatives
-            used = {_join_key(r) for _, r in matched_neg.iterrows()} if len(matched_neg) else set()
-            long_negs = long_negs.loc[~long_negs.apply(_join_key, axis=1).isin(used)].reset_index(drop=True)
+            used = (
+                {_join_key(r) for _, r in matched_neg.iterrows()}
+                if len(matched_neg)
+                else set()
+            )
+            long_negs = long_negs.loc[
+                ~long_negs.apply(_join_key, axis=1).isin(used)
+            ].reset_index(drop=True)
             if len(long_negs):
                 esc_pos, esc_neg, esc_report = match_negatives_to_positives(
                     unmatched,
@@ -543,12 +606,16 @@ def run_length_gc_match(
                     # Refresh headline stats
                     report["n_matched"] = int(len(matched_pos))
                     report["n_unmatched"] = int(len(positives) - len(matched_pos))
-                    report["unmatched_fraction"] = float(report["n_unmatched"] / max(len(positives), 1))
+                    report["unmatched_fraction"] = float(
+                        report["n_unmatched"] / max(len(positives), 1)
+                    )
                     report["delta_mu_length_post"] = float(
-                        matched_pos["seq_length"].mean() - matched_neg["seq_length"].mean()
+                        matched_pos["seq_length"].mean()
+                        - matched_neg["seq_length"].mean()
                     )
                     report["delta_mu_gc_post"] = float(
-                        matched_pos["gc_content"].mean() - matched_neg["gc_content"].mean()
+                        matched_pos["gc_content"].mean()
+                        - matched_neg["gc_content"].mean()
                     )
                     unmatched_after = _annotate_length_gc(
                         positives.loc[
@@ -567,15 +634,21 @@ def run_length_gc_match(
                             for q in (0.5, 0.75, 0.9, 1.0)
                         }
                     else:
-                        report["long_positive_truncation_risk"] = bool(len(unmatched_after) > 0)
+                        report["long_positive_truncation_risk"] = bool(
+                            len(unmatched_after) > 0
+                        )
 
     dataset = build_matched_dataset(matched_pos, matched_neg)
     write_dataset(dataset, output_csv, output_fasta)
 
     # Also write a negatives-only FASTA for thermo re-fold of new keys
     if not require_fused_positives:
-        neg_only_csv = resolve_path(f"{BALANCED_DIR}/length_gc_matched_refseq_negatives.csv")
-        neg_only_fa = resolve_path(f"{BALANCED_DIR}/length_gc_matched_refseq_negatives.fasta")
+        neg_only_csv = resolve_path(
+            f"{BALANCED_DIR}/length_gc_matched_refseq_negatives.csv"
+        )
+        neg_only_fa = resolve_path(
+            f"{BALANCED_DIR}/length_gc_matched_refseq_negatives.fasta"
+        )
     else:
         neg_only_csv = resolve_path(f"{BALANCED_DIR}/length_gc_matched_negatives.csv")
         neg_only_fa = resolve_path(f"{BALANCED_DIR}/length_gc_matched_negatives.fasta")
@@ -594,7 +667,8 @@ def run_length_gc_match(
     return report
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the length/GC matching CLI parser."""
     p = argparse.ArgumentParser(description="Length/GC-match negatives to positives.")
     p.add_argument("--delta-l", type=float, default=DEFAULT_DELTA_L)
     p.add_argument("--delta-gc", type=float, default=DEFAULT_DELTA_GC)
@@ -617,7 +691,8 @@ def _build_parser():
     return p
 
 
-def main():
+def main() -> None:
+    """Parse CLI arguments and run length/GC matching."""
     args = _build_parser().parse_args()
     kwargs = dict(delta_l=args.delta_l, delta_gc=args.delta_gc, top_k=args.top_k)
     if args.negatives_csv:
@@ -632,9 +707,15 @@ def main():
         kwargs["report_json"] = args.report_json
     if args.all_positives:
         kwargs["require_fused_positives"] = False
-        kwargs.setdefault("output_csv", f"{BALANCED_DIR}/length_gc_matched_refseq_dataset.csv")
-        kwargs.setdefault("output_fasta", f"{BALANCED_DIR}/length_gc_matched_refseq_dataset.fasta")
-        kwargs.setdefault("report_json", f"{BALANCED_DIR}/length_gc_matched_refseq_report.json")
+        kwargs.setdefault(
+            "output_csv", f"{BALANCED_DIR}/length_gc_matched_refseq_dataset.csv"
+        )
+        kwargs.setdefault(
+            "output_fasta", f"{BALANCED_DIR}/length_gc_matched_refseq_dataset.fasta"
+        )
+        kwargs.setdefault(
+            "report_json", f"{BALANCED_DIR}/length_gc_matched_refseq_report.json"
+        )
         kwargs.setdefault("cds_truncate", True)
     if args.cds_truncate:
         kwargs["cds_truncate"] = True

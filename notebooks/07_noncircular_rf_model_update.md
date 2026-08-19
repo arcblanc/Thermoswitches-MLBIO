@@ -3,8 +3,8 @@
 **Date:** 18 August 2026  
 **Panel:** `fused_features_refseq_dynamic.csv` (n = 2,396; 1,198 Rfam positives / 1,198 RefSeq-matched 5′ UTR negatives)  
 **Model:** `data/processed/models/rf_thermoswitch_noncircular.joblib` (sklearn RF, 200 trees, trained 2026-08-18)  
-**Architecture notebook:** [`07_classifier_architecture_ladder.ipynb`](07_classifier_architecture_ladder.ipynb) (§§1–3 history; §§4–7 this model)  
-**Executable tables:** [`08_noncircular_rf_results.ipynb`](08_noncircular_rf_results.ipynb)
+**Architecture notebook:** [`06_classifier_architecture_ladder.py`](06_classifier_architecture_ladder.py) (§§1–3 history; §§4–7 this model)  
+**Executable tables:** [`07_noncircular_rf_results.py`](07_noncircular_rf_results.py)
 
 This note replaces the circular 20-column RF as the production ranking model. It does **not** replace the locked EVA yield gate.
 

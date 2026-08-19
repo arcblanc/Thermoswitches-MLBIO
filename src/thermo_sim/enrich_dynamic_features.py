@@ -36,11 +36,13 @@ DEFAULT_SIDECAR = "data/processed/viennarna/refseq_dynamic_features.csv"
 DEFAULT_REPORT = "data/processed/refseq_dynamic_enrich_report.json"
 
 
-def _join_key_tuple(row) -> tuple:
+def _join_key_tuple(row: pd.Series) -> tuple[str, int, int]:
+    """Build the (rfamseq_acc, seq_start, seq_end) join key for a row."""
     return (str(row["rfamseq_acc"]), int(row["seq_start"]), int(row["seq_end"]))
 
 
 def _worker(payload: dict) -> dict:
+    """Compute Vienna dynamic features for one sequence payload."""
     feats = extract_dynamic_vienna_features(
         payload,
         n_shuffles=payload["_n_shuffles"],
@@ -54,11 +56,14 @@ def _worker(payload: dict) -> dict:
     }
     for col in VIENNA_DYNAMIC_FEATURE_COLUMNS:
         out[col] = feats.get(col)
-    out["viennarna_mfe_zscore_shuffle_mode"] = feats.get("viennarna_mfe_zscore_shuffle_mode")
+    out["viennarna_mfe_zscore_shuffle_mode"] = feats.get(
+        "viennarna_mfe_zscore_shuffle_mode"
+    )
     return out
 
 
 def _p_open_worker(payload: dict) -> dict:
+    """Compute RBS P_open features for one sequence payload."""
     feats = extract_p_open_rbs(payload, dangles=payload.get("_dangles", 2))
     out = {
         "rfamseq_acc": payload["rfamseq_acc"],
@@ -81,6 +86,7 @@ def enrich(
     resume: bool = True,
     dangles: int = 2,
 ) -> dict:
+    """Attach Vienna dynamic features to a fused CSV, resuming from sidecar."""
     require_vienna_rna()
     fused = pd.read_csv(resolve_path(fused_csv))
     for c in ("seq_start", "seq_end"):
@@ -111,8 +117,10 @@ def enrich(
         payload["_dangles"] = dangles
         todo.append(payload)
 
-    print(f"Computing dynamic features for {len(todo)} / {len(dataset)} sequences "
-          f"(workers={workers}, n_shuffles={n_shuffles})")
+    print(
+        f"Computing dynamic features for {len(todo)} / {len(dataset)} sequences "
+        f"(workers={workers}, n_shuffles={n_shuffles})"
+    )
 
     new_rows = []
     if todo:
@@ -144,7 +152,9 @@ def enrich(
 
     dyn_cols = VIENNA_DYNAMIC_FEATURE_COLUMNS + ["viennarna_mfe_zscore_shuffle_mode"]
     # Drop any prior dynamic cols before merge
-    fused_clean = fused.drop(columns=[c for c in dyn_cols if c in fused.columns], errors="ignore")
+    fused_clean = fused.drop(
+        columns=[c for c in dyn_cols if c in fused.columns], errors="ignore"
+    )
     out = fused_clean.merge(
         sidecar[JOIN_COLUMNS + dyn_cols],
         on=JOIN_COLUMNS,
@@ -168,11 +178,15 @@ def enrich(
         z = out["viennarna_mfe_zscore"]
         report["mean_z_pos"] = float(z[y == 1].mean())
         report["mean_z_neg"] = float(z[y == 0].mean())
-        report["delta_mean_z_pos_minus_neg"] = report["mean_z_pos"] - report["mean_z_neg"]
+        report["delta_mean_z_pos_minus_neg"] = (
+            report["mean_z_pos"] - report["mean_z_neg"]
+        )
         report["zscore_sanity_positives_more_negative"] = bool(
             report["mean_z_pos"] < report["mean_z_neg"]
         )
-        report["n_missing_dynamic"] = int(out[VIENNA_DYNAMIC_FEATURE_COLUMNS].isna().any(axis=1).sum())
+        report["n_missing_dynamic"] = int(
+            out[VIENNA_DYNAMIC_FEATURE_COLUMNS].isna().any(axis=1).sum()
+        )
         for col in VIENNA_DYNAMIC_FEATURE_COLUMNS:
             report[f"mean_{col}"] = float(out[col].mean())
 
@@ -207,7 +221,9 @@ def backfill_p_open(
         for c in ("seq_start", "seq_end"):
             sidecar[c] = sidecar[c].astype(int)
     else:
-        sidecar = pd.DataFrame(columns=JOIN_COLUMNS + list(VIENNA_DYNAMIC_FEATURE_COLUMNS))
+        sidecar = pd.DataFrame(
+            columns=JOIN_COLUMNS + list(VIENNA_DYNAMIC_FEATURE_COLUMNS)
+        )
 
     for col in VIENNA_P_OPEN_COLUMNS:
         if col not in sidecar.columns:
@@ -246,7 +262,9 @@ def backfill_p_open(
                 if i % 25 == 0 or i == len(todo):
                     print(f"  {i}/{len(todo)}")
         else:
-            from thermo_sim.enrich_dynamic_features import _p_open_worker as _pool_p_open
+            from thermo_sim.enrich_dynamic_features import (
+                _p_open_worker as _pool_p_open,
+            )
 
             with ProcessPoolExecutor(max_workers=workers) as pool:
                 futures = [pool.submit(_pool_p_open, p) for p in todo]
@@ -257,11 +275,15 @@ def backfill_p_open(
 
     if new_rows:
         patch = pd.DataFrame(new_rows)
-        sidecar = sidecar.merge(patch, on=JOIN_COLUMNS, how="outer", suffixes=("", "_new"))
+        sidecar = sidecar.merge(
+            patch, on=JOIN_COLUMNS, how="outer", suffixes=("", "_new")
+        )
         for col in VIENNA_P_OPEN_COLUMNS:
             new_col = f"{col}_new"
             if new_col in sidecar.columns:
-                sidecar[col] = sidecar[col].where(sidecar[col].notna(), sidecar[new_col])
+                sidecar[col] = sidecar[col].where(
+                    sidecar[col].notna(), sidecar[new_col]
+                )
                 sidecar = sidecar.drop(columns=[new_col])
         sidecar = sidecar.drop_duplicates(JOIN_COLUMNS, keep="last")
 
@@ -270,11 +292,16 @@ def backfill_p_open(
 
     dyn_cols = [
         c
-        for c in list(VIENNA_DYNAMIC_FEATURE_COLUMNS) + ["viennarna_mfe_zscore_shuffle_mode"]
+        for c in list(VIENNA_DYNAMIC_FEATURE_COLUMNS)
+        + ["viennarna_mfe_zscore_shuffle_mode"]
         if c in sidecar.columns
     ]
-    fused_clean = fused.drop(columns=[c for c in dyn_cols if c in fused.columns], errors="ignore")
-    out = fused_clean.merge(sidecar[JOIN_COLUMNS + dyn_cols], on=JOIN_COLUMNS, how="left")
+    fused_clean = fused.drop(
+        columns=[c for c in dyn_cols if c in fused.columns], errors="ignore"
+    )
+    out = fused_clean.merge(
+        sidecar[JOIN_COLUMNS + dyn_cols], on=JOIN_COLUMNS, how="left"
+    )
     out_path = resolve_path(output_csv)
     out.to_csv(out_path, index=False)
     report = {
@@ -291,8 +318,11 @@ def backfill_p_open(
     return report
 
 
-def main():
-    p = argparse.ArgumentParser(description="Enrich fused CSV with Vienna dynamic features.")
+def main() -> None:
+    """Run dynamic-feature enrichment or P_open backfill from the CLI."""
+    p = argparse.ArgumentParser(
+        description="Enrich fused CSV with Vienna dynamic features."
+    )
     p.add_argument("--fused-csv", default=DEFAULT_FUSED)
     p.add_argument("--dataset-csv", default=DEFAULT_DATASET_CSV)
     p.add_argument("--dataset-fasta", default=DEFAULT_DATASET_FASTA)
@@ -311,7 +341,9 @@ def main():
     args = p.parse_args()
     if args.p_open_only:
         backfill_p_open(
-            fused_csv=args.output_csv if args.fused_csv == DEFAULT_FUSED else args.fused_csv,
+            fused_csv=args.output_csv
+            if args.fused_csv == DEFAULT_FUSED
+            else args.fused_csv,
             dataset_csv=args.dataset_csv,
             dataset_fasta=args.dataset_fasta,
             sidecar_csv=args.sidecar_csv,

@@ -31,7 +31,8 @@ from thermo_sim.rf_posthoc import (
 )
 
 
-def test_kmer_keys_and_sum():
+def test_kmer_keys_and_sum() -> None:
+    """Assert dinuc/trinuc keys, sums, and AU count for a short sequence."""
     seq = "AUGCAUGC"
     dinuc = kmer_frequencies(seq, 2)
     trinuc = kmer_frequencies(seq, 3)
@@ -45,7 +46,8 @@ def test_kmer_keys_and_sum():
     assert dinuc["dinuc_AU"] == 2 / 7
 
 
-def test_sd_aug_spacing_known():
+def test_sd_aug_spacing_known() -> None:
+    """Assert SD–AUG spacing is 6 for a known AGGAGG spacer construct."""
     # AGGAGG + 6 nt spacer + AUG
     seq = "AGGAGGAAAAAAAUGCCCC"
     feats = sd_aug_features(seq)
@@ -53,7 +55,8 @@ def test_sd_aug_spacing_known():
     assert feats["sd_aug_spacing"] == 6
 
 
-def test_sd_aug_missing_sentinel_keeps_row():
+def test_sd_aug_missing_sentinel_keeps_row() -> None:
+    """Assert missing AUG uses the sentinel and composition features keep the row."""
     seq = "GGGGCCCCGGGGCCCC"  # no AUG
     feats = sd_aug_features(seq)
     assert feats["sd_aug_spacing"] == SD_AUG_SENTINEL
@@ -72,12 +75,14 @@ def test_sd_aug_missing_sentinel_keeps_row():
     assert out["sd_aug_spacing"].notna().all()
 
 
-def test_p_paired():
+def test_p_paired() -> None:
+    """Assert P_paired is 1 minus P_open, and None is passed through."""
     assert p_paired_rbs_37(0.25) == 0.75
     assert p_paired_rbs_37(None) is None
 
 
-def test_posthoc_gates():
+def test_posthoc_gates() -> None:
+    """Assert confidence bins and ΔP_RBS, Hill, Tm, and Z-score gate thresholds."""
     assert confidence_bin(0.81) == "high"
     assert confidence_bin(0.50) == "mid"
     assert confidence_bin(0.10) == "low"
@@ -92,7 +97,8 @@ def test_posthoc_gates():
     assert not gate_zscore(-1.9)
 
 
-def test_spearman_underpowered_high_bin():
+def test_spearman_underpowered_high_bin() -> None:
+    """Assert Spearman is withheld below min_n and computed when unconstrained."""
     n = 10
     df = pd.DataFrame(
         {
@@ -115,7 +121,8 @@ def test_spearman_underpowered_high_bin():
     assert panel["pairs"]["viennarna_Tm_vs_nupack_Tm"]["r_s"] is not None
 
 
-def test_visual_checklist_flags():
+def test_visual_checklist_flags() -> None:
+    """Assert visual-checklist flags for a steep, switching Vienna row."""
     row = pd.Series(
         {
             "viennarna_hill_coeff": 1.8,

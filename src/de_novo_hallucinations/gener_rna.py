@@ -1,6 +1,5 @@
 import argparse
 import gc
-import json
 import re
 import signal
 import sys
@@ -13,7 +12,11 @@ if str(SRC_ROOT) not in sys.path:
 from data_engineering.paths import resolve_path
 from de_novo_hallucinations.genererna.assets import ensure_generna_assets
 from de_novo_hallucinations.genererna.generate import generate_sequences
-from de_novo_hallucinations.genererna.loader import get_device, load_generna_model, load_tokenizer
+from de_novo_hallucinations.genererna.loader import (
+    get_device,
+    load_generna_model,
+    load_tokenizer,
+)
 from validation_embedding.config import load_llm_settings
 from validation_embedding.storage import ArtifactStorage, get_storage
 
@@ -25,7 +28,8 @@ _STORAGE: ArtifactStorage | None = None
 _EMBEDDING_SUBDIR = ""
 
 
-def validate_sequence(sequence):
+def validate_sequence(sequence: str) -> str:
+    """Normalize an RNA sequence and raise if it is empty or non-AUGC."""
     sequence = sequence.replace("T", "U").upper()
     if not sequence:
         raise ValueError("Generated sequence is empty")
@@ -35,7 +39,8 @@ def validate_sequence(sequence):
     return sequence
 
 
-def try_validate_sequence(sequence):
+def try_validate_sequence(sequence: str) -> str | None:
+    """Return a validated RNA sequence, or None if validation fails."""
     try:
         return validate_sequence(sequence)
     except ValueError as exc:
@@ -43,14 +48,18 @@ def try_validate_sequence(sequence):
         return None
 
 
-def append_fasta_record(output_path, record_id, sequence):
+def append_fasta_record(output_path: Path | str, record_id: str, sequence: str) -> None:
+    """Append a single FASTA record to the output path."""
     output_path = resolve_path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("a") as handle:
         handle.write(f">{record_id}\n{sequence}\n")
 
 
-def write_fasta(sequences, output_path, start_index=0):
+def write_fasta(
+    sequences: list[str], output_path: Path | str, start_index: int = 0
+) -> Path:
+    """Write sequences to a new FASTA file and return its resolved path."""
     output_path = resolve_path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as handle:
@@ -60,6 +69,7 @@ def write_fasta(sequences, output_path, start_index=0):
 
 
 def _next_sample_index(completed_ids: set[str]) -> int:
+    """Return the next sample_ index from completed generation ids."""
     indices = []
     for record_id in completed_ids:
         if record_id.startswith("sample_"):
@@ -70,18 +80,21 @@ def _next_sample_index(completed_ids: set[str]) -> int:
     return max(indices, default=-1) + 1
 
 
-def _flush_storage():
+def _flush_storage() -> None:
+    """Upload pending GenerRNA artifacts if a storage client is registered."""
     global _STORAGE
     if _STORAGE is not None:
         _STORAGE.sync_up(embedding_subdir=_EMBEDDING_SUBDIR)
 
 
-def _register_sigterm_handler(storage: ArtifactStorage, embedding_subdir: str):
+def _register_sigterm_handler(storage: ArtifactStorage, embedding_subdir: str) -> None:
+    """Flush GenerRNA artifacts to storage when the process receives SIGTERM."""
     global _STORAGE, _EMBEDDING_SUBDIR
     _STORAGE = storage
     _EMBEDDING_SUBDIR = embedding_subdir
 
-    def _handle_sigterm(signum, frame):
+    def _handle_sigterm(signum: int, frame: object | None) -> None:
+        """Flush artifacts to storage and exit on SIGTERM."""
         print("SIGTERM received — flushing artifacts to storage before exit...")
         storage.write_run_state(status="preempted", event="sigterm")
         _flush_storage()
@@ -91,16 +104,17 @@ def _register_sigterm_handler(storage: ArtifactStorage, embedding_subdir: str):
 
 
 def run_gener_rna(
-    num_samples=2,
-    max_new_tokens=64,
-    temperature=1.0,
-    top_k=250,
-    strategy="top_k",
-    output_fasta=DEFAULT_OUTPUT,
-    batch_size=None,
-    resume=False,
-    dry_run=False,
-):
+    num_samples: int = 2,
+    max_new_tokens: int = 64,
+    temperature: float = 1.0,
+    top_k: int = 250,
+    strategy: str = "top_k",
+    output_fasta: str = DEFAULT_OUTPUT,
+    batch_size: int | None = None,
+    resume: bool = False,
+    dry_run: bool = False,
+) -> list[str]:
+    """Generate GenerRNA sequences with checkpointed resume support."""
     settings = load_llm_settings()
     storage = get_storage(settings)
     cache_dir = resolve_path(settings.generna_cache_dir)
@@ -126,7 +140,9 @@ def run_gener_rna(
         return []
 
     if remaining == 0:
-        print(f"Generation complete: {len(completed_ids)} sequences already in manifest")
+        print(
+            f"Generation complete: {len(completed_ids)} sequences already in manifest"
+        )
         return []
 
     _register_sigterm_handler(storage, embedding_subdir)
@@ -183,7 +199,9 @@ def run_gener_rna(
         )
         storage.sync_up(embedding_subdir=embedding_subdir)
         gc.collect()
-        print(f"Checkpoint: {len(storage.completed_generation_ids())}/{num_samples} sequences")
+        print(
+            f"Checkpoint: {len(storage.completed_generation_ids())}/{num_samples} sequences"
+        )
 
     print(f"Wrote {len(generated)} new sequences to {out_path}")
     storage.write_run_state(
@@ -195,7 +213,8 @@ def run_gener_rna(
     return generated
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the CLI parser for GenerRNA generation."""
     parser = argparse.ArgumentParser(description="GenerRNA sequence generation.")
     parser.add_argument("--num-samples", type=int, default=2)
     parser.add_argument("--max-new-tokens", type=int, default=64)
@@ -209,7 +228,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Run GenerRNA generation from the command line."""
     from validation_embedding.runpod_lifecycle import runpod_terminate_if_configured
 
     args = _build_parser().parse_args()

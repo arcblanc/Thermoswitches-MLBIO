@@ -1,5 +1,4 @@
 import argparse
-import json
 import re
 import sys
 from pathlib import Path
@@ -15,7 +14,8 @@ DEFAULT_FASTA = "data/processed/de_novo/smoke/generated.fasta"
 DEFAULT_EMBED_DIR = "data/processed/validation_embedding/smoke"
 
 
-def parse_fasta(path):
+def parse_fasta(path: Path) -> list[tuple[str, str]]:
+    """Parse FASTA records as (header, sequence) tuples."""
     records = []
     header = None
     parts = []
@@ -37,24 +37,30 @@ def parse_fasta(path):
 
 
 def verify(
-    expected_records=2,
-    hidden_size=768,
-    fasta_path=DEFAULT_FASTA,
-    embed_dir=DEFAULT_EMBED_DIR,
-):
+    expected_records: int = 2,
+    hidden_size: int = 768,
+    fasta_path: str | Path = DEFAULT_FASTA,
+    embed_dir: str | Path = DEFAULT_EMBED_DIR,
+) -> bool:
+    """Check FASTA, npy embeddings, and manifest.jsonl match expected counts."""
     fasta_path = resolve_path(fasta_path)
     embed_dir = resolve_path(embed_dir)
     manifest_path = embed_dir / "manifest.jsonl"
 
     checks = []
 
-    def check(name, ok, detail=""):
+    def check(name: str, ok: bool, detail: str = "") -> None:
+        """Record and print one verification check result."""
         checks.append((name, ok, detail))
         status = "PASS" if ok else "FAIL"
         print(f"[{status}] {name}" + (f" — {detail}" if detail else ""))
 
     records = parse_fasta(fasta_path) if fasta_path.exists() else []
-    check("fasta record count", len(records) == expected_records, f"{len(records)} records")
+    check(
+        "fasta record count",
+        len(records) == expected_records,
+        f"{len(records)} records",
+    )
 
     for header, sequence in records:
         seq = sequence.replace("T", "U").upper()
@@ -62,7 +68,9 @@ def verify(
         check(f"{header} valid RNA", ok, seq[:40] + ("..." if len(seq) > 40 else ""))
 
     npy_files = sorted(embed_dir.glob("*.npy"))
-    check("npy file count", len(npy_files) >= expected_records, f"{len(npy_files)} files")
+    check(
+        "npy file count", len(npy_files) >= expected_records, f"{len(npy_files)} files"
+    )
     for npy_path in npy_files[:expected_records]:
         array = np.load(npy_path)
         check(
@@ -74,7 +82,11 @@ def verify(
     manifest_lines = 0
     if manifest_path.exists():
         manifest_lines = sum(1 for _ in manifest_path.open())
-    check("manifest.jsonl lines", manifest_lines == expected_records, f"{manifest_lines} lines")
+    check(
+        "manifest.jsonl lines",
+        manifest_lines == expected_records,
+        f"{manifest_lines} lines",
+    )
 
     failed = [name for name, ok, _ in checks if not ok]
     if failed:
@@ -84,8 +96,11 @@ def verify(
     return True
 
 
-def _build_parser():
-    parser = argparse.ArgumentParser(description="Verify GenerRNA + BiRNA-BERT outputs.")
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the LLM smoke-output verifier argument parser."""
+    parser = argparse.ArgumentParser(
+        description="Verify GenerRNA + BiRNA-BERT outputs."
+    )
     parser.add_argument("--expected", type=int, default=2)
     parser.add_argument("--hidden-size", type=int, default=768)
     parser.add_argument("--fasta", default=DEFAULT_FASTA)
@@ -93,7 +108,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Parse CLI args, verify outputs, and exit 1 on failure."""
     args = _build_parser().parse_args()
     ok = verify(
         expected_records=args.expected,

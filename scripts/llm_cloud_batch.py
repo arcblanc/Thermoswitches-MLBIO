@@ -11,7 +11,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from validation_embedding.config import load_llm_settings
+from validation_embedding.config import LLMSettings, load_llm_settings
 from validation_embedding.runpod_lifecycle import (
     SKIP_TERMINATE_ENV,
     runpod_terminate_if_configured,
@@ -23,13 +23,15 @@ BATCH_EMBED_DIR = "data/processed/validation_embedding"
 
 
 def _metadata(path: str) -> str:
+    """Fetch a GCE instance metadata value for the given relative path."""
     url = f"http://metadata.google.internal/computeMetadata/v1/{path}"
     request = urllib.request.Request(url, headers={"Metadata-Flavor": "Google"})
     with urllib.request.urlopen(request, timeout=5) as response:
         return response.read().decode().strip()
 
 
-def vm_shutdown_if_configured():
+def vm_shutdown_if_configured() -> None:
+    """Delete this GCE VM when vm_auto_shutdown is enabled."""
     settings = load_llm_settings()
     if not settings.vm_auto_shutdown:
         return
@@ -57,7 +59,8 @@ def vm_shutdown_if_configured():
     )
 
 
-def _remote_bucket_label(settings):
+def _remote_bucket_label(settings: LLMSettings) -> str | None:
+    """Return the configured remote bucket name, or None for local storage."""
     if settings.storage_target == "gcs":
         return settings.gcs_bucket
     if settings.storage_target in {"s3", "runpod"}:
@@ -65,14 +68,15 @@ def _remote_bucket_label(settings):
     return None
 
 
-def _child_env():
+def _child_env() -> dict[str, str]:
     """Children must not stop the pod; orchestrator stops once at the end."""
     env = os.environ.copy()
     env[SKIP_TERMINATE_ENV] = "1"
     return env
 
 
-def run_cloud_batch(dry_run=False):
+def run_cloud_batch(dry_run: bool = False) -> None:
+    """Run GenerRNA generation, BiRNA embedding, verify, then shut down."""
     settings = load_llm_settings()
     storage = get_storage(settings)
     embedding_subdir = ""
@@ -157,13 +161,15 @@ def run_cloud_batch(dry_run=False):
         runpod_terminate_if_configured(force=True)
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the GenerRNA cloud-batch argument parser."""
     parser = argparse.ArgumentParser(description="Run GenerRNA + BiRNA cloud batch.")
     parser.add_argument("--dry-run", action="store_true")
     return parser
 
 
-def main():
+def main() -> None:
+    """Parse CLI args and run the GenerRNA cloud batch."""
     args = _build_parser().parse_args()
     run_cloud_batch(dry_run=args.dry_run)
 

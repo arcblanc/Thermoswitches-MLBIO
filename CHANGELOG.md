@@ -19,8 +19,9 @@ where version tags are applied.
 - Non-circular RF inputs (`src/thermo_sim/noncircular_features.py`): static 37 °C physics, 16+64 k-mer frequencies, SD–AUG sentinel (`-1` + `sd_aug_missing`, no row drop), grouped permutation importance.
 - Post-hoc module (`src/thermo_sim/rf_posthoc.py` + `thermo_classifier.py posthoc`): OOF confidence bins, ΔP_RBS / Hill / Tm / Z gates, panel-wide Spearman (high-bin \(r_s\) only if \(N \ge 25\)), MW/KS, visual checklist pass rates.
 - Cheap \(P_{\mathrm{open,RBS}}\) backfill (`enrich_dynamic_features.py --p-open-only`) without 100-shuffle Z recompute.
-- Notebook 07 §§4–7: usable X, non-circular CV, post-hoc, visual diagnostic checklist.
-- Results brief: `notebooks/08_noncircular_rf_model_update.md` + `notebooks/08_noncircular_rf_results.ipynb`.
+- Notebook 06 §§4–7: usable X, non-circular CV, post-hoc, visual diagnostic checklist.
+- Results brief: `notebooks/07_noncircular_rf_model_update.md` + `notebooks/07_noncircular_rf_results.py`.
+- Marimo apps: `notebooks/marimo_dataset_curation.py` (App 1) plus converted notebooks `02`–`07` (`03_prototype` is now `02`).
 - Hill `bottom`/`top` persisted on new Vienna/NUPACK extracts (no 2396-row melting re-run).
 
 ### Changed

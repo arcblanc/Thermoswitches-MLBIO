@@ -8,8 +8,11 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from data_engineering.cd_hit_sequence_similarity import JOIN_COLUMNS
-from data_engineering.paths import resolve_path
-from thermo_sim.thermo_common import METADATA_COLUMNS, append_feature_table, write_feature_table
+from thermo_sim.thermo_common import (
+    METADATA_COLUMNS,
+    append_feature_table,
+    write_feature_table,
+)
 
 FUSED_FEATURE_COLUMNS = [
     "panel_role",
@@ -40,7 +43,12 @@ FUSED_FEATURE_COLUMNS = [
 ]
 
 
-def fuse_engine_features(vienna_df, nupack_df, join_on=None):
+def fuse_engine_features(
+    vienna_df: pd.DataFrame,
+    nupack_df: pd.DataFrame,
+    join_on: list[str] | None = None,
+) -> pd.DataFrame:
+    """Inner-join Vienna and NUPACK feature tables on the sequence key."""
     join_on = join_on or JOIN_COLUMNS
     vienna_df = vienna_df.copy()
     nupack_df = nupack_df.copy()
@@ -70,7 +78,8 @@ def fuse_engine_features(vienna_df, nupack_df, join_on=None):
     return fused
 
 
-def validate_fused_row(row):
+def validate_fused_row(row: pd.Series) -> list[str]:
+    """Return validation warning strings for one fused prototype row."""
     warnings = []
     role = row.get("panel_role", "")
     if role == "canonical_positive":
@@ -83,7 +92,8 @@ def validate_fused_row(row):
     return warnings
 
 
-def _fused_extra_columns(fused_df):
+def _fused_extra_columns(fused_df: pd.DataFrame) -> list[str]:
+    """Return optional identity columns present on the fused frame."""
     return [
         col
         for col in ("panel_role", "record_id", "seq_length")
@@ -91,8 +101,16 @@ def _fused_extra_columns(fused_df):
     ]
 
 
-def write_fused_features(fused_df, output_csv, join_columns=None, include_label=True):
-    engine_cols = [col for col in fused_df.columns if col.startswith(("viennarna_", "nupack_"))]
+def write_fused_features(
+    fused_df: pd.DataFrame,
+    output_csv: str | Path,
+    join_columns: list[str] | None = None,
+    include_label: bool = True,
+) -> Path:
+    """Write a fused Vienna/NUPACK feature table to CSV."""
+    engine_cols = [
+        col for col in fused_df.columns if col.startswith(("viennarna_", "nupack_"))
+    ]
     return write_feature_table(
         fused_df,
         output_csv,
@@ -103,8 +121,16 @@ def write_fused_features(fused_df, output_csv, join_columns=None, include_label=
     )
 
 
-def append_fused_features(fused_df, output_csv, join_columns=None, include_label=True):
-    engine_cols = [col for col in fused_df.columns if col.startswith(("viennarna_", "nupack_"))]
+def append_fused_features(
+    fused_df: pd.DataFrame,
+    output_csv: str | Path,
+    join_columns: list[str] | None = None,
+    include_label: bool = True,
+) -> Path:
+    """Append fused Vienna/NUPACK feature rows to an existing CSV."""
+    engine_cols = [
+        col for col in fused_df.columns if col.startswith(("viennarna_", "nupack_"))
+    ]
     return append_feature_table(
         fused_df,
         output_csv,

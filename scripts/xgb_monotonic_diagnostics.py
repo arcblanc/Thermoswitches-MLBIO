@@ -14,7 +14,11 @@ from pathlib import Path
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score
-from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold, cross_val_predict
+from sklearn.model_selection import (
+    StratifiedGroupKFold,
+    StratifiedKFold,
+    cross_val_predict,
+)
 
 SRC_ROOT = Path(__file__).resolve().parent.parent / "src"
 if str(SRC_ROOT) not in sys.path:
@@ -31,7 +35,14 @@ from thermo_sim.thermo_classifier import (
 LENGTH_ALONE_AUC_GATE = 0.65
 
 
-def _eval_proba(estimator, X, y, cv, groups=None):
+def _eval_proba(
+    estimator: object,
+    X: pd.DataFrame,
+    y: pd.Series,
+    cv: StratifiedGroupKFold | StratifiedKFold,
+    groups: pd.Series | None = None,
+) -> dict[str, float]:
+    """Cross-validate predict_proba and return ROC-AUC and accuracy."""
     if groups is None:
         proba = cross_val_predict(estimator, X, y, cv=cv, method="predict_proba")[:, 1]
     else:
@@ -45,26 +56,42 @@ def _eval_proba(estimator, X, y, cv, groups=None):
     }
 
 
-def _eval_rf(X, y, cv, groups=None):
+def _eval_rf(
+    X: pd.DataFrame,
+    y: pd.Series,
+    cv: StratifiedGroupKFold | StratifiedKFold,
+    groups: pd.Series | None = None,
+) -> dict[str, float]:
+    """Cross-validate an unconstrained RF and return ROC-AUC and accuracy."""
     rf = RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1)
     return _eval_proba(rf, X, y, cv, groups=groups)
 
 
-def _eval_xgb(X, y, feature_cols, cv, groups=None):
+def _eval_xgb(
+    X: pd.DataFrame,
+    y: pd.Series,
+    feature_cols: list[str],
+    cv: StratifiedGroupKFold | StratifiedKFold,
+    groups: pd.Series | None = None,
+) -> dict[str, float]:
+    """Cross-validate monotonic XGBoost and return ROC-AUC and accuracy."""
     model, _ = build_xgboost_monotonic(feature_cols)
     return _eval_proba(model, X, y, cv, groups=groups)
 
 
 def run_diagnostics(
-    fused_csv="data/processed/fused_features_refseq_dynamic.csv",
-    output_json="data/processed/xgb_refseq_dynamic_diagnostics.json",
-    rf_baseline_json="data/processed/refseq_dynamic_rf_diagnostics.json",
-    length_alone_gate=LENGTH_ALONE_AUC_GATE,
-    group_col="rfam_acc",
-):
+    fused_csv: str = "data/processed/fused_features_refseq_dynamic.csv",
+    output_json: str = "data/processed/xgb_refseq_dynamic_diagnostics.json",
+    rf_baseline_json: str = "data/processed/refseq_dynamic_rf_diagnostics.json",
+    length_alone_gate: float = LENGTH_ALONE_AUC_GATE,
+    group_col: str = "rfam_acc",
+) -> dict[str, object]:
+    """Compare length-alone RF, monotonic XGB, and unconstrained RF GroupKFold."""
     df = pd.read_csv(fused_csv)
     if group_col not in df.columns:
-        raise SystemExit(f"{fused_csv} missing {group_col} — required for StratifiedGroupKFold")
+        raise SystemExit(
+            f"{fused_csv} missing {group_col} — required for StratifiedGroupKFold"
+        )
     df = add_intensive_features(df)
     feature_cols = [c for c in PHYSICS_FEATURE_COLUMNS if c in df.columns]
     need = ["label", "seq_length", group_col] + feature_cols
@@ -130,7 +157,8 @@ def run_diagnostics(
     return report
 
 
-def main():
+def main() -> None:
+    """Parse CLI args and run monotonic XGBoost diagnostics."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--fused-csv",
@@ -145,7 +173,9 @@ def main():
         default="data/processed/refseq_dynamic_rf_diagnostics.json",
     )
     parser.add_argument("--group-col", default="rfam_acc")
-    parser.add_argument("--length-alone-gate", type=float, default=LENGTH_ALONE_AUC_GATE)
+    parser.add_argument(
+        "--length-alone-gate", type=float, default=LENGTH_ALONE_AUC_GATE
+    )
     args = parser.parse_args()
     run_diagnostics(
         fused_csv=args.fused_csv,

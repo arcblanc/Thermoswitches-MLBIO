@@ -14,7 +14,11 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from data_engineering.cd_hit_sequence_similarity import JOIN_COLUMNS
-from thermo_sim.feature_fusion import fuse_engine_features, validate_fused_row, write_fused_features
+from thermo_sim.feature_fusion import (
+    fuse_engine_features,
+    validate_fused_row,
+    write_fused_features,
+)
 from thermo_sim.nupack_engine import (
     NUPACK_FEATURE_COLUMNS,
     configure_nupack_threads,
@@ -23,7 +27,6 @@ from thermo_sim.nupack_engine import (
 )
 from thermo_sim.thermo_common import (
     DEFAULT_PROTOTYPE_CSV,
-    DEFAULT_PROTOTYPE_FASTA,
     PROTOTYPE_DIR,
     PROTOTYPE_TEMP_MAX,
     PROTOTYPE_TEMP_MIN,
@@ -37,16 +40,14 @@ from thermo_sim.thermo_common import (
     write_json,
 )
 from thermo_sim.vienna_rna import (
-    VIENNA_FEATURE_COLUMNS,
-    ViennaConfig,
     compare_dangles_for_sequence,
-    extract_vienna_features,
     require_vienna_rna,
     run_vienna_worker,
 )
 
 
-def _preflight(skip_nupack=False):
+def _preflight(skip_nupack: bool = False) -> dict:
+    """Check Vienna/NUPACK availability and record engine versions."""
     report = {"engines": {}}
     require_vienna_rna()
     import RNA
@@ -73,14 +74,24 @@ def _preflight(skip_nupack=False):
     return report
 
 
-def _cpu_sampler(stop_event, samples):
-    process = psutil.Process(os.getpid())
+def _cpu_sampler(stop_event: threading.Event, samples: list[float]) -> None:
+    """Append process-wide CPU percent samples until stop_event is set."""
     while not stop_event.is_set():
         samples.append(psutil.cpu_percent(interval=None))
         time.sleep(2)
 
 
-def _run_sequence_benchmark(row_dict, temp_range, dangles, sodium, magnesium, threads, concentration, skip_nupack):
+def _run_sequence_benchmark(
+    row_dict: dict,
+    temp_range: list[int],
+    dangles: int,
+    sodium: float,
+    magnesium: float,
+    threads: int,
+    concentration: float,
+    skip_nupack: bool,
+) -> dict:
+    """Run Vienna and optional NUPACK timing/memory profiles for one sequence."""
     sequence_label = row_dict.get("rfam_id", "sequence")
     vienna_timed = elapsed_seconds(
         peak_memory_mb,
@@ -100,7 +111,9 @@ def _run_sequence_benchmark(row_dict, temp_range, dangles, sodium, magnesium, th
             "total": vienna_timed["elapsed_sec"],
         },
         "vienna": {
-            "features": {k: v for k, v in vienna_result.items() if not k.startswith("_")},
+            "features": {
+                k: v for k, v in vienna_result.items() if not k.startswith("_")
+            },
             "memory_mb": {
                 "peak_traced_mb": vienna_profile["peak_traced_mb"],
                 "rss_delta_mb": vienna_profile["rss_delta_mb"],
@@ -126,7 +139,9 @@ def _run_sequence_benchmark(row_dict, temp_range, dangles, sodium, magnesium, th
         payload["elapsed_sec"]["nupack"] = nupack_timed["elapsed_sec"]
         payload["elapsed_sec"]["total"] += nupack_timed["elapsed_sec"]
         payload["nupack"] = {
-            "features": {k: v for k, v in nupack_result.items() if not k.startswith("_")},
+            "features": {
+                k: v for k, v in nupack_result.items() if not k.startswith("_")
+            },
             "memory_mb": {
                 "peak_traced_mb": nupack_profile["peak_traced_mb"],
                 "rss_delta_mb": nupack_profile["rss_delta_mb"],
@@ -137,22 +152,26 @@ def _run_sequence_benchmark(row_dict, temp_range, dangles, sodium, magnesium, th
     return payload
 
 
-def _worker_entry(args):
+def _worker_entry(
+    args: tuple[dict, list[int], int, float, float, int, float, bool],
+) -> dict:
+    """Unpack pool args and run a single-sequence prototype benchmark."""
     return _run_sequence_benchmark(*args)
 
 
 def run_prototype_benchmark(
-    workers=None,
-    temp_min=PROTOTYPE_TEMP_MIN,
-    temp_max=PROTOTYPE_TEMP_MAX,
-    temp_step=PROTOTYPE_TEMP_STEP,
-    vienna_dangles="both",
-    sodium=0.05,
-    magnesium=0.0,
-    concentration=1e-8,
-    skip_nupack=False,
-    dry_run=True,
-):
+    workers: int | None = None,
+    temp_min: int = PROTOTYPE_TEMP_MIN,
+    temp_max: int = PROTOTYPE_TEMP_MAX,
+    temp_step: int = PROTOTYPE_TEMP_STEP,
+    vienna_dangles: str = "both",
+    sodium: float = 0.05,
+    magnesium: float = 0.0,
+    concentration: float = 1e-8,
+    skip_nupack: bool = False,
+    dry_run: bool = True,
+) -> pd.DataFrame | tuple[pd.DataFrame, dict]:
+    """Run the 4-sequence prototype benchmark or print a dry-run plan."""
     prototype_csv = resolve_path(DEFAULT_PROTOTYPE_CSV)
     if not prototype_csv.exists():
         export_prototype_panel()
@@ -196,7 +215,11 @@ def run_prototype_benchmark(
         for dangles, payload in dangle_results.items():
             write_json(
                 curves_dir / f"vienna_fourU_d{dangles}.json",
-                {"temps": temp_range, "curve": payload["curve"], "hill": payload["hill"]},
+                {
+                    "temps": temp_range,
+                    "curve": payload["curve"],
+                    "hill": payload["hill"],
+                },
             )
     else:
         chosen_dangles = int(vienna_dangles)
@@ -211,13 +234,24 @@ def run_prototype_benchmark(
         row_dicts.append(row_dict)
 
     pool_args = [
-        (row_dict, temp_range, chosen_dangles, sodium, magnesium, threads, concentration, skip_nupack)
+        (
+            row_dict,
+            temp_range,
+            chosen_dangles,
+            sodium,
+            magnesium,
+            threads,
+            concentration,
+            skip_nupack,
+        )
         for row_dict in row_dicts
     ]
 
     cpu_samples = []
     stop_event = threading.Event()
-    sampler = threading.Thread(target=_cpu_sampler, args=(stop_event, cpu_samples), daemon=True)
+    sampler = threading.Thread(
+        target=_cpu_sampler, args=(stop_event, cpu_samples), daemon=True
+    )
     sampler.start()
     start = time.perf_counter()
     with Pool(processes=workers) as pool:
@@ -226,7 +260,9 @@ def run_prototype_benchmark(
     sampler.join(timeout=1)
     report["runtime_sec"] = time.perf_counter() - start
     report["cpu"] = {
-        "mean_cpu_pct": float(sum(cpu_samples) / len(cpu_samples)) if cpu_samples else None,
+        "mean_cpu_pct": float(sum(cpu_samples) / len(cpu_samples))
+        if cpu_samples
+        else None,
         "peak_cpu_pct": float(max(cpu_samples)) if cpu_samples else None,
         "workers": workers,
     }
@@ -255,7 +291,8 @@ def run_prototype_benchmark(
             nupack_features = seq_result["nupack"]["features"]
             nupack_rows.append({**row_dict, **nupack_features})
             write_json(
-                curves_dir / f"{row_dict['rfam_id']}_{row_dict['panel_role']}_nupack.json",
+                curves_dir
+                / f"{row_dict['rfam_id']}_{row_dict['panel_role']}_nupack.json",
                 seq_result["nupack"]["curves"],
             )
             seq_report["nupack"] = seq_result["nupack"]
@@ -272,7 +309,9 @@ def run_prototype_benchmark(
     vienna_df.to_csv(output_dir / "viennarna_features.csv", index=False)
 
     if skip_nupack:
-        nupack_df = pd.DataFrame({col: [None] * len(vienna_df) for col in NUPACK_FEATURE_COLUMNS})
+        nupack_df = pd.DataFrame(
+            {col: [None] * len(vienna_df) for col in NUPACK_FEATURE_COLUMNS}
+        )
         for col in JOIN_COLUMNS + ["label", "panel_role", "seq_length"]:
             nupack_df[col] = vienna_df[col].values
     else:
@@ -304,8 +343,11 @@ def run_prototype_benchmark(
     return fused, report
 
 
-def _build_parser():
-    parser = argparse.ArgumentParser(description="Run the 4-sequence thermodynamics prototype benchmark.")
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the prototype benchmark CLI parser."""
+    parser = argparse.ArgumentParser(
+        description="Run the 4-sequence thermodynamics prototype benchmark."
+    )
     parser.add_argument("--workers", type=int, default=None)
     parser.add_argument("--temp-min", type=int, default=PROTOTYPE_TEMP_MIN)
     parser.add_argument("--temp-max", type=int, default=PROTOTYPE_TEMP_MAX)
@@ -320,7 +362,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Run the 4-sequence thermodynamics prototype from the CLI."""
     args = _build_parser().parse_args()
     run_prototype_benchmark(
         workers=args.workers,

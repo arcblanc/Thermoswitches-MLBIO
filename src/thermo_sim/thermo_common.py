@@ -1,14 +1,13 @@
 import hashlib
 import json
-import math
 import os
 import random
 import time
 import tracemalloc
 import warnings
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
-from functools import wraps
 from pathlib import Path
 
 import numpy as np
@@ -77,15 +76,24 @@ PROTOTYPE_PANEL_SPECS = [
 ]
 
 
-def normalize_sequence(sequence):
+def normalize_sequence(sequence: str) -> str:
+    """Uppercase an RNA sequence and rewrite T as U."""
     return sequence.upper().replace("T", "U")
 
 
-def build_temp_range(temp_min=DEFAULT_TEMP_MIN, temp_max=DEFAULT_TEMP_MAX, temp_step=DEFAULT_TEMP_STEP):
+def build_temp_range(
+    temp_min: int = DEFAULT_TEMP_MIN,
+    temp_max: int = DEFAULT_TEMP_MAX,
+    temp_step: int = DEFAULT_TEMP_STEP,
+) -> list[int]:
+    """Build an inclusive Celsius temperature grid."""
     return list(range(temp_min, temp_max + 1, temp_step))
 
 
-def load_sequences_from_fasta(fasta_path):
+def load_sequences_from_fasta(
+    fasta_path: str | Path,
+) -> dict[tuple[str, int, int], str]:
+    """Load FASTA records keyed by JOIN_COLUMNS tuple."""
     fasta_path = resolve_path(fasta_path)
     records = {}
     header = None
@@ -114,7 +122,8 @@ def load_sequences_from_fasta(fasta_path):
     return records
 
 
-def _attach_sequences(df, fasta_path):
+def _attach_sequences(df: pd.DataFrame, fasta_path: str | Path) -> pd.DataFrame:
+    """Join FASTA sequences onto a metadata table using JOIN_COLUMNS."""
     sequences = load_sequences_from_fasta(fasta_path)
     df = df.copy()
     for column in JOIN_COLUMNS:
@@ -128,23 +137,29 @@ def _attach_sequences(df, fasta_path):
     return df
 
 
-def load_balanced_dataset(csv_path=DEFAULT_BALANCED_CSV, fasta_path=DEFAULT_BALANCED_FASTA):
+def load_balanced_dataset(
+    csv_path: str | Path = DEFAULT_BALANCED_CSV,
+    fasta_path: str | Path = DEFAULT_BALANCED_FASTA,
+) -> pd.DataFrame:
+    """Load the balanced CSV/FASTA pair with sequences attached."""
     return _attach_sequences(pd.read_csv(resolve_path(csv_path)), fasta_path)
 
 
 def load_prototype_panel(
-    csv_path=DEFAULT_PROTOTYPE_CSV,
-    fasta_path=DEFAULT_PROTOTYPE_FASTA,
-):
+    csv_path: str | Path = DEFAULT_PROTOTYPE_CSV,
+    fasta_path: str | Path = DEFAULT_PROTOTYPE_FASTA,
+) -> pd.DataFrame:
+    """Load the prototype panel CSV/FASTA pair with sequences attached."""
     return _attach_sequences(pd.read_csv(resolve_path(csv_path)), fasta_path)
 
 
 def export_prototype_panel(
-    balanced_csv=DEFAULT_BALANCED_CSV,
-    balanced_fasta=DEFAULT_BALANCED_FASTA,
-    output_csv=DEFAULT_PROTOTYPE_CSV,
-    output_fasta=DEFAULT_PROTOTYPE_FASTA,
-):
+    balanced_csv: str | Path = DEFAULT_BALANCED_CSV,
+    balanced_fasta: str | Path = DEFAULT_BALANCED_FASTA,
+    output_csv: str | Path = DEFAULT_PROTOTYPE_CSV,
+    output_fasta: str | Path = DEFAULT_PROTOTYPE_FASTA,
+) -> pd.DataFrame:
+    """Select specified panel members and write CSV plus FASTA outputs."""
     dataset = load_balanced_dataset(balanced_csv, balanced_fasta)
     selected_rows = []
 
@@ -178,7 +193,9 @@ def export_prototype_panel(
     output_fasta = resolve_path(output_fasta)
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
-    panel[METADATA_COLUMNS + ["panel_role", "seq_length"]].to_csv(output_csv, index=False)
+    panel[METADATA_COLUMNS + ["panel_role", "seq_length"]].to_csv(
+        output_csv, index=False
+    )
     with output_fasta.open("w") as handle:
         for _, row in panel.iterrows():
             header = (
@@ -191,7 +208,7 @@ def export_prototype_panel(
     return panel
 
 
-def detect_shine_dalgarno(sequence):
+def detect_shine_dalgarno(sequence: str) -> tuple[int, int]:
     """Return 0-based inclusive (start, end) indices for the SD motif or 3' window."""
     sequence = normalize_sequence(sequence)
     for motif in SD_MOTIFS:
@@ -203,7 +220,8 @@ def detect_shine_dalgarno(sequence):
     return len(sequence) - window, len(sequence) - 1
 
 
-def sd_window_indices(sequence):
+def sd_window_indices(sequence: str) -> list[int]:
+    """Return inclusive nucleotide indices covering the Shine-Dalgarno window."""
     start, end = detect_shine_dalgarno(sequence)
     return list(range(start, end + 1))
 
@@ -215,7 +233,7 @@ def get_stable_seed(join_key: str, base_seed: int = 42) -> int:
     return int(base_seed + (hash_int % 10_000))
 
 
-def rbs_window_indices(sequence, width: int = 30) -> list[int]:
+def rbs_window_indices(sequence: str, width: int = 30) -> list[int]:
     """CDS-proximal RBS/AUG window: last `width` nt, motif-anchored when useful."""
     sequence = normalize_sequence(sequence)
     n = len(sequence)
@@ -238,12 +256,15 @@ def rbs_window_indices(sequence, width: int = 30) -> list[int]:
 
 
 def _mononucleotide_shuffle(sequence: str, rng: random.Random) -> str:
+    """Shuffle sequence characters while preserving base composition."""
     chars = list(sequence)
     rng.shuffle(chars)
     return "".join(chars)
 
 
-def dinucleotide_shuffle(sequence: str, rng: random.Random | None = None) -> tuple[str, str]:
+def dinucleotide_shuffle(
+    sequence: str, rng: random.Random | None = None
+) -> tuple[str, str]:
     """Altschul–Erikson dinucleotide shuffle with mononucleotide fallback.
 
     Returns (shuffled_sequence, mode) where mode is 'dinuc' or 'mono'.
@@ -282,11 +303,14 @@ def dinucleotide_shuffle(sequence: str, rng: random.Random | None = None) -> tup
         return _mononucleotide_shuffle(sequence, rng), "mono"
 
 
-def mean_unpaired_in_window(unpaired_profile, indices) -> float | None:
+def mean_unpaired_in_window(
+    unpaired_profile: list[float], indices: list[int]
+) -> float | None:
+    """Average unpaired probability over the requested nucleotide indices."""
     return window_mean(unpaired_profile, indices)
 
 
-def positional_entropy_from_bpp(bpp, n: int) -> float:
+def positional_entropy_from_bpp(bpp: np.ndarray | list, n: int) -> float:
     """Mean positional entropy from Vienna bpp; log-safe for zero probabilities."""
     unpaired = mean_unpaired_from_pair_matrix(bpp, n)
     entropies = []
@@ -326,7 +350,9 @@ def positional_entropy_from_bpp(bpp, n: int) -> float:
     return float(np.mean(entropies)) if entropies else 0.0
 
 
-def extract_pair_probability(matrix, i, j):
+def extract_pair_probability(
+    matrix: np.ndarray | list | None, i: int, j: int
+) -> float | None:
     """Read pair probability from Vienna bpp rows or a square numpy matrix."""
     if matrix is None:
         return None
@@ -341,7 +367,8 @@ def extract_pair_probability(matrix, i, j):
     return None
 
 
-def mean_unpaired_from_pair_matrix(matrix, n):
+def mean_unpaired_from_pair_matrix(matrix: np.ndarray | list, n: int) -> list[float]:
+    """Convert a pair-probability matrix into per-base unpaired probabilities."""
     unpaired = []
     if isinstance(matrix, np.ndarray):
         for i in range(n):
@@ -363,14 +390,22 @@ def mean_unpaired_from_pair_matrix(matrix, n):
     return unpaired
 
 
-def window_mean(values, indices):
+def window_mean(values: list[float], indices: list[int]) -> float | None:
+    """Return the mean of `values` at `indices`, or None if empty."""
     if not values or not indices:
         return None
     picked = [values[i] for i in indices if 0 <= i < len(values)]
     return float(sum(picked) / len(picked)) if picked else None
 
 
-def hill_sigmoid(temps, bottom, top, tm, hill_coeff):
+def hill_sigmoid(
+    temps: np.ndarray | list[float],
+    bottom: float,
+    top: float,
+    tm: float,
+    hill_coeff: float,
+) -> np.ndarray:
+    """Evaluate a Hill sigmoid melting curve at the given temperatures."""
     temps = np.asarray(temps, dtype=float)
     safe_t = np.clip(temps, 1e-6, None)
     safe_tm = max(float(tm), 1e-6)
@@ -378,7 +413,10 @@ def hill_sigmoid(temps, bottom, top, tm, hill_coeff):
     return bottom + (top - bottom) / (1.0 + np.power(safe_tm / safe_t, safe_n))
 
 
-def fit_hill_curve(temps, values):
+def fit_hill_curve(
+    temps: list[int] | list[float], values: list[float | None]
+) -> dict[str, float | str | None]:
+    """Fit a Hill sigmoid and return Tm, slope, amplitude, and status."""
     if not temps or not values or len(temps) != len(values):
         return _failed_hill_fit("invalid_input")
 
@@ -438,7 +476,8 @@ def fit_hill_curve(temps, values):
         return _failed_hill_fit("optimize_failed")
 
 
-def _failed_hill_fit(reason):
+def _failed_hill_fit(reason: str) -> dict[str, float | str | None]:
+    """Return a sentinel Hill-fit dict for a failed or invalid curve."""
     return {
         "Tm": None,
         "hill_coeff": None,
@@ -450,7 +489,13 @@ def _failed_hill_fit(reason):
     }
 
 
-def _feature_table_columns(feature_columns, extra_columns=None, join_columns=None, include_label=True):
+def _feature_table_columns(
+    feature_columns: list[str],
+    extra_columns: list[str] | None = None,
+    join_columns: list[str] | None = None,
+    include_label: bool = True,
+) -> list[str]:
+    """Build a de-duplicated column order for feature-table writes."""
     join_columns = join_columns or JOIN_COLUMNS
     columns = list(join_columns)
     if include_label:
@@ -462,12 +507,21 @@ def _feature_table_columns(feature_columns, extra_columns=None, join_columns=Non
 
 
 def append_feature_table(
-    df, output_path, feature_columns, extra_columns=None, join_columns=None, include_label=True
-):
+    df: pd.DataFrame,
+    output_path: str | Path,
+    feature_columns: list[str],
+    extra_columns: list[str] | None = None,
+    join_columns: list[str] | None = None,
+    include_label: bool = True,
+) -> Path:
+    """Append selected feature columns to a CSV, creating it if needed."""
     output_path = resolve_path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     columns = _feature_table_columns(
-        feature_columns, extra_columns, join_columns=join_columns, include_label=include_label
+        feature_columns,
+        extra_columns,
+        join_columns=join_columns,
+        include_label=include_label,
     )
     write_header = not output_path.exists() or output_path.stat().st_size == 0
     if not write_header:
@@ -483,18 +537,28 @@ def append_feature_table(
 
 
 def write_feature_table(
-    df, output_path, feature_columns, extra_columns=None, join_columns=None, include_label=True
-):
+    df: pd.DataFrame,
+    output_path: str | Path,
+    feature_columns: list[str],
+    extra_columns: list[str] | None = None,
+    join_columns: list[str] | None = None,
+    include_label: bool = True,
+) -> Path:
+    """Overwrite a CSV with selected feature columns."""
     output_path = resolve_path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     columns = _feature_table_columns(
-        feature_columns, extra_columns, join_columns=join_columns, include_label=include_label
+        feature_columns,
+        extra_columns,
+        join_columns=join_columns,
+        include_label=include_label,
     )
     df[columns].to_csv(output_path, index=False)
     return output_path
 
 
-def write_json(path, payload):
+def write_json(path: str | Path, payload: dict) -> Path:
+    """Write a JSON object to a repo-resolved path."""
     path = resolve_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as handle:
@@ -502,7 +566,10 @@ def write_json(path, payload):
     return path
 
 
-def peak_memory_mb(callable_obj, *args, **kwargs):
+def peak_memory_mb(
+    callable_obj: Callable[..., object], *args: object, **kwargs: object
+) -> dict[str, object]:
+    """Run a callable and report traced peak plus RSS memory usage."""
     process = psutil.Process(os.getpid())
     rss_before = process.memory_info().rss
     tracemalloc.start()
@@ -520,13 +587,17 @@ def peak_memory_mb(callable_obj, *args, **kwargs):
     }
 
 
-def elapsed_seconds(callable_obj, *args, **kwargs):
+def elapsed_seconds(
+    callable_obj: Callable[..., object], *args: object, **kwargs: object
+) -> dict[str, object]:
+    """Run a callable and return its result with wall-clock elapsed seconds."""
     start = time.perf_counter()
     result = callable_obj(*args, **kwargs)
     return {"result": result, "elapsed_sec": time.perf_counter() - start}
 
 
-def max_stem_length(dot_bracket):
+def max_stem_length(dot_bracket: str) -> int:
+    """Return the longest nested stem depth in a dot-bracket structure."""
     longest = 0
     current = 0
     for char in dot_bracket:
@@ -538,7 +609,8 @@ def max_stem_length(dot_bracket):
     return longest
 
 
-def max_loop_length(dot_bracket):
+def max_loop_length(dot_bracket: str) -> int:
+    """Return the longest unpaired stretch in a dot-bracket structure."""
     longest = 0
     current = 0
     for char in dot_bracket:
@@ -550,7 +622,8 @@ def max_loop_length(dot_bracket):
     return longest
 
 
-def gc_content(sequence):
+def gc_content(sequence: str) -> float:
+    """Return the G+C fraction of an RNA sequence."""
     sequence = normalize_sequence(sequence)
     if not sequence:
         return 0.0
@@ -562,7 +635,10 @@ FASTA_JOIN_COLUMNS = ["record_id"]
 DEFAULT_DENOVO_FASTA = "data/processed/de_novo/generated.fasta"
 
 
-def load_fasta_dataset(fasta_path=DEFAULT_DENOVO_FASTA):
+def load_fasta_dataset(
+    fasta_path: str | Path = DEFAULT_DENOVO_FASTA,
+) -> pd.DataFrame:
+    """Load a FASTA file into a table of record_id, sequence, and length."""
     fasta_path = resolve_path(fasta_path)
     records = []
     header = None
@@ -607,7 +683,8 @@ def load_fasta_dataset(fasta_path=DEFAULT_DENOVO_FASTA):
 class LocalNupackWheel:
     root: Path
 
-    def wheel_for_current_platform(self):
+    def wheel_for_current_platform(self) -> Path | None:
+        """Return the NUPACK wheel matching this Python and machine, if any."""
         import platform
         import sys
 
@@ -626,5 +703,8 @@ class LocalNupackWheel:
         return matches[0] if matches else None
 
 
-def local_nupack_wheel_path():
-    return LocalNupackWheel(PROJECT_ROOT / "nupack-4.1.0.1").wheel_for_current_platform()
+def local_nupack_wheel_path() -> Path | None:
+    """Locate a vendored NUPACK wheel for the current platform."""
+    return LocalNupackWheel(
+        PROJECT_ROOT / "nupack-4.1.0.1"
+    ).wheel_for_current_platform()

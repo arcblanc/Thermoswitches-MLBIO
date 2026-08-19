@@ -39,6 +39,7 @@ MAX_UTR = 600
 
 
 def _parse_gff_attrs(attr_field: str) -> dict[str, str]:
+    """Parse a GFF column-9 attribute string into a key/value dict."""
     out = {}
     for part in attr_field.strip().split(";"):
         if not part or "=" not in part:
@@ -58,7 +59,9 @@ def _load_assembly_dirs(root: Path) -> list[tuple[str, Path, Path]]:
         gff = next(d.glob("*.gff"), None) or next(d.glob("*.gff3"), None)
         if fasta is None:
             # NCBI datasets layout: nested ncbi_dataset/data/GC*_*/
-            fasta = next(d.glob("**/*genomic.fna"), None) or next(d.glob("**/*.fna"), None)
+            fasta = next(d.glob("**/*genomic.fna"), None) or next(
+                d.glob("**/*.fna"), None
+            )
         if gff is None:
             gff = next(d.glob("**/*.gff"), None) or next(d.glob("**/*.gff3"), None)
         if fasta and gff:
@@ -75,6 +78,7 @@ def _load_assembly_dirs(root: Path) -> list[tuple[str, Path, Path]]:
 
 
 def _parse_cds(gff_path: Path) -> dict[str, list[dict]]:
+    """Parse CDS features from a GFF, grouped and sorted by sequence ID."""
     by_seq: dict[str, list[dict]] = defaultdict(list)
     with gff_path.open() as handle:
         for line in handle:
@@ -103,13 +107,16 @@ def _parse_cds(gff_path: Path) -> dict[str, list[dict]]:
 
 
 def _is_housekeeping(cds: dict) -> bool:
+    """Return True if a CDS looks housekeeping and not heat-shock related."""
     text = f"{cds.get('product', '')} {cds.get('gene', '')}"
     if HEATSHOCK_PATTERNS.search(text):
         return False
     return bool(HOUSEKEEPING_PATTERNS.search(text))
 
 
-def _upstream_interval(cds: dict, neighbors: list[dict], contig_len: int) -> tuple[int, int] | None:
+def _upstream_interval(
+    cds: dict, neighbors: list[dict], contig_len: int
+) -> tuple[int, int] | None:
     """Return 0-based [start, end) genomic interval for UTR, or None if empty."""
     if cds["strand"] == "+":
         cds_start = cds["start"]  # 1-based inclusive
@@ -152,6 +159,7 @@ def extract_from_assembly(
     min_utr: int = MIN_UTR,
     max_utr: int = MAX_UTR,
 ) -> tuple[list[dict], dict]:
+    """Extract housekeeping 5' UTR windows from one assembly FASTA/GFF pair."""
     records = {rec.id.split()[0]: rec for rec in SeqIO.parse(str(fasta_path), "fasta")}
     # Also index without version quirks
     for rec in list(records.values()):
@@ -172,7 +180,14 @@ def extract_from_assembly(
         rec = records.get(seqid)
         if rec is None:
             # try prefix match
-            rec = next((records[k] for k in records if k.startswith(seqid) or seqid.startswith(k)), None)
+            rec = next(
+                (
+                    records[k]
+                    for k in records
+                    if k.startswith(seqid) or seqid.startswith(k)
+                ),
+                None,
+            )
         if rec is None:
             stats["n_missing_seq"] += 1
             continue
@@ -240,24 +255,25 @@ def run_extract(
     max_utr: int = MAX_UTR,
     target_candidates: int = 3000,
 ) -> dict:
+    """Walk downloaded assemblies and write candidate UTR CSV/FASTA plus a report."""
     root = resolve_path(genome_root)
     assemblies = _load_assembly_dirs(root)
     all_rows = []
     per_assembly = []
     for acc, fasta, gff in assemblies:
-        taxon = "Bacteria"
-        for part in Path(acc).parts:
-            pass
-        # infer taxon folder from path
         tax_string = "Bacteria"
         for parent in fasta.parents:
             if parent.name in {"Pseudomonadota", "Bacillota"}:
                 tax_string = f"Bacteria; {parent.name}"
                 break
-        rows, stats = extract_from_assembly(acc, fasta, gff, tax_string, min_utr, max_utr)
+        rows, stats = extract_from_assembly(
+            acc, fasta, gff, tax_string, min_utr, max_utr
+        )
         all_rows.extend(rows)
         per_assembly.append(stats)
-        print(f"{acc}: kept={stats['n_kept']} hk={stats['n_housekeeping']} cds={stats['n_cds']}")
+        print(
+            f"{acc}: kept={stats['n_kept']} hk={stats['n_housekeeping']} cds={stats['n_cds']}"
+        )
         if len(all_rows) >= target_candidates * 3:
             # enough headroom after cmscan losses
             break
@@ -306,11 +322,14 @@ def run_extract(
     return report
 
 
-def main():
+def main() -> None:
+    """Parse CLI arguments and extract RefSeq housekeeping UTRs."""
     p = argparse.ArgumentParser(description="Extract RefSeq housekeeping 5' UTRs")
     p.add_argument("--genome-root", default="data/raw/refseq_genomes")
     p.add_argument("--output-csv", default="data/processed/refseq_utr/candidates.csv")
-    p.add_argument("--output-fasta", default="data/processed/refseq_utr/candidates.fasta")
+    p.add_argument(
+        "--output-fasta", default="data/processed/refseq_utr/candidates.fasta"
+    )
     p.add_argument("--min-utr", type=int, default=MIN_UTR)
     p.add_argument("--max-utr", type=int, default=MAX_UTR)
     p.add_argument("--target-candidates", type=int, default=3000)

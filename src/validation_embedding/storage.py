@@ -13,24 +13,29 @@ GENERATED_FASTA_NAME = "generated.fasta"
 
 
 class ArtifactStorage:
-    def __init__(self, settings: LLMSettings | None = None):
+    def __init__(self, settings: LLMSettings | None = None) -> None:
+        """Initialize local and remote artifact storage from LLM settings."""
         self.settings = settings or load_llm_settings()
         self._gcs_client = None
         self._s3_client = None
 
     @property
     def uses_gcs(self) -> bool:
+        """Return whether storage uploads go to GCS."""
         return self.settings.storage_target == "gcs"
 
     @property
     def uses_s3(self) -> bool:
+        """Return whether storage uploads go to S3 or RunPod S3."""
         return self.settings.storage_target in {"s3", "runpod"}
 
     @property
     def uses_remote(self) -> bool:
+        """Return whether a remote object store is configured."""
         return self.uses_gcs or self.uses_s3
 
     def _remote_key(self, relative_path: str) -> str:
+        """Prefix a relative path with the configured bucket prefix."""
         relative_path = relative_path.lstrip("/")
         if self.uses_gcs:
             prefix = self.settings.gcs_prefix
@@ -38,15 +43,20 @@ class ArtifactStorage:
             prefix = self.settings.aws_s3_prefix
         return f"{prefix}/{relative_path}" if prefix else relative_path
 
-    def _require_gcs(self):
+    def _require_gcs(self) -> None:
+        """Raise if GCS is selected but GCS_BUCKET is unset."""
         if not self.settings.gcs_bucket:
             raise ValueError("GCS_BUCKET is required when STORAGE_TARGET=gcs")
 
-    def _require_s3(self):
+    def _require_s3(self) -> None:
+        """Raise if S3 is selected but AWS_S3_BUCKET is unset."""
         if not self.settings.aws_s3_bucket:
-            raise ValueError("AWS_S3_BUCKET is required when STORAGE_TARGET=s3 or runpod")
+            raise ValueError(
+                "AWS_S3_BUCKET is required when STORAGE_TARGET=s3 or runpod"
+            )
 
-    def _gcs_client_or_raise(self):
+    def _gcs_client_or_raise(self) -> object:
+        """Return a cached GCS client, creating it on first use."""
         self._require_gcs()
         if self._gcs_client is None:
             from google.cloud import storage
@@ -54,7 +64,8 @@ class ArtifactStorage:
             self._gcs_client = storage.Client()
         return self._gcs_client
 
-    def _s3_client_or_raise(self):
+    def _s3_client_or_raise(self) -> object:
+        """Return a cached boto3 S3 client, creating it on first use."""
         self._require_s3()
         if self._s3_client is None:
             import boto3
@@ -62,39 +73,49 @@ class ArtifactStorage:
             self._s3_client = boto3.client("s3", region_name=self.settings.aws_region)
         return self._s3_client
 
-    def _gcs_bucket(self):
+    def _gcs_bucket(self) -> object:
+        """Return the configured GCS bucket handle."""
         return self._gcs_client_or_raise().bucket(self.settings.gcs_bucket)
 
     def local_path(self, relative_path: str) -> Path:
+        """Resolve a repo-relative path to an absolute local path."""
         return resolve_path(relative_path)
 
     def de_novo_fasta_path(self) -> Path:
+        """Return the local path of the generated de novo FASTA."""
         return self.local_path(
             f"{self.settings.de_novo_output_dir}/{GENERATED_FASTA_NAME}"
         )
 
     def generation_manifest_path(self) -> Path:
+        """Return the local path of the generation manifest JSONL."""
         return self.local_path(
             f"{self.settings.de_novo_output_dir}/{GENERATION_MANIFEST_NAME}"
         )
 
     def embedding_dir(self, subdir: str = "") -> Path:
+        """Return the local embedding output directory, optionally nested."""
         base = resolve_path(self.settings.embedding_output_dir)
         return base / subdir if subdir else base
 
     def embedding_manifest_path(self, subdir: str = "") -> Path:
+        """Return the local path of the embedding manifest JSONL."""
         return self.embedding_dir(subdir) / EMBEDDING_MANIFEST_NAME
 
     def run_state_path(self) -> Path:
+        """Return the local path of the run_state.json file."""
         return self.local_path(f"data/processed/{RUN_STATE_NAME}")
 
     def upload_file(self, local_path: Path, remote_relative: str | None = None) -> bool:
+        """Upload a local file to remote storage when a remote target is set."""
         if not self.uses_remote:
             return True
         local_path = Path(local_path)
         if not local_path.exists():
             return False
-        remote_relative = remote_relative or str(local_path.relative_to(resolve_path(".")))
+        remote_relative = remote_relative or str(
+            local_path.relative_to(resolve_path("."))
+        )
         remote_key = self._remote_key(remote_relative)
         try:
             if self.uses_gcs:
@@ -112,6 +133,7 @@ class ArtifactStorage:
             return False
 
     def download_file(self, remote_relative: str, local_path: Path) -> bool:
+        """Download a remote object, skipping if a non-empty local file exists."""
         if not self.uses_remote:
             return local_path.exists()
         local_path = Path(local_path)
@@ -133,15 +155,20 @@ class ArtifactStorage:
                 client.head_object(Bucket=self.settings.aws_s3_bucket, Key=remote_key)
             except ClientError:
                 return False
-            client.download_file(self.settings.aws_s3_bucket, remote_key, str(local_path))
+            client.download_file(
+                self.settings.aws_s3_bucket, remote_key, str(local_path)
+            )
         return True
 
     def _list_remote_objects(self, prefix: str) -> list[str]:
+        """List object names under a remote prefix (non-recursive)."""
         names = []
         remote_prefix = self._remote_key(prefix)
         if self.uses_gcs:
             bucket = self._gcs_bucket()
-            blob_prefix = remote_prefix if remote_prefix.endswith("/") else f"{remote_prefix}/"
+            blob_prefix = (
+                remote_prefix if remote_prefix.endswith("/") else f"{remote_prefix}/"
+            )
             for blob in bucket.list_blobs(prefix=blob_prefix):
                 name = blob.name[len(blob_prefix) :]
                 if name and "/" not in name:
@@ -168,6 +195,7 @@ class ArtifactStorage:
         return names
 
     def upload_de_novo_artifacts(self) -> None:
+        """Upload generated FASTA, manifest, and accepted-chunk files."""
         if not self.uses_remote:
             return
         fasta = self.de_novo_fasta_path()
@@ -182,10 +210,19 @@ class ArtifactStorage:
                 manifest,
                 f"{DE_NOVO_REMOTE_SUBDIR}/{GENERATION_MANIFEST_NAME}",
             )
+        # Immutable accepted slices for stream triage (S3-native watcher).
+        accepted_dir = self.de_novo_fasta_path().parent / "accepted_chunks"
+        if accepted_dir.is_dir():
+            for path in sorted(accepted_dir.glob("accepted_*.fasta")):
+                self.upload_file(
+                    path,
+                    f"{DE_NOVO_REMOTE_SUBDIR}/accepted_chunks/{path.name}",
+                )
 
     def upload_embedding_artifacts(
         self, subdir: str = "", record_ids: list[str] | None = None
     ) -> None:
+        """Upload embedding manifest and npy/json artifacts for a subdir."""
         if not self.uses_remote:
             return
         output_dir = self.embedding_dir(subdir)
@@ -218,16 +255,19 @@ class ArtifactStorage:
             self.upload_file(path, f"{prefix}/{path.name}")
 
     def upload_run_state(self) -> None:
+        """Upload run_state.json when it exists locally."""
         path = self.run_state_path()
         if path.exists():
             self.upload_file(path, RUN_STATE_NAME)
 
     def sync_up(self, embedding_subdir: str = "") -> None:
+        """Upload de novo, embedding, and run-state artifacts."""
         self.upload_de_novo_artifacts()
         self.upload_embedding_artifacts(embedding_subdir)
         self.upload_run_state()
 
     def sync_down(self, embedding_subdir: str = "") -> None:
+        """Download remote de novo, embedding, and run-state artifacts."""
         if not self.uses_remote:
             return
         self.download_file(
@@ -252,7 +292,8 @@ class ArtifactStorage:
                 self.download_file(f"{prefix}/{name}", output_dir / name)
         self.download_file(RUN_STATE_NAME, self.run_state_path())
 
-    def load_jsonl(self, path: Path) -> list[dict]:
+    def load_jsonl(self, path: Path) -> list[dict[str, object]]:
+        """Load a JSONL file into a list of objects, or [] if missing."""
         if not path.exists():
             return []
         rows = []
@@ -263,24 +304,30 @@ class ArtifactStorage:
                     rows.append(json.loads(line))
         return rows
 
-    def append_jsonl(self, path: Path, record: dict) -> None:
+    def append_jsonl(self, path: Path, record: dict[str, object]) -> None:
+        """Append one JSON object as a line, creating parent directories."""
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a") as handle:
             handle.write(json.dumps(record) + "\n")
 
-    def load_generation_manifest(self) -> list[dict]:
+    def load_generation_manifest(self) -> list[dict[str, object]]:
+        """Load the generation manifest JSONL from disk."""
         return self.load_jsonl(self.generation_manifest_path())
 
-    def load_embedding_manifest(self, subdir: str = "") -> list[dict]:
+    def load_embedding_manifest(self, subdir: str = "") -> list[dict[str, object]]:
+        """Load the embedding manifest JSONL for an optional subdir."""
         return self.load_jsonl(self.embedding_manifest_path(subdir))
 
     def completed_generation_ids(self) -> set[str]:
+        """Return record ids already present in the generation manifest."""
         return {row["record_id"] for row in self.load_generation_manifest()}
 
     def completed_embedding_ids(self, subdir: str = "") -> set[str]:
+        """Return record ids already present in the embedding manifest."""
         return {row["record_id"] for row in self.load_embedding_manifest(subdir)}
 
-    def write_run_state(self, **fields) -> dict:
+    def write_run_state(self, **fields: object) -> dict[str, object]:
+        """Merge fields into run_state.json, upload it, and return the state."""
         path = self.run_state_path()
         state = {}
         if path.exists():
@@ -293,4 +340,5 @@ class ArtifactStorage:
 
 
 def get_storage(settings: LLMSettings | None = None) -> ArtifactStorage:
+    """Construct an ArtifactStorage from settings or the environment."""
     return ArtifactStorage(settings=settings)

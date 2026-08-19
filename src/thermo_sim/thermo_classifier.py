@@ -15,8 +15,12 @@ if str(SRC_ROOT) not in sys.path:
 from data_engineering.paths import resolve_path
 
 DEFAULT_MODEL_PATH = "data/processed/models/rf_thermoswitch.joblib"
-DEFAULT_NONCIRCULAR_MODEL_PATH = "data/processed/models/rf_thermoswitch_noncircular.joblib"
-DEFAULT_LENGTH_MATCHED_MODEL_PATH = "data/processed/models/rf_thermoswitch_length_matched.joblib"
+DEFAULT_NONCIRCULAR_MODEL_PATH = (
+    "data/processed/models/rf_thermoswitch_noncircular.joblib"
+)
+DEFAULT_LENGTH_MATCHED_MODEL_PATH = (
+    "data/processed/models/rf_thermoswitch_length_matched.joblib"
+)
 DEFAULT_TRAINING_FUSED = "data/processed/fused_features.csv"
 DEFAULT_LENGTH_MATCHED_FUSED = "data/processed/fused_features_length_matched.csv"
 DEFAULT_DENOVO_FUSED = "data/processed/denovo_fused_features.csv"
@@ -104,7 +108,7 @@ def build_xgboost_monotonic(
     max_depth: int = 4,
     learning_rate: float = 0.05,
     random_state: int = 42,
-):
+) -> tuple[object, tuple[int, ...]]:
     """Construct an XGBClassifier with physical monotone_constraints."""
     from xgboost import XGBClassifier
 
@@ -143,23 +147,27 @@ def add_intensive_features(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def _available_features(df, feature_columns=None):
+def _available_features(
+    df: pd.DataFrame, feature_columns: list[str] | None = None
+) -> list[str]:
+    """Return physics feature columns that are present on the frame."""
     cols = feature_columns if feature_columns is not None else PHYSICS_FEATURE_COLUMNS
     return [col for col in cols if col in df.columns]
 
 
 def train_random_forest(
-    fused_csv=DEFAULT_TRAINING_FUSED,
-    model_path=None,
-    n_estimators=200,
-    random_state=42,
-    intensive=True,
-    feature_set=None,
-    dataset_csv=None,
-    dataset_fasta=None,
-    denovo_fasta=None,
-    feature_log_json=DEFAULT_FEATURE_LOG,
-):
+    fused_csv: str = DEFAULT_TRAINING_FUSED,
+    model_path: str | None = None,
+    n_estimators: int = 200,
+    random_state: int = 42,
+    intensive: bool = True,
+    feature_set: str | None = None,
+    dataset_csv: str | None = None,
+    dataset_fasta: str | None = None,
+    denovo_fasta: str | None = None,
+    feature_log_json: str = DEFAULT_FEATURE_LOG,
+) -> Path:
+    """Train a Random Forest on fused physics features and persist the model."""
     from thermo_sim.noncircular_features import (
         DEFAULT_DATASET_CSV,
         DEFAULT_DATASET_FASTA,
@@ -268,13 +276,13 @@ def train_random_forest(
 
 
 def train_xgboost_monotonic(
-    fused_csv=DEFAULT_REFSEQ_DYNAMIC_FUSED,
-    model_path=DEFAULT_XGB_MODEL_PATH,
-    n_estimators=300,
-    max_depth=4,
-    learning_rate=0.05,
-    random_state=42,
-):
+    fused_csv: str = DEFAULT_REFSEQ_DYNAMIC_FUSED,
+    model_path: str = DEFAULT_XGB_MODEL_PATH,
+    n_estimators: int = 300,
+    max_depth: int = 4,
+    learning_rate: float = 0.05,
+    random_state: int = 42,
+) -> Path:
     """Train monotonic XGBoost on intensive+dynamic fused features."""
     fused_csv = resolve_path(fused_csv)
     df = pd.read_csv(fused_csv)
@@ -312,14 +320,17 @@ def train_xgboost_monotonic(
         },
         model_path,
     )
-    print(f"Trained monotonic XGBoost on {len(train_df)} rows, {len(feature_cols)} features")
+    print(
+        f"Trained monotonic XGBoost on {len(train_df)} rows, {len(feature_cols)} features"
+    )
     print(f"  features: {', '.join(feature_cols)}")
     print(f"  monotone_constraints: {constraints}")
     print(f"  model:    {model_path}")
     return model_path
 
 
-def _resolve_id_column(df):
+def _resolve_id_column(df: pd.DataFrame) -> str:
+    """Pick the first available join/id column for prediction output."""
     from data_engineering.cd_hit_sequence_similarity import JOIN_COLUMNS
 
     for col in ("record_id", *JOIN_COLUMNS):
@@ -329,14 +340,15 @@ def _resolve_id_column(df):
 
 
 def predict_thermoswitches(
-    fused_csv=DEFAULT_DENOVO_FUSED,
-    model_path=DEFAULT_MODEL_PATH,
-    predictions_csv=DEFAULT_PREDICTIONS,
-    join_column="record_id",
-    dataset_csv=None,
-    dataset_fasta=None,
-    denovo_fasta=None,
-):
+    fused_csv: str = DEFAULT_DENOVO_FUSED,
+    model_path: str = DEFAULT_MODEL_PATH,
+    predictions_csv: str = DEFAULT_PREDICTIONS,
+    join_column: str = "record_id",
+    dataset_csv: str | None = None,
+    dataset_fasta: str | None = None,
+    denovo_fasta: str | None = None,
+) -> Path:
+    """Score fused sequences with a saved classifier and write predictions."""
     from thermo_sim.noncircular_features import (
         DEFAULT_DATASET_CSV,
         DEFAULT_DATASET_FASTA,
@@ -381,7 +393,11 @@ def predict_thermoswitches(
         probs = [0.0] * len(predict_df)
     labels = model.predict(predict_df[feature_cols])
 
-    id_col = join_column if join_column in predict_df.columns else _resolve_id_column(predict_df)
+    id_col = (
+        join_column
+        if join_column in predict_df.columns
+        else _resolve_id_column(predict_df)
+    )
     results = predict_df[[id_col]].copy()
     results["prob_positive"] = probs
     results["predicted_label"] = labels
@@ -393,13 +409,16 @@ def predict_thermoswitches(
     return predictions_csv
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the train/predict/posthoc CLI parser."""
     parser = argparse.ArgumentParser(
         description="Train or run thermoswitch classifiers (RF / monotonic XGBoost)."
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    train_parser = sub.add_parser("train", help="Train RF on labeled fused_features.csv")
+    train_parser = sub.add_parser(
+        "train", help="Train RF on labeled fused_features.csv"
+    )
     train_parser.add_argument("--fused-csv", default=DEFAULT_REFSEQ_DYNAMIC_FUSED)
     train_parser.add_argument("--model-path", default=DEFAULT_NONCIRCULAR_MODEL_PATH)
     train_parser.add_argument(
@@ -471,12 +490,17 @@ def _build_parser():
     return parser
 
 
-def _run_posthoc_cli(args):
+def _run_posthoc_cli(args: argparse.Namespace) -> None:
+    """Run grouped CV diagnostics and post-hoc melting gates from CLI args."""
     import json as _json
 
     from sklearn.ensemble import RandomForestClassifier as _RF
     from sklearn.metrics import accuracy_score, roc_auc_score
-    from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold, cross_val_predict
+    from sklearn.model_selection import (
+        StratifiedGroupKFold,
+        StratifiedKFold,
+        cross_val_predict,
+    )
 
     from thermo_sim.noncircular_features import (
         build_noncircular_matrix,
@@ -504,7 +528,10 @@ def _run_posthoc_cli(args):
         clean[args.group_col].astype(str) if args.group_col in clean.columns else None
     )
 
-    def _eval_matrix(matrix, cv, grp=None):
+    def _eval_matrix(
+        matrix: pd.DataFrame, cv: object, grp: pd.Series | None = None
+    ) -> tuple[dict[str, float], object]:
+        """Score ROC-AUC and accuracy from out-of-fold RF probabilities."""
         rf = _RF(n_estimators=200, random_state=42, n_jobs=-1)
         kwargs = {"cv": cv, "method": "predict_proba"}
         if grp is not None:
@@ -561,7 +588,8 @@ def _run_posthoc_cli(args):
     )
 
 
-def main():
+def main() -> None:
+    """Dispatch thermoswitch train, predict, or post-hoc CLI commands."""
     args = _build_parser().parse_args()
     if args.command == "train":
         if args.legacy_features:

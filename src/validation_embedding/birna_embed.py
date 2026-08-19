@@ -18,8 +18,8 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from data_engineering.paths import resolve_path
-from validation_embedding.config import load_llm_settings
-from validation_embedding.storage import get_storage
+from validation_embedding.config import LLMSettings, load_llm_settings
+from validation_embedding.storage import ArtifactStorage, get_storage
 
 DEFAULT_INPUT = "data/processed/de_novo/smoke/generated.fasta"
 BATCH_INPUT = "data/processed/de_novo/generated.fasta"
@@ -28,7 +28,8 @@ _STORAGE = None
 _EMBEDDING_SUBDIR = ""
 
 
-def get_device(prefer_cuda=True, require_cuda=False):
+def get_device(prefer_cuda: bool = True, require_cuda: bool = False) -> torch.device:
+    """Return a CUDA device when available, otherwise CPU."""
     if prefer_cuda and torch.cuda.is_available():
         device = torch.device("cuda")
         print(f"BiRNA device: {device} ({torch.cuda.get_device_name(0)})")
@@ -42,7 +43,7 @@ def get_device(prefer_cuda=True, require_cuda=False):
     return torch.device("cpu")
 
 
-def _patch_birna_cpu_compat():
+def _patch_birna_cpu_compat() -> None:
     """Mac/CPU-only: skip Triton flash-attn imports that break without GPU kernels."""
     global _BIRNA_CPU_PATCHED
     if _BIRNA_CPU_PATCHED:
@@ -50,7 +51,8 @@ def _patch_birna_cpu_compat():
 
     import transformers.dynamic_module_utils as dmu
 
-    def check_imports(filename):
+    def check_imports(filename: str) -> list[str]:
+        """Import modeling-file deps, skipping Triton on CPU."""
         missing = []
         for imp in dmu.get_imports(filename):
             if imp == "triton":
@@ -72,7 +74,14 @@ def _patch_birna_cpu_compat():
     dmu.check_imports = check_imports
     real_import = builtins.__import__
 
-    def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+    def guarded_import(
+        name: str,
+        globals: dict[str, object] | None = None,
+        locals: dict[str, object] | None = None,
+        fromlist: tuple[str, ...] = (),
+        level: int = 0,
+    ) -> object:
+        """Raise ImportError for Triton flash-attn on CPU Bert layers."""
         module_name = globals.get("__name__", "") if globals else ""
         if (
             module_name.endswith("bert_layers")
@@ -86,13 +95,16 @@ def _patch_birna_cpu_compat():
     _BIRNA_CPU_PATCHED = True
 
 
-def _patch_birna_alibi(module, device):
+def _patch_birna_alibi(module: object, device: torch.device) -> None:
     """Keep ALiBi tensors on the same device as the model (GPU when available)."""
     encoder = module.BertEncoder
     original_rebuild = encoder.rebuild_alibi_tensor
     default_device = torch.device(device)
 
-    def rebuild_alibi(self, size, device=None):
+    def rebuild_alibi(
+        self: object, size: int, device: torch.device | None = None
+    ) -> torch.Tensor:
+        """Rebuild the ALiBi tensor on the model device by default."""
         if device is None:
             device = default_device
         return original_rebuild(self, size, device=device)
@@ -100,7 +112,8 @@ def _patch_birna_alibi(module, device):
     encoder.rebuild_alibi_tensor = rebuild_alibi
 
 
-def parse_fasta(path):
+def parse_fasta(path: Path | str) -> list[tuple[str, str]]:
+    """Parse a FASTA file into (header, sequence) pairs."""
     records = []
     header = None
     parts = []
@@ -121,12 +134,16 @@ def parse_fasta(path):
     return records
 
 
-def nuc_tokenize_input(sequence):
+def nuc_tokenize_input(sequence: str) -> str:
+    """Convert a DNA/RNA string into space-separated NUC tokens."""
     sequence = sequence.replace("T", "U").upper()
     return " ".join(list(sequence))
 
 
-def load_birna_model(settings, device):
+def load_birna_model(
+    settings: LLMSettings, device: torch.device
+) -> tuple[AutoTokenizer, torch.nn.Module, transformers.BertConfig]:
+    """Load BiRNA-BERT, tokenizer, and config onto the given device."""
     # CPU-compat patches only when actually on CPU (Mac smoke). On CUDA, leave
     # Triton/flash-attn imports alone so the A100 path can engage.
     if device.type == "cpu":
@@ -152,21 +169,37 @@ def load_birna_model(settings, device):
     return tokenizer, model, config
 
 
-def _record_id(header):
+def _record_id(header: str) -> str:
+    """Sanitize a FASTA header into a filesystem-safe record id."""
     return header.replace("/", "_").replace(" ", "_")
 
 
-def _sort_pending_by_length(pending):
+def _sort_pending_by_length(
+    pending: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
     """Sort by sequence length so micro-batches share similar lengths (less pad waste)."""
     return sorted(pending, key=lambda item: len(item[1]))
 
 
-def embed_sequence(tokenizer, model, config, sequence, device):
+def embed_sequence(
+    tokenizer: AutoTokenizer,
+    model: torch.nn.Module,
+    config: transformers.BertConfig,
+    sequence: str,
+    device: torch.device,
+) -> tuple[torch.Tensor, str]:
+    """Embed a single sequence and return (tensor, NUC input)."""
     results = embed_batch(tokenizer, model, config, [sequence], device)
     return results[0]
 
 
-def embed_batch(tokenizer, model, config, sequences, device):
+def embed_batch(
+    tokenizer: AutoTokenizer,
+    model: torch.nn.Module,
+    config: transformers.BertConfig,
+    sequences: list[str],
+    device: torch.device,
+) -> list[tuple[torch.Tensor, str]]:
     """True GPU micro-batch: pad within the batch, one forward, slice off pad tokens."""
     if not sequences:
         return []
@@ -183,7 +216,9 @@ def embed_batch(tokenizer, model, config, sequences, device):
         output = model(**batch)
     embeddings = output.logits
     if embeddings.ndim != 3:
-        raise ValueError(f"Expected 3D embedding tensor, got shape {tuple(embeddings.shape)}")
+        raise ValueError(
+            f"Expected 3D embedding tensor, got shape {tuple(embeddings.shape)}"
+        )
     if embeddings.shape[-1] != config.hidden_size:
         raise ValueError(
             f"Hidden size mismatch: expected {config.hidden_size}, got {embeddings.shape[-1]}"
@@ -199,7 +234,16 @@ def embed_batch(tokenizer, model, config, sequences, device):
     return results
 
 
-def save_embedding(record_id, sequence, embeddings, config, output_dir, settings, storage):
+def save_embedding(
+    record_id: str,
+    sequence: str,
+    embeddings: torch.Tensor,
+    config: transformers.BertConfig,
+    output_dir: Path | str,
+    settings: LLMSettings,
+    storage: ArtifactStorage,
+) -> tuple[Path, Path]:
+    """Write embedding .npy/.json files and append a manifest row."""
     output_dir = resolve_path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     array = embeddings.cpu().numpy()
@@ -220,18 +264,21 @@ def save_embedding(record_id, sequence, embeddings, config, output_dir, settings
     return npy_path, meta_path
 
 
-def _flush_storage():
+def _flush_storage() -> None:
+    """Upload pending embedding artifacts if a storage client is registered."""
     global _STORAGE, _EMBEDDING_SUBDIR
     if _STORAGE is not None:
         _STORAGE.sync_up(embedding_subdir=_EMBEDDING_SUBDIR)
 
 
-def _register_sigterm_handler(storage, embedding_subdir):
+def _register_sigterm_handler(storage: ArtifactStorage, embedding_subdir: str) -> None:
+    """Flush embedding artifacts to storage when the process receives SIGTERM."""
     global _STORAGE, _EMBEDDING_SUBDIR
     _STORAGE = storage
     _EMBEDDING_SUBDIR = embedding_subdir
 
-    def _handle_sigterm(signum, frame):
+    def _handle_sigterm(signum: int, frame: object | None) -> None:
+        """Flush artifacts to storage and exit on SIGTERM."""
         print("SIGTERM received — flushing embedding artifacts before exit...")
         storage.write_run_state(status="preempted", event="sigterm_embed")
         _flush_storage()
@@ -241,14 +288,15 @@ def _register_sigterm_handler(storage, embedding_subdir):
 
 
 def run_birna_embed(
-    input_fasta=DEFAULT_INPUT,
-    output_subdir="smoke",
-    sequence=None,
-    batch_size=32,
-    resume=False,
-    dry_run=False,
-    require_cuda=False,
-):
+    input_fasta: str = DEFAULT_INPUT,
+    output_subdir: str = "smoke",
+    sequence: str | None = None,
+    batch_size: int = 32,
+    resume: bool = False,
+    dry_run: bool = False,
+    require_cuda: bool = False,
+) -> list[tuple[Path, Path]]:
+    """Embed sequences with BiRNA-BERT and write checkpointed .npy artifacts."""
     settings = load_llm_settings()
     storage = get_storage(settings)
     output_dir = resolve_path(settings.embedding_output_dir) / output_subdir
@@ -303,7 +351,9 @@ def run_birna_embed(
     saved = []
     total_batches = (len(pending) + batch_size - 1) // batch_size
 
-    for batch_idx, batch_start in enumerate(range(0, len(pending), batch_size), start=1):
+    for batch_idx, batch_start in enumerate(
+        range(0, len(pending), batch_size), start=1
+    ):
         batch = pending[batch_start : batch_start + batch_size]
         headers = [header for header, _ in batch]
         seqs = [seq for _, seq in batch]
@@ -349,11 +399,14 @@ def run_birna_embed(
     return saved
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the CLI parser for BiRNA-BERT embedding."""
     parser = argparse.ArgumentParser(description="BiRNA-BERT NUC embedding.")
     parser.add_argument("--input-fasta", default=None)
     parser.add_argument("--output-subdir", default=None)
-    parser.add_argument("--sequence", default=None, help="Inline sequence instead of FASTA")
+    parser.add_argument(
+        "--sequence", default=None, help="Inline sequence instead of FASTA"
+    )
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
@@ -365,7 +418,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Run BiRNA-BERT embedding from the command line."""
     from validation_embedding.runpod_lifecycle import runpod_terminate_if_configured
 
     args = _build_parser().parse_args()

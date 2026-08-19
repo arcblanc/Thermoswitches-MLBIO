@@ -9,6 +9,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
+    """Parse a boolean environment variable, falling back to default."""
     value = os.environ.get(name)
     if value is None:
         return default
@@ -46,15 +47,20 @@ class LLMSettings:
 
 
 def load_llm_settings() -> LLMSettings:
+    """Load LLM and storage settings from environment variables."""
     return LLMSettings(
         hf_token=os.environ.get("HF_TOKEN") or None,
         generna_cache_dir=os.environ.get("GENERNA_CACHE_DIR", "models/genererna"),
-        birna_tokenizer_id=os.environ.get("BIRNA_TOKENIZER_ID", "buetnlpbio/birna-tokenizer"),
+        birna_tokenizer_id=os.environ.get(
+            "BIRNA_TOKENIZER_ID", "buetnlpbio/birna-tokenizer"
+        ),
         birna_model_id=os.environ.get("BIRNA_MODEL_ID", "buetnlpbio/birna-bert"),
         embedding_output_dir=os.environ.get(
             "EMBEDDING_OUTPUT_DIR", "data/processed/validation_embedding"
         ),
-        de_novo_output_dir=os.environ.get("DE_NOVO_OUTPUT_DIR", "data/processed/de_novo"),
+        de_novo_output_dir=os.environ.get(
+            "DE_NOVO_OUTPUT_DIR", "data/processed/de_novo"
+        ),
         storage_target=os.environ.get("STORAGE_TARGET", "local").strip().lower(),
         gcs_bucket=os.environ.get("GCS_BUCKET") or None,
         gcs_prefix=os.environ.get("GCS_PREFIX", "llm-batch/v1").strip("/"),
@@ -67,7 +73,9 @@ def load_llm_settings() -> LLMSettings:
         vm_auto_shutdown=_env_bool("VM_AUTO_SHUTDOWN", default=False),
         generna_batch_size=int(os.environ.get("GENERNA_BATCH_SIZE", "50")),
         generna_num_samples=int(os.environ.get("GENERNA_NUM_SAMPLES", "10000")),
-        eva_checkpoint_dir=os.environ.get("EVA_CHECKPOINT_DIR", "models/eva/checkpoint"),
+        eva_checkpoint_dir=os.environ.get(
+            "EVA_CHECKPOINT_DIR", "models/eva/checkpoint"
+        ),
         eva_cache_dir=os.environ.get("EVA_CACHE_DIR", "models/eva"),
         eva_chunk_size=int(os.environ.get("EVA_CHUNK_SIZE", "512")),
         eva_min_len=int(os.environ.get("EVA_MIN_LEN", "40")),

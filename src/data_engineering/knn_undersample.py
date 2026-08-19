@@ -1,6 +1,7 @@
 import argparse
 import pickle
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pandas as pd
@@ -30,11 +31,14 @@ METADATA_COLUMNS = [
 ]
 
 
-def normalize_sequence(sequence):
+def normalize_sequence(sequence: str) -> str:
+    """Uppercase a sequence and convert DNA T bases to RNA U."""
     return sequence.upper().replace("T", "U")
 
 
-def iter_sequence_kmer_tokens(sequence, ks=(2, 3)):
+def iter_sequence_kmer_tokens(
+    sequence: str, ks: tuple[int, ...] = (2, 3)
+) -> Iterator[str]:
     """Yield 2-mer and 3-mer tokens for a single sequence."""
     sequence = normalize_sequence(sequence)
     for k in ks:
@@ -44,18 +48,25 @@ def iter_sequence_kmer_tokens(sequence, ks=(2, 3)):
             yield sequence[index : index + k]
 
 
-def build_kmer_corpus(sequences, ks=(2, 3)):
+def build_kmer_corpus(sequences: list[str], ks: tuple[int, ...] = (2, 3)) -> list[str]:
+    """Build space-joined k-mer token strings for each sequence."""
     return [" ".join(iter_sequence_kmer_tokens(sequence, ks)) for sequence in sequences]
 
 
-def build_kmer_matrix(sequences, ks=(2, 3)):
+def build_kmer_matrix(
+    sequences: list[str], ks: tuple[int, ...] = (2, 3)
+) -> tuple[object, CountVectorizer]:
+    """Fit a k-mer count matrix and return it with the vectorizer."""
     corpus = build_kmer_corpus(sequences, ks=ks)
     vectorizer = CountVectorizer(token_pattern=r"\S+")
     matrix = vectorizer.fit_transform(corpus)
     return matrix, vectorizer
 
 
-def load_sequences_from_fasta(fasta_path):
+def load_sequences_from_fasta(
+    fasta_path: str | Path,
+) -> dict[tuple[str, int, int], str]:
+    """Parse FASTA records keyed by rfamseq_acc and coordinates."""
     fasta_path = resolve_path(fasta_path)
     records = {}
     header = None
@@ -84,7 +95,10 @@ def load_sequences_from_fasta(fasta_path):
     return records
 
 
-def load_labeled_pool(csv_path, fasta_path, label):
+def load_labeled_pool(
+    csv_path: str | Path, fasta_path: str | Path, label: int
+) -> pd.DataFrame:
+    """Load CSV metadata, attach FASTA sequences, and stamp a class label."""
     csv_path = resolve_path(csv_path)
     fasta_path = resolve_path(fasta_path)
     df = pd.read_csv(csv_path)
@@ -103,7 +117,10 @@ def load_labeled_pool(csv_path, fasta_path, label):
     return df
 
 
-def write_dataset(df, output_csv, output_fasta):
+def write_dataset(
+    df: pd.DataFrame, output_csv: str | Path, output_fasta: str | Path
+) -> tuple[Path, Path]:
+    """Write labeled metadata CSV and FASTA files for a dataset."""
     output_csv = resolve_path(output_csv)
     output_fasta = resolve_path(output_fasta)
     output_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -122,17 +139,18 @@ def write_dataset(df, output_csv, output_fasta):
 
 
 def balance_with_enn_rus(
-    positives_csv=f"{CDHIT_OUTPUT_DIR}/positives_deduped.csv",
-    positives_fasta=f"{CDHIT_OUTPUT_DIR}/positives_deduped.fasta",
-    negatives_csv=f"{CDHIT_OUTPUT_DIR}/negatives_deduped.csv",
-    negatives_fasta=f"{CDHIT_OUTPUT_DIR}/negatives_deduped.fasta",
-    enn_output_csv=f"{BALANCED_DIR}/enn_cleaned.csv",
-    enn_output_fasta=f"{BALANCED_DIR}/enn_cleaned.fasta",
-    balanced_output_csv=f"{BALANCED_DIR}/balanced_dataset.csv",
-    balanced_output_fasta=f"{BALANCED_DIR}/balanced_dataset.fasta",
-    vectorizer_output=f"{BALANCED_DIR}/kmer_vectorizer.pkl",
-    random_state=RANDOM_STATE,
-):
+    positives_csv: str | Path = f"{CDHIT_OUTPUT_DIR}/positives_deduped.csv",
+    positives_fasta: str | Path = f"{CDHIT_OUTPUT_DIR}/positives_deduped.fasta",
+    negatives_csv: str | Path = f"{CDHIT_OUTPUT_DIR}/negatives_deduped.csv",
+    negatives_fasta: str | Path = f"{CDHIT_OUTPUT_DIR}/negatives_deduped.fasta",
+    enn_output_csv: str | Path = f"{BALANCED_DIR}/enn_cleaned.csv",
+    enn_output_fasta: str | Path = f"{BALANCED_DIR}/enn_cleaned.fasta",
+    balanced_output_csv: str | Path = f"{BALANCED_DIR}/balanced_dataset.csv",
+    balanced_output_fasta: str | Path = f"{BALANCED_DIR}/balanced_dataset.fasta",
+    vectorizer_output: str | Path = f"{BALANCED_DIR}/kmer_vectorizer.pkl",
+    random_state: int = RANDOM_STATE,
+) -> pd.DataFrame:
+    """Clean majority k-mers with ENN, then random-undersample to class balance."""
     positives_df = load_labeled_pool(positives_csv, positives_fasta, label=1)
     negatives_df = load_labeled_pool(negatives_csv, negatives_fasta, label=0)
     dataset = pd.concat([positives_df, negatives_df], ignore_index=True)
@@ -193,7 +211,8 @@ def balance_with_enn_rus(
     return balanced_df
 
 
-def _build_parser():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the ENN/RUS balancing CLI parser."""
     parser = argparse.ArgumentParser(
         description="Balance CD-HIT negatives to match positives via k-mer ENN and RUS."
     )
@@ -216,7 +235,8 @@ def _build_parser():
     return parser
 
 
-def main():
+def main() -> None:
+    """Parse CLI arguments and write the balanced dataset."""
     args = _build_parser().parse_args()
     balance_with_enn_rus(
         positives_csv=args.positives_csv,
