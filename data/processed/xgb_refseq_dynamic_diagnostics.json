@@ -1,0 +1,99 @@
+{
+  "n": 2396,
+  "n_pos": 1198,
+  "n_neg": 1198,
+  "group_col": "rfam_acc",
+  "n_families": 108,
+  "features_intensive": [
+    "nupack_MFE_per_nt",
+    "nupack_max_stem_frac",
+    "nupack_max_loop_frac",
+    "nupack_mean_exposure",
+    "nupack_gc_content",
+    "nupack_Tm",
+    "nupack_hill_coeff",
+    "nupack_amplitude",
+    "viennarna_MFE_per_nt",
+    "viennarna_max_loop_frac",
+    "viennarna_gc_content",
+    "viennarna_mean_unpaired_prob",
+    "viennarna_Tm",
+    "viennarna_hill_coeff",
+    "viennarna_amplitude",
+    "viennarna_mfe_zscore",
+    "viennarna_delta_P_RBS",
+    "viennarna_delta_delta_G",
+    "viennarna_ensemble_diversity",
+    "viennarna_mean_positional_entropy"
+  ],
+  "monotone_constraints": {
+    "nupack_MFE_per_nt": -1,
+    "nupack_max_stem_frac": 0,
+    "nupack_max_loop_frac": 0,
+    "nupack_mean_exposure": 0,
+    "nupack_gc_content": 0,
+    "nupack_Tm": 0,
+    "nupack_hill_coeff": 1,
+    "nupack_amplitude": 1,
+    "viennarna_MFE_per_nt": -1,
+    "viennarna_max_loop_frac": 0,
+    "viennarna_gc_content": 0,
+    "viennarna_mean_unpaired_prob": 0,
+    "viennarna_Tm": 0,
+    "viennarna_hill_coeff": 0,
+    "viennarna_amplitude": 0,
+    "viennarna_mfe_zscore": -1,
+    "viennarna_delta_P_RBS": 1,
+    "viennarna_delta_delta_G": -1,
+    "viennarna_ensemble_diversity": 1,
+    "viennarna_mean_positional_entropy": 1
+  },
+  "monotone_constraints_tuple": [
+    -1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    -1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    -1,
+    1,
+    -1,
+    1,
+    1
+  ],
+  "length_alone_stratified": {
+    "roc_auc": 0.1956188806608677,
+    "accuracy": 0.27295492487479134
+  },
+  "xgb_monotonic_stratified_group": {
+    "roc_auc": 0.19729599415832175,
+    "accuracy": 0.3952420701168614
+  },
+  "xgb_monotonic_stratified": {
+    "roc_auc": 0.7977952959997324,
+    "accuracy": 0.7287145242070117
+  },
+  "rf_unconstrained_stratified_group": {
+    "roc_auc": 0.1872998542367496,
+    "accuracy": 0.3843906510851419
+  },
+  "rf_baseline_json": "data/processed/refseq_dynamic_rf_diagnostics.json",
+  "rf_baseline_groupkfold_auc": 0.1872998542367496,
+  "length_alone_gate": 0.65,
+  "length_alone_gate_passed": true,
+  "decision_matrix": {
+    "rf_groupkfold_auc": 0.1873,
+    "xgb_monotonic_groupkfold_auc": 0.1973,
+    "delta_auc_vs_rf": 0.01,
+    "length_alone_gate_passed": true
+  }
+}

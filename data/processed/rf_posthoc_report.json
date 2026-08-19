@@ -1,8 +1,3 @@
-Trained RandomForest on 2396 rows, 92 features
-  feature_set: noncircular
-  features: viennarna_MFE_per_nt, nupack_MFE_per_nt, viennarna_ensemble_diversity, viennarna_mean_positional_entropy, nupack_max_stem_length, nupack_max_loop_length, viennarna_max_loop_length, seq_length, viennarna_gc_content, P_paired_RBS_37, dinuc_AA, dinuc_AU, dinuc_AG, dinuc_AC, dinuc_UA, dinuc_UU, dinuc_UG, dinuc_UC, dinuc_GA, dinuc_GU, dinuc_GG, dinuc_GC, dinuc_CA, dinuc_CU, dinuc_CG, dinuc_CC, trinuc_AAA, trinuc_AAU, trinuc_AAG, trinuc_AAC, trinuc_AUA, trinuc_AUU, trinuc_AUG, trinuc_AUC, trinuc_AGA, trinuc_AGU, trinuc_AGG, trinuc_AGC, trinuc_ACA, trinuc_ACU, trinuc_ACG, trinuc_ACC, trinuc_UAA, trinuc_UAU, trinuc_UAG, trinuc_UAC, trinuc_UUA, trinuc_UUU, trinuc_UUG, trinuc_UUC, trinuc_UGA, trinuc_UGU, trinuc_UGG, trinuc_UGC, trinuc_UCA, trinuc_UCU, trinuc_UCG, trinuc_UCC, trinuc_GAA, trinuc_GAU, trinuc_GAG, trinuc_GAC, trinuc_GUA, trinuc_GUU, trinuc_GUG, trinuc_GUC, trinuc_GGA, trinuc_GGU, trinuc_GGG, trinuc_GGC, trinuc_GCA, trinuc_GCU, trinuc_GCG, trinuc_GCC, trinuc_CAA, trinuc_CAU, trinuc_CAG, trinuc_CAC, trinuc_CUA, trinuc_CUU, trinuc_CUG, trinuc_CUC, trinuc_CGA, trinuc_CGU, trinuc_CGG, trinuc_CGC, trinuc_CCA, trinuc_CCU, trinuc_CCG, trinuc_CCC, sd_aug_spacing, sd_aug_missing
-  model:    /Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/models/rf_thermoswitch_noncircular.joblib
-Wrote /Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/rf_noncircular_diagnostics.json
 {
   "written_at": "2026-08-18T15:18:59.567994+00:00",
   "n": 2396,
@@ -141,4 +136,3 @@ Wrote /Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/rf_noncircu
   "eva_hill_not_available": "EVA stream FASTA triage still uses Z / \u0394P_RBS / E_Rfam only. Full post-hoc Hill/Tm gates need thermo_batch on generated sequences.",
   "has_hill_columns": true
 }
-Wrote /Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/rf_posthoc_report.json

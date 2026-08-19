@@ -1,3 +1,0 @@
-Trained RandomForest on 2396 rows, 15 features
-  features: nupack_MFE_per_nt, nupack_max_stem_frac, nupack_max_loop_frac, nupack_mean_exposure, nupack_gc_content, nupack_Tm, nupack_hill_coeff, nupack_amplitude, viennarna_MFE_per_nt, viennarna_max_loop_frac, viennarna_gc_content, viennarna_mean_unpaired_prob, viennarna_Tm, viennarna_hill_coeff, viennarna_amplitude
-  model:    /Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/models/rf_thermoswitch_refseq_matched.joblib

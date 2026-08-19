@@ -37,31 +37,64 @@ Thumbs.db
 .idea/
 *.swp
 
-# Generated data
+# Generated data (default: ignore all processed artifacts)
 data/raw/*
 !data/raw/.gitkeep
 data/reference/*
 !data/reference/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
-!data/processed/viennarna/
-!data/processed/viennarna/.gitkeep
-!data/processed/nupack/
-!data/processed/nupack/.gitkeep
+
+# --- Lightweight summaries only (diff-friendly metrics) ---
+!data/processed/rf_noncircular_diagnostics.json
+!data/processed/rf_posthoc_report.json
+!data/processed/rf_noncircular_feature_log.json
+!data/processed/xgb_refseq_dynamic_diagnostics.json
+
+# Prototype 4-seq golden panel (small CI fixture)
 !data/processed/prototype/
 !data/processed/prototype/.gitkeep
+
+# Novelty: JSON/CSV summaries + figures only (no raw BLAST tables or query FASTAs)
 !data/processed/novelty/
 !data/processed/novelty/.gitkeep
-# Keep novelty summaries / candidates; drop multi-GB search dumps
-data/processed/novelty/nhmmer_hits.out
-data/processed/novelty/nhmmer_hits.tbl
-data/processed/novelty/run.log
 !data/processed/novelty/novelty_summary.json
 !data/processed/novelty/novelty_report.csv
 !data/processed/novelty/novelty_by_category.csv
-!data/processed/novelty/candidates_99.fasta
-!data/processed/novelty/blastn_hits.tsv
+!data/processed/novelty/eva_pilot_novelty_summary.json
+!data/processed/novelty/eva_pilot_novelty_report.csv
+!data/processed/novelty/eva_pilot_novelty_by_category.csv
 !data/processed/novelty/figures/
+
+# Directory placeholders (no heavy tables committed)
+!data/processed/viennarna/.gitkeep
+!data/processed/nupack/.gitkeep
+
+# Heavy reproducible tables (regenerate via thermo_batch / enrich scripts)
+data/processed/viennarna/*.csv
+data/processed/nupack/*.csv
+data/processed/**/*_features*.csv
+data/processed/**/fused_features*.csv
+data/processed/**/dynamic_features*.csv
+
+# Raw generative / candidate sequence pools
+data/processed/de_novo/*.fasta
+data/processed/eva_pilot/*.fasta
+data/processed/eva_stream/*.fasta
+data/processed/novelty/blastn_hits.tsv
+data/processed/novelty/*blastn_hits*.tsv
+data/processed/novelty/eva_pilot_queries.fasta
+data/processed/novelty/candidates_99.fasta
+data/processed/novelty/nhmmer_hits.out
+data/processed/novelty/nhmmer_hits.tbl
+data/processed/novelty/run.log
+
+# Pipeline run logs (noisy; regenerate on each run)
+logs/*
+!logs/.gitkeep
+
+# Marimo editor session cache
+notebooks/__marimo__/
 
 # Trained models
 models/*
@@ -97,7 +130,6 @@ data/processed/prototype/curves/
 # LLM caches and generated embeddings (under data/processed/* by default)
 models/genererna/
 data/processed/validation_embedding/
-
 
 # Local notebook PDF export helpers (not published)
 scripts/export_notebook_pdf.sh
