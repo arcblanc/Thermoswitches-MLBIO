@@ -7,8 +7,6 @@
 
 Executable analysis stack for the thesis: corpus curation, ViennaRNA/NUPACK thermodynamics, the 92-column Random Forest panel, EVA generation on Macleod, yield triage, and figure export.
 
-**Thesis chapter prose, guideline evaluations, and the supplementary booklet** live in the sibling package [`../thesis_md_package/`](../thesis_md_package/) (see [`notebooks/THESIS_MD_PACKAGE.md`](notebooks/THESIS_MD_PACKAGE.md)).
-
 ---
 
 ## Scientific summary
@@ -47,22 +45,18 @@ Mac CPU ── Vienna Z / ΔP_RBS + Rfam novelty ── yield gate ── 105 ca
 
 ---
 
-## Thesis and supplementary map
+## Analysis map
 
-| Thesis / supplementary content | Repository location | Regenerate / view |
-|--------------------------------|---------------------|-------------------|
-| **Chapter 3 methods** (matching, 92-column matrix, engines) | `src/data_engineering/`, `src/thermo_sim/` | [Rebuild core panel](#rebuild-core-panel) |
-| **Chapter 4 results** (RF, grouped permutation, gates) | `data/processed/rf_*.json`, App 07 | `notebooks/07_noncircular_rf_results.py` |
-| **Chapter 4 figures** (ROC, permutation, funnel, Hill ribbons) | `notebooks/figures/thesis_figures/` | `notebooks/thesis_figures.py`, `src/thermo_sim/thesis_results_figures.py` |
-| **Supplementary §1** (software stack, Macleod job) | `environment.yml`, `cluster/MACLEOD_EVA.md` | `cluster/EVA_OVERVIEW.md` |
-| **Supplementary §2** (92-col matrix, EVA soft-drop) | `noncircular_features.py`, `eva_quality.py` | `tests/test_noncircular_features.py`, `tests/test_eva_quality.py` |
-| **Supplementary §3** (RF formulae, yield gates) | `thermo_classifier.py`, `rf_posthoc.py` | `notebooks/rf_noncircular_methodology.md` |
-| **Supplementary §4** (105 yield table, attrition, parity) | `data/processed/eva_denovo_checklist.json` | App 08, `notebooks/08_summarised_findings.md` |
-| **Supplementary §5–6** (GenerRNA prototype, lead-315 PoC) | `src/de_novo_hallucinations/genererna/`, App 08 figures | `notebooks/figures/08_eva_denovo/` |
-| **Guideline evaluations & accuracy audits** | `../thesis_md_package/guideline_eval/` | Not in this repo |
-| **Supplementary booklet (PDF/DOCX source)** | `../thesis_md_package/supplementary/` | `supplementary/build_supplementary_figures.py` |
-
-Pointer: [`notebooks/THESIS_MD_PACKAGE.md`](notebooks/THESIS_MD_PACKAGE.md).
+| Content | Repository location | Regenerate / view |
+|---------|---------------------|-------------------|
+| **Panel construction** (matching, 92-column matrix, engines) | `src/data_engineering/`, `src/thermo_sim/` | [Rebuild core panel](#rebuild-core-panel) |
+| **RF results** (grouped permutation, gates) | `data/processed/rf_*.json`, App 07 | `notebooks/07_noncircular_rf_results.py` |
+| **Results figures** (ROC, permutation, funnel, Hill ribbons) | `notebooks/figures/thesis_figures/` | `notebooks/thesis_figures.py`, `src/thermo_sim/thesis_results_figures.py` |
+| **Software stack and Macleod job** | `environment.yml`, `cluster/MACLEOD_EVA.md` | `cluster/EVA_OVERVIEW.md` |
+| **92-col matrix and EVA soft-drop** | `noncircular_features.py`, `eva_quality.py` | `tests/test_noncircular_features.py`, `tests/test_eva_quality.py` |
+| **RF formulae and yield gates** | `thermo_classifier.py`, `rf_posthoc.py` | `notebooks/rf_noncircular_methodology.md` |
+| **105 yield table and attrition** | `data/processed/eva_denovo_checklist.json` | App 08, `notebooks/08_summarised_findings.md` |
+| **GenerRNA prototype and lead-315 PoC** | `src/de_novo_hallucinations/genererna/`, App 08 figures | `notebooks/figures/08_eva_denovo/` |
 
 ---
 
@@ -126,7 +120,7 @@ Missing AUG was **not** dropped (RefSeq UTRs lack initiators more often than Rfa
 | Length-alone AUC | ≈ 0.20 | `rf_noncircular_diagnostics.json` |
 | **GroupKFold AUC (92-col $X$)** | **≈ 0.28** | same |
 | EVA accepted / yield (2,000 panel) | 105 / 2,000 = **5.25%** | `eva_denovo_checklist.json` |
-| Vienna vs NUPACK $T_m$ parity | Gates locked to **ViennaRNA only** | Supplementary Figure 5 narrative |
+| Vienna vs NUPACK $T_m$ parity | Gates locked to **ViennaRNA only** | App 08, `notebooks/08_summarised_findings.md` |
 
 ---
 
@@ -227,14 +221,6 @@ Large regenerated tables (`fused_features_*.csv`, Vienna/NUPACK CSVs, `.joblib` 
 | `data/processed/eva_denovo_checklist.json` | Four-gate pass rates by cohort |
 | `notebooks/figures/thesis_figures/` | Chapter 4 export PNGs |
 | `notebooks/figures/08_eva_denovo/` | App 08 audit figures |
-
----
-
-
-```bash
-cd ../thesis_md_package/supplementary
-PYTHONPATH=../Thermoswitches-MLBIO/src python build_supplementary_figures.py
-```
 
 ---
 
