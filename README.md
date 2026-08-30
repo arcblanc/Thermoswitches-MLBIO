@@ -5,7 +5,7 @@
 **Author:** Amier Zuhri · MSc Data Science, University of Aberdeen (2026)  
 **Thesis:** *In Silico De Novo Design and Validation of Synthetic RNA Thermoswitches Via Deep Generative Modelling*
 
-Executable analysis stack for the thesis: corpus curation, ViennaRNA/NUPACK thermodynamics, the non-circular Random Forest panel, EVA generation orchestration, yield triage, and figure export.
+Executable analysis stack for the thesis: corpus curation, ViennaRNA/NUPACK thermodynamics, the 92-column Random Forest panel, EVA generation on Macleod, yield triage, and figure export.
 
 **Thesis chapter prose, guideline evaluations, and the supplementary booklet** live in the sibling package [`../thesis_md_package/`](../thesis_md_package/) (see [Thesis markdown package](#thesis-markdown-package)).
 
@@ -13,11 +13,11 @@ Executable analysis stack for the thesis: corpus curation, ViennaRNA/NUPACK ther
 
 ## Scientific summary
 
-Prokaryotic RNA thermoswitches in the 5′ UTR sequester the Shine–Dalgarno (RBS) sequence at low temperature and expose it as temperature rises. We built a length/GC-matched panel ($N = 2{,}396$), scored sequences with dual folding engines, trained a Random Forest on **non-circular 37 °C physics and k-mers**, and used **post-hoc melting gates** (not RF inputs) to rank phenotype. A frozen **EVA 1.4B CLM** on Macleod GPU generated 2,000 sequences; Mac-side triage recovered **105 yield-gated candidates** under
+Prokaryotic RNA thermoswitches in the 5′ UTR sequester the Shine–Dalgarno (RBS) sequence at low temperature. They expose it as temperature rises. We built a length/GC-matched panel ($N = 2{,}396$) with dual folding engines, trained a 200-tree Random Forest on **37 °C physics and k-mers**, and ranked phenotype with **post-hoc melting gates** that sit outside $X$, and after that we deployed a frozen **EVA 1.4B CLM** on Macleod gpu02, drew 2,000 TaxID-conditioned mRNA sequences, and ran the streaming triage in `scripts/triage/` to recover **105 yield-gated candidates** under
 
 $$Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}.$$
 
-The Random Forest is a **ranking aid**, not a wet-lab acceptance gate. GroupKFold AUC on the non-circular matrix is ≈ **0.28** (no transferable out-of-family detector); the circular 20-column history inflated to ≈ **0.80** under stratified CV because melting scalars leaked the phenotype into $X$.
+The yield settled near five per cent. The Random Forest serves as a **ranking aid** rather than a wet-lab acceptance gate, and GroupKFold evaluation on the 92-column matrix returned AUC ≈ **0.28**, which indicates that static 37 °C features alone do not yield a transferable out-of-family detector.
 
 ---
 
@@ -39,7 +39,7 @@ Mac CPU ── Vienna Z / ΔP_RBS + Rfam novelty ── yield gate ── 105 ca
 |-------|------|----------------|
 | **1. Corpus** | Rfam thermoswitch families vs RefSeq housekeeping 5′ UTRs | `src/data_engineering/` |
 | **2. Features ($X$)** | Static 37 °C physics + composition + 16+64 k-mers + SD–AUG | `src/thermo_sim/noncircular_features.py` |
-| **3. RF** | Bootstrap ensemble; grouped CV diagnostics | `src/thermo_sim/thermo_classifier.py` |
+| **3. RF** | Bootstrap ensemble and grouped CV diagnostics | `src/thermo_sim/thermo_classifier.py` |
 | **4. Post-hoc** | ŷ bins, ΔP_RBS, $n_H$, $T_m$, $Z$, Vienna–NUPACK Spearman | `src/thermo_sim/rf_posthoc.py` |
 | **5. EVA** | Pretrained CLM generation (not trained here) | `src/de_novo_hallucinations/eva_generate.py` |
 | **6. Triage** | Three-gate yield on streaming FASTA | `scripts/triage/` |
@@ -78,7 +78,7 @@ Thermoswitches-MLBIO/
 │   └── validation_embedding/    # BiRNA embedding (optional validation path)
 ├── scripts/                     # Runnable CLIs by domain → scripts/README.md
 ├── notebooks/                   # Marimo apps + exported figures
-├── tests/                       # pytest (16 tests; no Vienna/NUPACK required)
+├── tests/                       # pytest (16 tests, no Vienna/NUPACK required)
 ├── cluster/                     # RunPod, EC2, Macleod EVA runbooks
 ├── data/                        # Raw reference + processed artefacts (.gitignore policy)
 ├── typings/                     # Stubs for optional NUPACK / ViennaRNA (ty)
@@ -88,7 +88,7 @@ Thermoswitches-MLBIO/
 └── environment.yml              # Conda bio-toolchain (cd-hit, infernal, hmmer)
 ```
 
-**Split principle:** `src/` holds reusable logic; `scripts/` holds thin orchestration; `notebooks/` are interactive viewers and audit apps (prefer loading JSON sidecars over retraining inline). Paths resolve via `src/data_engineering/paths.py` → `resolve_path()`.
+**Split principle:** `src/` holds reusable logic, `scripts/` holds thin orchestration, and `notebooks/` are interactive viewers and audit apps (prefer loading JSON sidecars over retraining inline). Paths resolve via `src/data_engineering/paths.py` → `resolve_path()`.
 
 ---
 
@@ -104,9 +104,9 @@ Thermoswitches-MLBIO/
 
 ---
 
-## Non-circular feature matrix ($p = 92$)
+## Feature matrix ($p = 92$)
 
-The legacy 20-column intensive + dynamic set included **$T_m$, Hill, amplitude, $Z$, $\Delta P_{\mathrm{RBS}}$, $\Delta\Delta G$** in $X$, which circularly encoded the melting phenotype we later gate on. Those scalars remain on the fused table for **post-hoc scoring only**.
+We train the Random Forest on 92 columns of static 37 °C physics, composition, k-mers, and SD–AUG spacing. Melting scalars (**$T_m$**, Hill, **$Z$**, **$\Delta P_{\mathrm{RBS}}$**) remain on the fused table for post-hoc ranking, and we withhold them from $X$.
 
 **In $X$ (92 columns):**
 
@@ -123,9 +123,8 @@ Missing AUG is **not** dropped (RefSeq UTRs lack initiators more often than Rfam
 
 | Check | Result | Sidecar |
 |-------|--------|---------|
-| Length-alone AUC (legacy) | ≈ 0.20 | `rf_noncircular_diagnostics.json` |
-| Stratified CV (20-col circular) | ≈ 0.80 (family leakage) | same |
-| **GroupKFold (non-circular $X$)** | **≈ 0.28** | same |
+| Length-alone AUC | ≈ 0.20 | `rf_noncircular_diagnostics.json` |
+| **GroupKFold AUC (92-col $X$)** | **≈ 0.28** | same |
 | EVA accepted / yield (2,000 panel) | 105 / 2,000 = **5.25%** | `eva_denovo_checklist.json` |
 | Vienna vs NUPACK $T_m$ parity | Gates locked to **ViennaRNA only** | Supplementary Figure 5 narrative |
 
@@ -144,7 +143,7 @@ uv run marimo edit notebooks/<app>.py
 | 3 | [`03_llm_smoke_test_results.py`](notebooks/03_llm_smoke_test_results.py) | GenerRNA smoke test |
 | 4 | [`04_full_thermo_rf_analysis.py`](notebooks/04_full_thermo_rf_analysis.py) | Full thermo RF analysis (historical) |
 | 5 | [`05_novelty_rfam_analysis.py`](notebooks/05_novelty_rfam_analysis.py) | Rfam novelty |
-| 6 | [`06_classifier_architecture_ladder.py`](notebooks/06_classifier_architecture_ladder.py) | Circular → non-circular architecture ladder |
+| 6 | [`06_classifier_architecture_ladder.py`](notebooks/06_classifier_architecture_ladder.py) | Feature-set architecture ablation (historical) |
 | 7 | [`07_noncircular_rf_results.py`](notebooks/07_noncircular_rf_results.py) | **Results viewer** (loads JSON, no retrain) |
 | 8 | [`08_eva_denovo_biophysical_characterization.py`](notebooks/08_eva_denovo_biophysical_characterization.py) | EVA vs Rfam/RefSeq melting audit |
 | 9 | [`09_baseline_compositional_ablation.py`](notebooks/09_baseline_compositional_ablation.py) | Compositional ablation |
@@ -166,7 +165,7 @@ cp .env.example .env    # EMAIL, NCBI_API_KEY
 make ci                 # ruff + format check + uv check + pytest (matches CI)
 ```
 
-- **NUPACK 4.1:** manual wheel from `nupack-4.1.0.1/package/` (licensed; gitignored).
+- **NUPACK 4.1:** manual wheel from `nupack-4.1.0.1/package/` (licensed, gitignored).
 - **ViennaRNA:** `uv sync --group biophysics` (import as `RNA`).
 - **Conda alternative:** `conda env create -f environment.yml` for cd-hit, infernal, hmmer.
 
@@ -204,7 +203,7 @@ PYTHONPATH=src python src/data_engineering/length_gc_match.py \
 python src/thermo_sim/thermo_batch.py --run
 PYTHONPATH=src python src/thermo_sim/enrich_dynamic_features.py --workers 4
 
-# Non-circular RF + post-hoc JSON sidecars
+# RF training + post-hoc JSON sidecars
 python src/thermo_sim/thermo_classifier.py train \
   --fused-csv data/processed/fused_features_refseq_dynamic.csv \
   --model-path data/processed/models/rf_thermoswitch_noncircular.joblib
@@ -222,7 +221,7 @@ Large regenerated tables (`fused_features_*.csv`, Vienna/NUPACK CSVs, `.joblib` 
 
 | Path | Contents |
 |------|----------|
-| `data/processed/fused_features_refseq_dynamic.csv` | Labelled panel (local; not committed) |
+| `data/processed/fused_features_refseq_dynamic.csv` | Labelled panel (local, not committed) |
 | `data/processed/rf_noncircular_diagnostics.json` | GroupKFold AUC + grouped permutation |
 | `data/processed/rf_posthoc_report.json` | ŷ bins, gates, Spearman, checklist |
 | `data/processed/eva_denovo_checklist.json` | Four-gate pass rates by cohort |
