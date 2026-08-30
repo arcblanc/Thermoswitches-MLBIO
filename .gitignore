@@ -37,6 +37,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 .idea/
+.cursor/
 *.swp
 
 # Generated data (default: ignore all processed artifacts)

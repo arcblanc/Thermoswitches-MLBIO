@@ -13,7 +13,6 @@ where version tags are applied.
 - **CI & quality gate:** GitHub Actions (`.github/workflows/ci.yml`), root `Makefile` (`make ci`), formal `tests/` with pytest (16 tests), `typings/` stubs for NUPACK/ViennaRNA, strict `uv check` (ty) across `src/`, `scripts/`, `notebooks/`, `tests/`.
 - **Scripts reorg:** category folders `scripts/{rf,eva,triage,extraction,cloud,generation,dev}/` with `scripts/README.md` and `_repo_paths.py`.
 - EVA de novo biophysical characterization (notebook 08), baseline compositional ablation (notebook 09), thesis figure export (`notebooks/thesis_figures.py`, `src/thermo_sim/thesis_results_figures.py`).
-- Cursor project rules (`.cursor/rules/`) for uv linters, ML guardrails, and critical-review protocol.
 - RUS-only RefSeq negative ablation (skip k-mer ENN): `knn_undersample.py --skip-enn` → `rus_cleaned.*`, Hungarian CDS-truncate rematch (`length_gc_matched_refseq_rus_*`), negatives-only thermo/enrich, `scripts/rf/merge_rus_fused_panel.py`, and parallel RF sidecars `*_rus.*` for ENN-vs-RUS comparison in notebooks 06/07.
 - RefSeq housekeeping 5′ UTR negative pipeline: genome download (`scripts/extraction/download_refseq_genomes.sh`), UTR extraction (`src/data_engineering/refseq_utr_extract.py`), and Infernal `cmscan --cut_ga` decontamination (`src/data_engineering/cmscan_decontaminate.py`).
 - Global length/GC matchmaking (`src/data_engineering/length_gc_match.py`): Z-space cKDTree top-K + Hungarian assignment, hard `|ΔL|≤40` / `|ΔGC|≤0.05` gates, and CDS-proximal truncation for exact-length pairing of all CD-HIT positives.
