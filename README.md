@@ -2,20 +2,22 @@
 
 [![CI](https://github.com/arcblanc/Thermoswitches-MLBIO/actions/workflows/ci.yml/badge.svg)](https://github.com/arcblanc/Thermoswitches-MLBIO/actions/workflows/ci.yml)
 
-**Author:** Amier Zuhri · MSc Data Science, University of Aberdeen (2026)  
-**Thesis:** *In Silico De Novo Design and Validation of Synthetic RNA Thermoswitches Via Deep Generative Modelling*
+**Author:** Amier Mohd Zuhri · MSc Data Science, University of Aberdeen (2026)  
+**Thesis:** [*In Silico De Novo Design and Validation of Synthetic RNA Thermoswitches Via Deep Generative Modelling*](thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches.pdf)
 
-Executable analysis stack for the thesis: corpus curation, ViennaRNA/NUPACK thermodynamics, the 92-column Random Forest panel, EVA generation on Macleod, yield triage, and figure export.
+Executable analysis stack for the thesis: Rfam/RefSeq corpus curation, ViennaRNA/NUPACK thermodynamics, the 92-column Random Forest baseline, EVA generation on Macleod, yield triage, and in silico biophysical validation.
+
+**Thesis PDF:** [`thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches.pdf`](thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches.pdf) (annotated draft: [`thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches_AAmarkings.pdf`](thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches_AAmarkings.pdf))
 
 ---
 
 ## Scientific summary
 
-Prokaryotic RNA thermoswitches in the 5′ UTR sequester the Shine–Dalgarno (RBS) sequence at low temperature. They expose it as temperature rises. We built a length/GC-matched panel ($N = 2{,}396$) with dual folding engines, trained a 200-tree Random Forest on **37 °C physics and k-mers**, and ranked phenotype with **post-hoc melting gates** that sat outside $X$, and after that we deployed a frozen **EVA 1.4B CLM** on Macleod gpu02, drew 2,000 TaxID-conditioned mRNA sequences, and ran the streaming triage in `scripts/triage/` to recover **105 yield-gated candidates** under
+Engineered *Escherichia coli* hosts carry a yield dilemma at 37 °C, and premature leaky expression selects against productive biomass before heat-shock induction. RNA thermoswitches (RNATs) sequester the ribosome binding site in a stem-loop lock at 37 °C and expose it near 42 °C, which offers a chemically free route to decouple growth from production. We curated a balanced benchmark of 1,198 Rfam thermoswitches and 1,198 length/GC-matched RefSeq 5′ UTR controls ($N = 2{,}396$), scored every transcript with dual folding engines, and trained a 200-tree Random Forest on a **92-column feature matrix** of static 37 °C physics, k-mers, and SD–AUG spacing while we withheld melting scalars for post-hoc ranking. StratifiedGroupKFold grouped on Rfam accession returned AUC ≈ **0.28**, which showed that static snapshot features memorised family-correlated trinucleotides rather than transferable switching rules. After that we deployed a frozen **EVA 1.4B CLM** on Macleod gpu02 with TaxID-conditioned `mRNA` prompts, drew 2,000 de novo 5′ UTR sequences, and ran automated biophysical triage in `scripts/triage/` to recover **105 yield-gated candidates** (5.25%) under
 
 $$Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}.$$
 
-The yield settled near five per cent. The Random Forest served as a **ranking aid** rather than a wet-lab acceptance gate, and GroupKFold evaluation on the 92-column matrix returned AUC ≈ **0.28**, which indicated that static 37 °C features alone did not yield a transferable out-of-family detector.
+The yield-gated set advanced to continuous ViennaRNA thermal sweeps and Hill parameterisation in App 08, and the broader EVA cohort remained thermodynamically resistant across the 37–42 °C induction window with largely flat RBS exposure. This repository implements the three-domain architecture from the thesis: **supervised Random Forest baseline**, **EVA de novo generation**, and **in silico biophysical validation**.
 
 ---
 
@@ -64,6 +66,7 @@ Mac CPU ── Vienna Z / ΔP_RBS + Rfam novelty ── yield gate ── 105 ca
 
 ```
 Thermoswitches-MLBIO/
+├── thesis/                      # Thesis PDF (final + annotated draft)
 ├── src/                         # Importable library (uv editable install)
 │   ├── data_engineering/        # Rfam extract, RefSeq UTRs, CD-HIT, length/GC match
 │   ├── thermo_sim/              # Vienna/NUPACK, RF, post-hoc, batch, thesis figures
