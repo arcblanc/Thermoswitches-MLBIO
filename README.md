@@ -7,17 +7,17 @@
 
 Executable analysis stack for the thesis: corpus curation, ViennaRNA/NUPACK thermodynamics, the 92-column Random Forest panel, EVA generation on Macleod, yield triage, and figure export.
 
-**Thesis chapter prose, guideline evaluations, and the supplementary booklet** live in the sibling package [`../thesis_md_package/`](../thesis_md_package/) (see [Thesis markdown package](#thesis-markdown-package)).
+**Thesis chapter prose, guideline evaluations, and the supplementary booklet** live in the sibling package [`../thesis_md_package/`](../thesis_md_package/) (see [`notebooks/THESIS_MD_PACKAGE.md`](notebooks/THESIS_MD_PACKAGE.md)).
 
 ---
 
 ## Scientific summary
 
-Prokaryotic RNA thermoswitches in the 5′ UTR sequester the Shine–Dalgarno (RBS) sequence at low temperature. They expose it as temperature rises. We built a length/GC-matched panel ($N = 2{,}396$) with dual folding engines, trained a 200-tree Random Forest on **37 °C physics and k-mers**, and ranked phenotype with **post-hoc melting gates** that sit outside $X$, and after that we deployed a frozen **EVA 1.4B CLM** on Macleod gpu02, drew 2,000 TaxID-conditioned mRNA sequences, and ran the streaming triage in `scripts/triage/` to recover **105 yield-gated candidates** under
+Prokaryotic RNA thermoswitches in the 5′ UTR sequester the Shine–Dalgarno (RBS) sequence at low temperature. They expose it as temperature rises. We built a length/GC-matched panel ($N = 2{,}396$) with dual folding engines, trained a 200-tree Random Forest on **37 °C physics and k-mers**, and ranked phenotype with **post-hoc melting gates** that sat outside $X$, and after that we deployed a frozen **EVA 1.4B CLM** on Macleod gpu02, drew 2,000 TaxID-conditioned mRNA sequences, and ran the streaming triage in `scripts/triage/` to recover **105 yield-gated candidates** under
 
 $$Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}.$$
 
-The yield settled near five per cent. The Random Forest serves as a **ranking aid** rather than a wet-lab acceptance gate, and GroupKFold evaluation on the 92-column matrix returned AUC ≈ **0.28**, which indicates that static 37 °C features alone do not yield a transferable out-of-family detector.
+The yield settled near five per cent. The Random Forest served as a **ranking aid** rather than a wet-lab acceptance gate, and GroupKFold evaluation on the 92-column matrix returned AUC ≈ **0.28**, which indicated that static 37 °C features alone did not yield a transferable out-of-family detector.
 
 ---
 
@@ -106,7 +106,7 @@ Thermoswitches-MLBIO/
 
 ## Feature matrix ($p = 92$)
 
-We train the Random Forest on 92 columns of static 37 °C physics, composition, k-mers, and SD–AUG spacing. Melting scalars (**$T_m$**, Hill, **$Z$**, **$\Delta P_{\mathrm{RBS}}$**) remain on the fused table for post-hoc ranking, and we withhold them from $X$.
+We trained the Random Forest on 92 columns of static 37 °C physics, composition, k-mers, and SD–AUG spacing. Melting scalars (**$T_m$**, Hill, **$Z$**, **$\Delta P_{\mathrm{RBS}}$**) remained on the fused table for post-hoc ranking, and we withheld them from $X$.
 
 **In $X$ (92 columns):**
 
@@ -115,7 +115,7 @@ We train the Random Forest on 92 columns of static 37 °C physics, composition, 
 - **16 + 64** dinucleotide and trinucleotide frequencies (intensive, from matched FASTA)
 - **2** SD–AUG spacing + missing-AUG sentinel (`sd_aug_spacing = -1`, `sd_aug_missing`)
 
-Missing AUG is **not** dropped (RefSeq UTRs lack initiators more often than Rfam positives). Feature log: `data/processed/rf_noncircular_feature_log.json`.
+Missing AUG was **not** dropped (RefSeq UTRs lack initiators more often than Rfam positives). Feature log: `data/processed/rf_noncircular_feature_log.json`.
 
 ---
 
@@ -230,17 +230,6 @@ Large regenerated tables (`fused_features_*.csv`, Vienna/NUPACK CSVs, `.joblib` 
 
 ---
 
-## Thesis markdown package
-
-Thesis prose and supplementary source **do not** live in this repository.
-
-| Location | Contents |
-|----------|----------|
-| [`../thesis_md_package/`](../thesis_md_package/) | Guideline evals, accuracy audits, supplementary booklet |
-| `../thesis_md_package/supplementary/Supplementary_Material.md` | Booklet source (Sections 1–6) |
-| `../thesis_md_package/guideline_eval/` | UK word-count, v2–v7 evals, citation syntax |
-
-Rebuild supplementary figures from the thesis package:
 
 ```bash
 cd ../thesis_md_package/supplementary
@@ -248,9 +237,5 @@ PYTHONPATH=../Thermoswitches-MLBIO/src python build_supplementary_figures.py
 ```
 
 ---
-
-## Licence and citation
-
-Thesis: Amier Mohd Zuhri, University of Aberdeen, 2026. Cite Rfam (Kalvari *et al.*, 2021), RefSeq (O'Leary *et al.*, 2016), ViennaRNA (Lorenz *et al.*, 2011), and EVA (GENTEL-Lab checkpoint) as described in the supplementary booklet.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
