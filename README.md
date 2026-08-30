@@ -5,11 +5,13 @@
 **Author:** Amier Zuhri · MSc Data Science, University of Aberdeen (2026)  
 **Thesis:** *In Silico De Novo Design and Validation of Synthetic RNA Thermoswitches Via Deep Generative Modelling*
 
-This repository holds the **executable analysis stack** for the thesis: corpus curation, ViennaRNA/NUPACK thermodynamics, the non-circular Random Forest panel, EVA generation orchestration, yield triage, and figure export. **Thesis chapter prose, guideline evaluations, and the supplementary booklet** live in the sibling package [`../thesis_md_package/`](../thesis_md_package/) (see [Thesis markdown package](#thesis-markdown-package)).
+Executable analysis stack for the thesis: corpus curation, ViennaRNA/NUPACK thermodynamics, the non-circular Random Forest panel, EVA generation orchestration, yield triage, and figure export.
+
+**Thesis chapter prose, guideline evaluations, and the supplementary booklet** live in the sibling package [`../thesis_md_package/`](../thesis_md_package/) (see [Thesis markdown package](#thesis-markdown-package)).
 
 ---
 
-## What this codebase does
+## Scientific summary
 
 Prokaryotic RNA thermoswitches in the 5′ UTR sequester the Shine–Dalgarno (RBS) sequence at low temperature and expose it as temperature rises. We built a length/GC-matched panel ($N = 2{,}396$), scored sequences with dual folding engines, trained a Random Forest on **non-circular 37 °C physics and k-mers**, and used **post-hoc melting gates** (not RF inputs) to rank phenotype. A frozen **EVA 1.4B CLM** on Macleod GPU generated 2,000 sequences; Mac-side triage recovered **105 yield-gated candidates** under
 
@@ -19,7 +21,7 @@ The Random Forest is a **ranking aid**, not a wet-lab acceptance gate. GroupKFol
 
 ---
 
-## End-to-end pipeline
+## Pipeline overview
 
 ```
 Rfam positives (1,198) ──┐
@@ -45,11 +47,11 @@ Mac CPU ── Vienna Z / ΔP_RBS + Rfam novelty ── yield gate ── 105 ca
 
 ---
 
-## Thesis and supplementary ↔ repository map
+## Thesis and supplementary map
 
-| Thesis / supplementary content | Where it lives | Regenerate / view |
-|--------------------------------|----------------|-------------------|
-| **Chapter 3 methods** (matching, 92-column matrix, engines) | `src/data_engineering/`, `src/thermo_sim/` | README § [Rebuild core panel](#rebuild-core-panel) |
+| Thesis / supplementary content | Repository location | Regenerate / view |
+|--------------------------------|---------------------|-------------------|
+| **Chapter 3 methods** (matching, 92-column matrix, engines) | `src/data_engineering/`, `src/thermo_sim/` | [Rebuild core panel](#rebuild-core-panel) |
 | **Chapter 4 results** (RF, grouped permutation, gates) | `data/processed/rf_*.json`, App 07 | `notebooks/07_noncircular_rf_results.py` |
 | **Chapter 4 figures** (ROC, permutation, funnel, Hill ribbons) | `notebooks/figures/thesis_figures/` | `notebooks/thesis_figures.py`, `src/thermo_sim/thesis_results_figures.py` |
 | **Supplementary §1** (software stack, Macleod job) | `environment.yml`, `cluster/MACLEOD_EVA.md` | `cluster/EVA_OVERVIEW.md` |
@@ -60,7 +62,7 @@ Mac CPU ── Vienna Z / ΔP_RBS + Rfam novelty ── yield gate ── 105 ca
 | **Guideline evaluations & accuracy audits** | `../thesis_md_package/guideline_eval/` | Not in this repo |
 | **Supplementary booklet (PDF/DOCX source)** | `../thesis_md_package/supplementary/` | `supplementary/build_supplementary_figures.py` |
 
-Pointer file: [`notebooks/THESIS_MD_PACKAGE.md`](notebooks/THESIS_MD_PACKAGE.md).
+Pointer: [`notebooks/THESIS_MD_PACKAGE.md`](notebooks/THESIS_MD_PACKAGE.md).
 
 ---
 
@@ -76,9 +78,9 @@ Thermoswitches-MLBIO/
 │   └── validation_embedding/    # BiRNA embedding (optional validation path)
 ├── scripts/                     # Runnable CLIs by domain → scripts/README.md
 ├── notebooks/                   # Marimo apps + exported figures
-├── tests/                       # pytest (16 tests, no Vienna/NUPACK required)
+├── tests/                       # pytest (16 tests; no Vienna/NUPACK required)
 ├── cluster/                     # RunPod, EC2, Macleod EVA runbooks
-├── data/                        # Raw reference + processed artifacts (.gitignore policy)
+├── data/                        # Raw reference + processed artefacts (.gitignore policy)
 ├── typings/                     # Stubs for optional NUPACK / ViennaRNA (ty)
 ├── .github/workflows/ci.yml     # ruff + ty + pytest
 ├── Makefile                     # make ci
@@ -90,7 +92,7 @@ Thermoswitches-MLBIO/
 
 ---
 
-## `src/` package reference
+## `src/` packages
 
 | Package | Responsibility | Key modules |
 |---------|----------------|-------------|
@@ -117,7 +119,7 @@ Missing AUG is **not** dropped (RefSeq UTRs lack initiators more often than Rfam
 
 ---
 
-## Key results (pinned in repo)
+## Key results
 
 | Check | Result | Sidecar |
 |-------|--------|---------|
@@ -146,7 +148,7 @@ uv run marimo edit notebooks/<app>.py
 | 7 | [`07_noncircular_rf_results.py`](notebooks/07_noncircular_rf_results.py) | **Results viewer** (loads JSON, no retrain) |
 | 8 | [`08_eva_denovo_biophysical_characterization.py`](notebooks/08_eva_denovo_biophysical_characterization.py) | EVA vs Rfam/RefSeq melting audit |
 | 9 | [`09_baseline_compositional_ablation.py`](notebooks/09_baseline_compositional_ablation.py) | Compositional ablation |
-| — | [`thesis_figures.py`](notebooks/thesis_figures.py) | Export Chapter 4 thesis figures → `notebooks/figures/thesis_figures/` |
+| — | [`thesis_figures.py`](notebooks/thesis_figures.py) | Export Chapter 4 figures → `notebooks/figures/thesis_figures/` |
 
 Briefs: [`notebooks/08_summarised_findings.md`](notebooks/08_summarised_findings.md), [`notebooks/rf_noncircular_results.md`](notebooks/rf_noncircular_results.md).
 
@@ -214,7 +216,7 @@ Groups for out-of-family CV: Rfam accession (positives), `REFSEQ:{assembly}` (ne
 
 ---
 
-## Data artifact policy
+## Data artefact policy
 
 Large regenerated tables (`fused_features_*.csv`, Vienna/NUPACK CSVs, `.joblib` models, FASTA pools) are **gitignored** under `data/processed/`. Lightweight **JSON metric sidecars** are allowlisted for diff-friendly audit (see `.gitignore`). Prototype golden panel: `data/processed/prototype/` (4-seq smoke fixture).
 
