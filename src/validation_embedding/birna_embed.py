@@ -6,12 +6,14 @@ import json
 import signal
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import torch
 import transformers
 from transformers import AutoTokenizer
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 SRC_ROOT = Path(__file__).resolve().parent.parent
 if str(SRC_ROOT) not in sys.path:
@@ -71,7 +73,7 @@ def _patch_birna_cpu_compat() -> None:
             )
         return dmu.get_relative_imports(filename)
 
-    dmu.check_imports = check_imports
+    setattr(dmu, "check_imports", check_imports)
     real_import = builtins.__import__
 
     def guarded_import(
@@ -82,7 +84,7 @@ def _patch_birna_cpu_compat() -> None:
         level: int = 0,
     ) -> object:
         """Raise ImportError for Triton flash-attn on CPU Bert layers."""
-        module_name = globals.get("__name__", "") if globals else ""
+        module_name = str(globals.get("__name__", "")) if globals else ""
         if (
             module_name.endswith("bert_layers")
             and fromlist
@@ -91,13 +93,13 @@ def _patch_birna_cpu_compat() -> None:
             raise ImportError("CPU smoke test: skip Triton flash attention")
         return real_import(name, globals, locals, fromlist, level)
 
-    builtins.__import__ = guarded_import
+    setattr(builtins, "__import__", guarded_import)
     _BIRNA_CPU_PATCHED = True
 
 
 def _patch_birna_alibi(module: object, device: torch.device) -> None:
     """Keep ALiBi tensors on the same device as the model (GPU when available)."""
-    encoder = module.BertEncoder
+    encoder = cast(Any, module).BertEncoder
     original_rebuild = encoder.rebuild_alibi_tensor
     default_device = torch.device(device)
 
@@ -142,7 +144,7 @@ def nuc_tokenize_input(sequence: str) -> str:
 
 def load_birna_model(
     settings: LLMSettings, device: torch.device
-) -> tuple[AutoTokenizer, torch.nn.Module, transformers.BertConfig]:
+) -> tuple[PreTrainedTokenizerBase, torch.nn.Module, transformers.BertConfig]:
     """Load BiRNA-BERT, tokenizer, and config onto the given device."""
     # CPU-compat patches only when actually on CPU (Mac smoke). On CUDA, leave
     # Triton/flash-attn imports alone so the A100 path can engage.
@@ -157,7 +159,7 @@ def load_birna_model(
     _patch_birna_alibi(sys.modules[model_cls.__module__], device)
     # float32 on GPU: BiRNA's custom attention path mismatches float16 (Half vs Float).
     dtype = torch.float32
-    model = model_cls.from_pretrained(
+    model = cast(Any, model_cls).from_pretrained(
         settings.birna_model_id,
         config=config,
         torch_dtype=dtype,
@@ -166,7 +168,7 @@ def load_birna_model(
     model.to(device)
     model.eval()
     print(f"BiRNA model on {next(model.parameters()).device}, dtype={dtype}")
-    return tokenizer, model, config
+    return cast(PreTrainedTokenizerBase, tokenizer), model, config
 
 
 def _record_id(header: str) -> str:
@@ -182,7 +184,7 @@ def _sort_pending_by_length(
 
 
 def embed_sequence(
-    tokenizer: AutoTokenizer,
+    tokenizer: PreTrainedTokenizerBase,
     model: torch.nn.Module,
     config: transformers.BertConfig,
     sequence: str,
@@ -194,7 +196,7 @@ def embed_sequence(
 
 
 def embed_batch(
-    tokenizer: AutoTokenizer,
+    tokenizer: PreTrainedTokenizerBase,
     model: torch.nn.Module,
     config: transformers.BertConfig,
     sequences: list[str],
@@ -250,7 +252,7 @@ def save_embedding(
     npy_path = output_dir / f"{record_id}.npy"
     meta_path = output_dir / f"{record_id}.json"
     np.save(npy_path, array)
-    metadata = {
+    metadata: dict[str, object] = {
         "record_id": record_id,
         "sequence": sequence,
         "tokenization": "NUC",

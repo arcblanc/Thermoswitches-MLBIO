@@ -23,7 +23,6 @@ def ensure_generna_assets(
             repo_id=GENERNA_REPO,
             filename="model_updated.pt",
             local_dir=str(cache_dir),
-            local_dir_use_symlinks=False,
             **kwargs,
         )
         ckpt_path = Path(downloaded)
@@ -33,7 +32,6 @@ def ensure_generna_assets(
             repo_id=GENERNA_REPO,
             allow_patterns=["tokenizer/*"],
             local_dir=str(cache_dir),
-            local_dir_use_symlinks=False,
             **kwargs,
         )
 

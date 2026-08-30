@@ -32,7 +32,7 @@ def _(mo):
     - Each `.npy` embedding is 3-D with hidden size 768
     - `manifest.jsonl` has 2 JSON lines (one per sequence)
 
-    Re-run the pipeline: `bash scripts/llm_smoke_test.sh` (first GenerRNA run downloads ~3.6 GB to `models/genererna/`).
+    Re-run the pipeline: `bash scripts/generation/llm_smoke_test.sh` (first GenerRNA run downloads ~3.6 GB to `models/genererna/`).
     """)
     return
 
@@ -115,7 +115,7 @@ def _(Counter, FASTA_PATH, Path, RNA_PATTERN, pd):
 
     if not FASTA_PATH.exists():
         raise FileNotFoundError(
-            f"Missing {FASTA_PATH}. Run: bash scripts/llm_smoke_test.sh"
+            f"Missing {FASTA_PATH}. Run: bash scripts/generation/llm_smoke_test.sh"
         )
 
     records = parse_fasta(FASTA_PATH)
@@ -148,9 +148,13 @@ def _(fasta_df, plt):
     _ax.set_ylabel("Sequence length (nt)")
     _ax.set_title("GenerRNA smoke-test sequences")
     _ax.set_ylim(0, fasta_df["length_nt"].max() * 1.15)
-    for idx, row in fasta_df.iterrows():
+    for bar_i, (_, row) in enumerate(fasta_df.iterrows()):
         _ax.text(
-            idx, row["length_nt"] + 5, str(row["length_nt"]), ha="center", fontsize=10
+            bar_i,
+            row["length_nt"] + 5,
+            str(row["length_nt"]),
+            ha="center",
+            fontsize=10,
         )
     plt.tight_layout()
     plt.show()
@@ -265,7 +269,7 @@ def _(mo):
     | BiRNA-BERT NUC tokenization + 768-d embeddings | OK |
     | `.npy` + `manifest.jsonl` I/O | OK |
 
-    The same scripts run unchanged on a cloud GPU when CUDA is available (`CUDA_VISIBLE_DEVICES=0 bash scripts/llm_smoke_test.sh`).
+    The same scripts run unchanged on a cloud GPU when CUDA is available (`CUDA_VISIBLE_DEVICES=0 bash scripts/generation/llm_smoke_test.sh`).
     """)
     return
 

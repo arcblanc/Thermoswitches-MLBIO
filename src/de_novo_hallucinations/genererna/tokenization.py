@@ -1,8 +1,11 @@
+import argparse
 import os
+import random
+from typing import cast
+
 import numpy as np
 from transformers import AutoTokenizer
-import random
-import argparse
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -43,7 +46,7 @@ def parse_arguments() -> argparse.Namespace:
 
 
 def tokenize_and_save_lines(
-    tokenizer: AutoTokenizer,
+    tokenizer: PreTrainedTokenizerBase,
     input_file: str,
     train_txt_file: str,
     val_txt_file: str,
@@ -131,7 +134,10 @@ def main() -> None:
     print("Paths setup complete...")
 
     # Tokenization
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path)
+    tokenizer = cast(
+        PreTrainedTokenizerBase,
+        AutoTokenizer.from_pretrained(args.tokenizer_path),
+    )
     tokenize_and_save_lines(
         tokenizer,
         raw_data_path,

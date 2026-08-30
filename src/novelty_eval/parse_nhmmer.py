@@ -1,6 +1,7 @@
 """Parse nhmmer --tblout for novelty evaluation."""
 
 from pathlib import Path
+from typing import TypedDict
 
 import pandas as pd
 
@@ -21,6 +22,14 @@ NHMMER_COLUMNS = [
     "score",
     "bias",
 ]
+
+
+class NhmmerBestCandidate(TypedDict):
+    record_id: str
+    nhmmer_target_id: str
+    nhmmer_evalue: float
+    nhmmer_bitscore: float
+    nhmmer_alignment_length: int
 
 
 def _parse_tblout_line(line: str) -> dict[str, str] | None:
@@ -55,7 +64,7 @@ def best_nhmmer_hits_from_tbl(
             ]
         )
 
-    best = {}
+    best: dict[str, NhmmerBestCandidate] = {}
     with open(path) as handle:
         for line in handle:
             row = _parse_tblout_line(line)
@@ -73,12 +82,12 @@ def best_nhmmer_hits_from_tbl(
 
             query = row["query_name"]
             alignment_length = abs(ali_to - ali_from) + 1
-            candidate = {
+            candidate: NhmmerBestCandidate = {
                 "record_id": query,
                 "nhmmer_target_id": row["target_name"],
                 "nhmmer_evalue": evalue,
                 "nhmmer_bitscore": score,
-                "nhmmer_alignment_length": alignment_length,
+                "nhmmer_alignment_length": int(alignment_length),
             }
             prev = best.get(query)
             if prev is None or (evalue, -score) < (
@@ -242,13 +251,18 @@ def enrich_nhmmer_identity(
     targets = _fetch_rfam_sequences(rfam_fasta, target_ids)
 
     identity_values = []
-    for row in rows.itertuples():
-        query_seq = queries.get(
-            row.query_name if hasattr(row, "query_name") else row.record_id
+    for _, row in rows.iterrows():
+        query_name = (
+            str(row["query_name"])
+            if "query_name" in row.index
+            else str(row["record_id"])
         )
         target_id = (
-            row.target_name if hasattr(row, "target_name") else row.nhmmer_target_id
+            str(row["target_name"])
+            if "target_name" in row.index
+            else str(row["nhmmer_target_id"])
         )
+        query_seq = queries.get(query_name)
         target_seq = targets.get(target_id)
         if not query_seq or not target_seq:
             identity_values.append(0.0)

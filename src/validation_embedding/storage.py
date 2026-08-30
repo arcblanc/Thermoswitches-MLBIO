@@ -1,5 +1,7 @@
 import json
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Protocol, cast
 
 from data_engineering.paths import resolve_path
 from validation_embedding.config import LLMSettings, load_llm_settings
@@ -12,12 +14,46 @@ EMBEDDING_MANIFEST_NAME = "manifest.jsonl"
 GENERATED_FASTA_NAME = "generated.fasta"
 
 
+class GCSBlob(Protocol):
+    name: str
+
+    def upload_from_filename(self, filename: str) -> None: ...
+
+    def download_to_filename(self, filename: str) -> None: ...
+
+    def exists(self) -> bool: ...
+
+
+class GCSBucket(Protocol):
+    def blob(self, blob_name: str) -> GCSBlob: ...
+
+    def list_blobs(self, *, prefix: str) -> Iterator[GCSBlob]: ...
+
+
+class GCSClient(Protocol):
+    def bucket(self, bucket_name: str) -> GCSBucket: ...
+
+
+class S3Paginator(Protocol):
+    def paginate(self, *, Bucket: str, Prefix: str) -> Iterator[dict[str, object]]: ...
+
+
+class S3Client(Protocol):
+    def upload_file(self, Filename: str, Bucket: str, Key: str) -> None: ...
+
+    def head_object(self, *, Bucket: str, Key: str) -> object: ...
+
+    def download_file(self, Bucket: str, Key: str, Filename: str) -> None: ...
+
+    def get_paginator(self, operation_name: str) -> S3Paginator: ...
+
+
 class ArtifactStorage:
     def __init__(self, settings: LLMSettings | None = None) -> None:
         """Initialize local and remote artifact storage from LLM settings."""
         self.settings = settings or load_llm_settings()
-        self._gcs_client = None
-        self._s3_client = None
+        self._gcs_client: GCSClient | None = None
+        self._s3_client: S3Client | None = None
 
     @property
     def uses_gcs(self) -> bool:
@@ -55,27 +91,42 @@ class ArtifactStorage:
                 "AWS_S3_BUCKET is required when STORAGE_TARGET=s3 or runpod"
             )
 
-    def _gcs_client_or_raise(self) -> object:
+    def _gcs_client_or_raise(self) -> GCSClient:
         """Return a cached GCS client, creating it on first use."""
         self._require_gcs()
         if self._gcs_client is None:
             from google.cloud import storage
 
-            self._gcs_client = storage.Client()
+            self._gcs_client = cast(GCSClient, storage.Client())
         return self._gcs_client
 
-    def _s3_client_or_raise(self) -> object:
+    def _s3_client_or_raise(self) -> S3Client:
         """Return a cached boto3 S3 client, creating it on first use."""
         self._require_s3()
         if self._s3_client is None:
             import boto3
 
-            self._s3_client = boto3.client("s3", region_name=self.settings.aws_region)
+            self._s3_client = cast(
+                S3Client,
+                boto3.client("s3", region_name=self.settings.aws_region),
+            )
         return self._s3_client
 
-    def _gcs_bucket(self) -> object:
+    def _gcs_bucket(self) -> GCSBucket:
         """Return the configured GCS bucket handle."""
-        return self._gcs_client_or_raise().bucket(self.settings.gcs_bucket)
+        bucket_name = self.settings.gcs_bucket
+        if bucket_name is None:
+            raise ValueError("GCS_BUCKET is required when STORAGE_TARGET=gcs")
+        return self._gcs_client_or_raise().bucket(bucket_name)
+
+    def _s3_bucket_name(self) -> str:
+        """Return the configured S3 bucket name."""
+        bucket_name = self.settings.aws_s3_bucket
+        if bucket_name is None:
+            raise ValueError(
+                "AWS_S3_BUCKET is required when STORAGE_TARGET=s3 or runpod"
+            )
+        return bucket_name
 
     def local_path(self, relative_path: str) -> Path:
         """Resolve a repo-relative path to an absolute local path."""
@@ -124,7 +175,7 @@ class ArtifactStorage:
             else:
                 self._s3_client_or_raise().upload_file(
                     str(local_path),
-                    self.settings.aws_s3_bucket,
+                    self._s3_bucket_name(),
                     remote_key,
                 )
             return True
@@ -149,15 +200,14 @@ class ArtifactStorage:
             blob.download_to_filename(str(local_path))
         else:
             client = self._s3_client_or_raise()
+            bucket_name = self._s3_bucket_name()
             from botocore.exceptions import ClientError
 
             try:
-                client.head_object(Bucket=self.settings.aws_s3_bucket, Key=remote_key)
+                client.head_object(Bucket=bucket_name, Key=remote_key)
             except ClientError:
                 return False
-            client.download_file(
-                self.settings.aws_s3_bucket, remote_key, str(local_path)
-            )
+            client.download_file(bucket_name, remote_key, str(local_path))
         return True
 
     def _list_remote_objects(self, prefix: str) -> list[str]:
@@ -178,13 +228,21 @@ class ArtifactStorage:
             from botocore.exceptions import ClientError
 
             paginator = client.get_paginator("list_objects_v2")
+            bucket_name = self._s3_bucket_name()
             try:
                 for page in paginator.paginate(
-                    Bucket=self.settings.aws_s3_bucket,
+                    Bucket=bucket_name,
                     Prefix=remote_prefix.rstrip("/") + "/",
                 ):
-                    for obj in page.get("Contents", []):
-                        key = obj["Key"]
+                    contents = page.get("Contents", [])
+                    if not isinstance(contents, list):
+                        continue
+                    for obj in contents:
+                        if not isinstance(obj, dict):
+                            continue
+                        key = obj.get("Key")
+                        if not isinstance(key, str):
+                            continue
                         name = key.split("/")[-1]
                         if name:
                             names.append(name)
@@ -320,16 +378,16 @@ class ArtifactStorage:
 
     def completed_generation_ids(self) -> set[str]:
         """Return record ids already present in the generation manifest."""
-        return {row["record_id"] for row in self.load_generation_manifest()}
+        return {str(row["record_id"]) for row in self.load_generation_manifest()}
 
     def completed_embedding_ids(self, subdir: str = "") -> set[str]:
         """Return record ids already present in the embedding manifest."""
-        return {row["record_id"] for row in self.load_embedding_manifest(subdir)}
+        return {str(row["record_id"]) for row in self.load_embedding_manifest(subdir)}
 
     def write_run_state(self, **fields: object) -> dict[str, object]:
         """Merge fields into run_state.json, upload it, and return the state."""
         path = self.run_state_path()
-        state = {}
+        state: dict[str, object] = {}
         if path.exists():
             state = json.loads(path.read_text())
         state.update(fields)

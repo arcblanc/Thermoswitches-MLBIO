@@ -47,11 +47,11 @@ def load_fused_features(path: str = DEFAULT_FUSED) -> pd.DataFrame:
     return pd.read_csv(resolve_path(path))
 
 
-def ensure_output_dir(output_dir: str = OUTPUT_DIR) -> Path:
+def ensure_output_dir(output_dir: str | Path = OUTPUT_DIR) -> Path:
     """Create the figure output directory if needed and return its path."""
-    output_dir = resolve_path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    return output_dir
+    out_path = resolve_path(output_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+    return out_path
 
 
 def save_figure(fig: plt.Figure, output_dir: Path, name: str) -> Path:
@@ -138,7 +138,7 @@ def plot_length_vs_cost(report: dict, output_dir: Path) -> Path:
         )
 
     fig.suptitle("Sequence length vs computational cost", fontsize=13)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
     return save_figure(fig, output_dir, "length_vs_cost_scatter.png")
 
 
@@ -174,7 +174,7 @@ def plot_categorical_bars(report: dict, output_dir: Path) -> Path:
         axes[1].set_axis_off()
 
     fig.suptitle("Categorical performance metrics", fontsize=13)
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
     return save_figure(fig, output_dir, "categorical_bars.png")
 
 
@@ -221,7 +221,7 @@ def plot_feature_violins(fused_df: pd.DataFrame, output_dir: Path) -> Path:
         ax.set_ylabel("")
 
     fig.suptitle("Feature distributions across prototype sequences", fontsize=13)
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
     return save_figure(fig, output_dir, "feature_distribution_violin.png")
 
 
@@ -232,9 +232,11 @@ def _hill_overlay(
     fit = fit_hill_curve(temps, values)
     dense_t = np.linspace(min(temps), max(temps), 200)
     if fit["fit_status"] == "ok" and fit["bottom"] is not None:
-        curve = hill_sigmoid(
-            dense_t, fit["bottom"], fit["top"], fit["Tm"], fit["hill_coeff"]
-        )
+        bottom = float(fit["bottom"])
+        top = float(fit["top"]) if fit["top"] is not None else bottom
+        tm = float(fit["Tm"]) if fit["Tm"] is not None else bottom
+        hill_coeff = float(fit["hill_coeff"]) if fit["hill_coeff"] is not None else 1.0
+        curve = hill_sigmoid(dense_t, bottom, top, tm, hill_coeff)
     else:
         curve = np.full_like(dense_t, np.nan)
     return fit, dense_t, curve
@@ -287,14 +289,14 @@ def plot_melting_profiles(report: dict, output_dir: Path) -> Path:
                 ax.legend(fontsize=7)
 
     fig.suptitle("Melting profiles: scatter + Generalised Hill overlay", fontsize=13)
-    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
     return save_figure(fig, output_dir, "melting_profiles_hill_overlay.png")
 
 
 def generate_all_figures(
     report_path: str = DEFAULT_REPORT,
     fused_path: str = DEFAULT_FUSED,
-    output_dir: str = OUTPUT_DIR,
+    output_dir: str | Path = OUTPUT_DIR,
 ) -> list[Path]:
     """Render all prototype benchmark figures and return their paths."""
     sns.set_theme(style="whitegrid")

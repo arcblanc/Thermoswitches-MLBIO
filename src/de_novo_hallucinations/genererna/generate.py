@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoTokenizer
+from transformers import PreTrainedTokenizerBase
 
 from de_novo_hallucinations.genererna.loader import autocast_context
 from de_novo_hallucinations.genererna.model import GPT
@@ -7,7 +7,7 @@ from de_novo_hallucinations.genererna.model import GPT
 
 def generate_sequences(
     model: GPT,
-    tokenizer: AutoTokenizer,
+    tokenizer: PreTrainedTokenizerBase,
     device: torch.device,
     *,
     num_samples: int = 2,
@@ -36,7 +36,12 @@ def generate_sequences(
                     top_k=top_k,
                     repetition_penalty=repetition_penalty,
                 )[0].tolist()
-                text = decode(token_sequence).replace(" ", "").upper()
+                decoded = decode(token_sequence)
+                if not isinstance(decoded, str):
+                    raise ValueError(
+                        f"Tokenizer decode returned non-string: {type(decoded)!r}"
+                    )
+                text = decoded.replace(" ", "").upper()
                 sequences.append(text)
 
     return sequences

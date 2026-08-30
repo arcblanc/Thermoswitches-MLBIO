@@ -45,7 +45,7 @@ Locked split:
 | Symptom | Cause | Fix |
 |---------|--------|-----|
 | SSH timeout to `EC2_HOST` | Instance stopped | Start `i-0123fbf60559bd082` in console (`eu-west-2`); IP may change |
-| IAM `Arcblanc` cannot `ec2:DescribeInstances` / `StartInstances` | Least-privilege user | Manual console start; `scripts/start_eva_bake_vm.sh` cannot start the VM via API |
+| IAM `Arcblanc` cannot `ec2:DescribeInstances` / `StartInstances` | Least-privilege user | Manual console start; `scripts/eva/start_eva_bake_vm.sh` cannot start the VM via API |
 | **Disk full during `docker build`** | 25 GB root + CUDA devel + compiling flash-attn | Resize EBS **≥80 GB**, `growpart` + `resize2fs` |
 | flash-attn compile too heavy | Source build on small disk | Switch helper to **prebuilt flash-attn wheel** (`build_push_eva_docker.sh`) |
 | No Hub token in env | Push skipped | Build-only until `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` set |

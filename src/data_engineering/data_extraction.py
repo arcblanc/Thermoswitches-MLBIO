@@ -5,8 +5,11 @@ SRC_ROOT = Path(__file__).resolve().parent.parent
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from typing import cast
+
 import mysql.connector
 import pandas as pd
+from mysql.connector.connection import MySQLConnectionAbstract
 
 DEDUP_COLUMNS = ["rfam_acc", "rfamseq_acc", "seq_start", "seq_end"]
 
@@ -19,9 +22,9 @@ RFAM_CONFIG = {
 }
 
 
-def connect() -> mysql.connector.MySQLConnection:
+def connect() -> MySQLConnectionAbstract:
     """Open a read-only connection to the public Rfam MySQL instance."""
-    return mysql.connector.connect(**RFAM_CONFIG)
+    return cast(MySQLConnectionAbstract, mysql.connector.connect(**RFAM_CONFIG))
 
 
 def fetch_rfam_thermoswitches(

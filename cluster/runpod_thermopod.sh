@@ -27,7 +27,7 @@ PY
 export STORAGE_TARGET="${STORAGE_TARGET:-runpod}"
 
 echo "=== RunPod LLM batch (STORAGE_TARGET=${STORAGE_TARGET}, GENERNA_NUM_SAMPLES=${GENERNA_NUM_SAMPLES:-10000}) ==="
-python scripts/llm_cloud_batch.py --dry-run
+python scripts/generation/llm_cloud_batch.py --dry-run
 
 if [[ "${1:-}" != "--yes" && "${RUNPOD_FULL_BATCH:-}" != "1" ]]; then
   echo ""
@@ -39,4 +39,4 @@ if [[ "${1:-}" != "--yes" && "${RUNPOD_FULL_BATCH:-}" != "1" ]]; then
 fi
 
 export GENERNA_NUM_SAMPLES="${GENERNA_NUM_SAMPLES:-10000}"
-bash scripts/llm_cloud_run.sh
+bash scripts/generation/llm_cloud_run.sh

@@ -10,12 +10,17 @@ where version tags are applied.
 
 ### Added
 
-- RefSeq housekeeping 5′ UTR negative pipeline: genome download (`scripts/download_refseq_genomes.sh`), UTR extraction (`src/data_engineering/refseq_utr_extract.py`), and Infernal `cmscan --cut_ga` decontamination (`src/data_engineering/cmscan_decontaminate.py`).
+- **CI & quality gate:** GitHub Actions (`.github/workflows/ci.yml`), root `Makefile` (`make ci`), formal `tests/` with pytest (16 tests), `typings/` stubs for NUPACK/ViennaRNA, strict `uv check` (ty) across `src/`, `scripts/`, `notebooks/`, `tests/`.
+- **Scripts reorg:** category folders `scripts/{rf,eva,triage,extraction,cloud,generation,dev}/` with `scripts/README.md` and `_repo_paths.py`.
+- EVA de novo biophysical characterization (notebook 08), baseline compositional ablation (notebook 09), thesis figure export (`notebooks/thesis_figures.py`, `src/thermo_sim/thesis_results_figures.py`).
+- Cursor project rules (`.cursor/rules/`) for uv linters, ML guardrails, and critical-review protocol.
+- RUS-only RefSeq negative ablation (skip k-mer ENN): `knn_undersample.py --skip-enn` → `rus_cleaned.*`, Hungarian CDS-truncate rematch (`length_gc_matched_refseq_rus_*`), negatives-only thermo/enrich, `scripts/rf/merge_rus_fused_panel.py`, and parallel RF sidecars `*_rus.*` for ENN-vs-RUS comparison in notebooks 06/07.
+- RefSeq housekeeping 5′ UTR negative pipeline: genome download (`scripts/extraction/download_refseq_genomes.sh`), UTR extraction (`src/data_engineering/refseq_utr_extract.py`), and Infernal `cmscan --cut_ga` decontamination (`src/data_engineering/cmscan_decontaminate.py`).
 - Global length/GC matchmaking (`src/data_engineering/length_gc_match.py`): Z-space cKDTree top-K + Hungarian assignment, hard `|ΔL|≤40` / `|ΔGC|≤0.05` gates, and CDS-proximal truncation for exact-length pairing of all CD-HIT positives.
 - Intensive RF feature path in `thermo_classifier.py`: `*_MFE_per_nt`, stem/loop fractions; legacy raw-MFE set retained via `--legacy-features`.
 - Vienna dynamic enrichment (`src/thermo_sim/enrich_dynamic_features.py` + helpers in `thermo_common.py` / `vienna_rna.py`): dinucleotide-shuffle MFE Z-score, ΔP_RBS, ΔΔG, ensemble diversity Q, mean positional entropy S.
-- Leakage-aware diagnostics (`scripts/rf_length_bias_diagnostics.py`): length-alone gate, stratified contrast, and `StratifiedGroupKFold` by `rfam_acc` / `REFSEQ:{assembly}`.
-- Monotonic XGBoost path (`thermo_classifier.py train-xgb` + `scripts/xgb_monotonic_diagnostics.py`): physical `monotone_constraints` on intensive+dynamic features; diagnostic JSON `xgb_refseq_dynamic_diagnostics.json`.
+- Leakage-aware diagnostics (`scripts/rf/rf_length_bias_diagnostics.py`): length-alone gate, stratified contrast, and `StratifiedGroupKFold` by `rfam_acc` / `REFSEQ:{assembly}`.
+- Monotonic XGBoost path (`thermo_classifier.py train-xgb` + `scripts/rf/xgb_monotonic_diagnostics.py`): physical `monotone_constraints` on intensive+dynamic features; diagnostic JSON `xgb_refseq_dynamic_diagnostics.json`.
 - Non-circular RF inputs (`src/thermo_sim/noncircular_features.py`): static 37 °C physics, 16+64 k-mer frequencies, SD–AUG sentinel (`-1` + `sd_aug_missing`, no row drop), grouped permutation importance.
 - Post-hoc module (`src/thermo_sim/rf_posthoc.py` + `thermo_classifier.py posthoc`): OOF confidence bins, ΔP_RBS / Hill / Tm / Z gates, panel-wide Spearman (high-bin \(r_s\) only if \(N \ge 25\)), MW/KS, visual checklist pass rates.
 - Cheap \(P_{\mathrm{open,RBS}}\) backfill (`enrich_dynamic_features.py --p-open-only`) without 100-shuffle Z recompute.
@@ -26,6 +31,9 @@ where version tags are applied.
 
 ### Changed
 
+- `pyproject.toml`: hatchling editable wheel, uv dependency groups, Ruff + ty configuration; README modernized with repo layout, CI badge, and `make ci` workflow.
+- Migrated unit tests from `scripts/dev/` and `scripts/eva/` to `tests/`; legacy paths delegate to pytest.
+- Type-safety pass across `src/` and `scripts/` (Path contracts, gate helpers, optional-import handling).
 - Production RF training defaults to the **non-circular** feature set; `--circular-features` keeps the previous 20-column intensive+dynamic RF; `--legacy-features` keeps raw MFE.
 - FASTA header parsing accepts sanitized `REFSEQ:{assembly}` / `assembly:contig` accessions without pipe collisions.
 - Fused CSV resume-append aligns to the existing header order to prevent column shift on long thermo batches.

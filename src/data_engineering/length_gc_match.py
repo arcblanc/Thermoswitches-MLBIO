@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.optimize import linear_sum_assignment
-from scipy.spatial import cKDTree
+from scipy.spatial import KDTree as cKDTree
 
 SRC_ROOT = Path(__file__).resolve().parent.parent
 if str(SRC_ROOT) not in sys.path:
@@ -641,17 +641,15 @@ def run_length_gc_match(
     dataset = build_matched_dataset(matched_pos, matched_neg)
     write_dataset(dataset, output_csv, output_fasta)
 
-    # Also write a negatives-only FASTA for thermo re-fold of new keys
-    if not require_fused_positives:
-        neg_only_csv = resolve_path(
-            f"{BALANCED_DIR}/length_gc_matched_refseq_negatives.csv"
-        )
-        neg_only_fa = resolve_path(
-            f"{BALANCED_DIR}/length_gc_matched_refseq_negatives.fasta"
-        )
+    # Negatives-only sidecar for thermo re-fold; derive from output stem so RUS
+    # runs never overwrite the ENN panel's length_gc_matched_refseq_negatives.*.
+    out_stem = Path(str(output_csv)).name.replace(".csv", "")
+    if out_stem.endswith("_dataset"):
+        neg_stem = out_stem[: -len("_dataset")] + "_negatives"
     else:
-        neg_only_csv = resolve_path(f"{BALANCED_DIR}/length_gc_matched_negatives.csv")
-        neg_only_fa = resolve_path(f"{BALANCED_DIR}/length_gc_matched_negatives.fasta")
+        neg_stem = f"{out_stem}_negatives"
+    neg_only_csv = resolve_path(f"{BALANCED_DIR}/{neg_stem}.csv")
+    neg_only_fa = resolve_path(f"{BALANCED_DIR}/{neg_stem}.fasta")
     write_dataset(matched_neg.assign(label=0), neg_only_csv, neg_only_fa)
 
     report_path = resolve_path(report_json)

@@ -17,11 +17,13 @@ dist/
 .eggs/
 
 # Tool caches
+.mplconfig/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
 htmlcov/
+.ty_check_output.txt
 
 # Jupyter
 .ipynb_checkpoints/
@@ -50,6 +52,13 @@ data/processed/*
 !data/processed/rf_posthoc_report.json
 !data/processed/rf_noncircular_feature_log.json
 !data/processed/xgb_refseq_dynamic_diagnostics.json
+!data/processed/eva_denovo_checklist.json
+!data/processed/rf_noncircular_diagnostics_rus.json
+!data/processed/rf_posthoc_report_rus.json
+!data/processed/rf_noncircular_feature_log_rus.json
+!data/processed/rf_noncircular_oof_curves.json
+!data/processed/rf_naive_raw_mfe_permutation.json
+!data/processed/balanced/length_gc_matched_refseq_rus_report.json
 
 # Prototype 4-seq golden panel (small CI fixture)
 !data/processed/prototype/
@@ -132,8 +141,8 @@ models/genererna/
 data/processed/validation_embedding/
 
 # Local notebook PDF export helpers (not published)
-scripts/export_notebook_pdf.sh
-scripts/install_pandoc_for_nbconvert.sh
+scripts/dev/export_notebook_pdf.sh
+scripts/dev/install_pandoc_for_nbconvert.sh
 .jupyter/
 .vscode/
 notebooks/*.pdf

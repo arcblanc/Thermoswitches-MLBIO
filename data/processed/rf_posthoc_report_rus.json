@@ -1,0 +1,138 @@
+{
+  "written_at": "2026-08-20T17:29:14.034428+00:00",
+  "n": 2396,
+  "n_pos": 1198,
+  "n_neg": 1198,
+  "group_col": "rfam_acc",
+  "bins": {
+    "high_ge_0.80": 6,
+    "mid_0.40_0.60": 295,
+    "low_le_0.20": 1534,
+    "other": 561
+  },
+  "n_high": 6,
+  "gates": {
+    "delta_P_RBS_gt_0": 2296,
+    "hill_gt_1": 2367,
+    "nupack_hill_gt_1": 2387,
+    "tm_42_45": 124,
+    "z_le_minus2": 1124
+  },
+  "spearman_panel_wide_primary": {
+    "n_complete": 2396,
+    "min_n": 25,
+    "underpowered": false,
+    "pairs": {
+      "viennarna_Tm_vs_nupack_Tm": {
+        "n": 2396,
+        "r_s": 0.018710726504538602,
+        "p_value": 0.359943537840939,
+        "underpowered": false
+      },
+      "viennarna_hill_coeff_vs_nupack_hill_coeff": {
+        "n": 2396,
+        "r_s": 0.03357930814290152,
+        "p_value": 0.10032549868004946,
+        "underpowered": false
+      },
+      "viennarna_amplitude_vs_nupack_amplitude": {
+        "n": 2396,
+        "r_s": 0.09965040247617771,
+        "p_value": 1.021729968625289e-06,
+        "underpowered": false
+      }
+    }
+  },
+  "spearman_high_bin": {
+    "n_complete": 6,
+    "min_n": 25,
+    "underpowered": true,
+    "pairs": {
+      "viennarna_Tm_vs_nupack_Tm": {
+        "n": 6,
+        "r_s": null,
+        "p_value": null,
+        "underpowered": true,
+        "min_n": 25
+      },
+      "viennarna_hill_coeff_vs_nupack_hill_coeff": {
+        "n": 6,
+        "r_s": null,
+        "p_value": null,
+        "underpowered": true,
+        "min_n": 25
+      },
+      "viennarna_amplitude_vs_nupack_amplitude": {
+        "n": 6,
+        "r_s": null,
+        "p_value": null,
+        "underpowered": true,
+        "min_n": 25
+      }
+    }
+  },
+  "high_bin_spearman_underpowered": true,
+  "bin_tests_high_vs_low": {
+    "viennarna_Tm": {
+      "n_high": 6,
+      "n_low": 1534,
+      "mannwhitney_u": 1795.0,
+      "mannwhitney_p": 0.009838219535863833,
+      "ks_statistic": 0.7088222511951325,
+      "ks_p": 0.0015203849391302857
+    },
+    "viennarna_hill_coeff": {
+      "n_high": 6,
+      "n_low": 1534,
+      "mannwhitney_u": 4629.0,
+      "mannwhitney_p": 0.9805508817807966,
+      "ks_statistic": 0.24858757062146894,
+      "ks_p": 0.7769410592967878
+    },
+    "viennarna_amplitude": {
+      "n_high": 6,
+      "n_low": 1534,
+      "mannwhitney_u": 2845.0,
+      "mannwhitney_p": 0.10616850352899178,
+      "ks_statistic": 0.4267709691438505,
+      "ks_p": 0.16739685669048868
+    },
+    "viennarna_mfe_zscore": {
+      "n_high": 6,
+      "n_low": 1534,
+      "mannwhitney_u": 4826.0,
+      "mannwhitney_p": 0.8411149119589569,
+      "ks_statistic": 0.2003476749239461,
+      "ks_p": 0.9321993777228108
+    },
+    "viennarna_delta_P_RBS": {
+      "n_high": 6,
+      "n_low": 1534,
+      "mannwhitney_u": 3627.0,
+      "mannwhitney_p": 0.370060110731088,
+      "ks_statistic": 0.35028248587570615,
+      "ks_p": 0.36784635383049047
+    }
+  },
+  "visual_checklist": {
+    "sigmoidal_steepness_snap": 2339,
+    "sigmoidal_ramp": 29,
+    "inflection_tm": 124,
+    "dynamic_range": 764,
+    "baseline_repression": 76,
+    "all_four_pass": 0
+  },
+  "visual_checklist_thresholds": {
+    "n_H_snap": 1.5,
+    "n_H_ramp": 1.0,
+    "n_H_posthoc_gate": 1.0,
+    "Tm_C": [
+      42.0,
+      45.0
+    ],
+    "delta_theta_min": 0.5,
+    "P_open_RBS_37_max": 0.2
+  },
+  "eva_hill_not_available": "EVA stream FASTA triage still uses Z / \u0394P_RBS / E_Rfam only. Full post-hoc Hill/Tm gates need thermo_batch on generated sequences.",
+  "has_hill_columns": true
+}

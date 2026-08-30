@@ -26,8 +26,8 @@ def _(mo):
 
     Run the pipeline first:
     ```bash
-    bash scripts/download_rfam.sh
-    bash scripts/run_novelty_search.sh
+    bash scripts/extraction/download_rfam.sh
+    bash scripts/extraction/run_novelty_search.sh
     ```
     """)
     return

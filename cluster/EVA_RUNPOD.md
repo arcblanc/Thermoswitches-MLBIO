@@ -22,7 +22,7 @@ Do this **before** the first EVA smoke. The M3 only orchestrates; a Linux amd64 
 export DOCKERHUB_USERNAME=arcblanc
 export DOCKERHUB_TOKEN=…   # Hub access token with write
 
-bash scripts/start_eva_bake_vm.sh
+bash scripts/eva/start_eva_bake_vm.sh
 ```
 
 If IAM user `Arcblanc` cannot `ec2:DescribeInstances` / `StartInstances`, start instance `i-0123fbf60559bd082` in the AWS console (`eu-west-2`), put the public IP in `.env` as `EC2_HOST`, then re-run the script.
@@ -45,7 +45,7 @@ git clone https://github.com/arcblanc/Thermoswitches-MLBIO.git   # or scp/rsync 
 cd Thermoswitches-MLBIO
 export DOCKERHUB_IMAGE=arcblanc/eva-model:v1
 export EVA_SRC_DIR=~/EVA
-bash scripts/build_push_eva_docker.sh
+bash scripts/eva/build_push_eva_docker.sh
 
 # Option B: manual (same as EVA docs, retagged for Hub)
 git clone https://github.com/GENTEL-Lab/EVA.git
@@ -55,7 +55,7 @@ docker build -f docker/Dockerfile -t arcblanc/eva-model:v1 .
 
 The Dockerfile installs CUDA PyTorch, `flash-attn`, MegaBlocks/deps, and `eva-generate`. Expect a long build and multi‑GB disk. Checkpoint weights are **not** baked into the image.
 
-`scripts/build_push_eva_docker.sh` **hard-fails on macOS** so the bake cannot be started by mistake on an M3.
+`scripts/eva/build_push_eva_docker.sh` **hard-fails on macOS** so the bake cannot be started by mistake on an M3.
 
 ### Step 2 — Push to Docker Hub (warehouse)
 
@@ -63,7 +63,7 @@ Still **on the VM**:
 
 ```bash
 docker login
-bash scripts/build_push_eva_docker.sh --push
+bash scripts/eva/build_push_eva_docker.sh --push
 # or: docker push arcblanc/eva-model:v1
 ```
 
@@ -128,7 +128,7 @@ huggingface-cli download GENTEL-Lab/EVA --local-dir models/eva/checkpoint
 bash cluster/runpod_eva_thermopod.sh smoke --yes
 ```
 
-Or: `bash scripts/eva_smoke_test.sh`
+Or: `bash scripts/eva/eva_smoke_test.sh`
 
 S3 layout:
 
@@ -155,7 +155,7 @@ Chunks of `EVA_CHUNK_SIZE=512` per host until quotas complete; BiRNA + verify; p
 
 ```bash
 export STORAGE_TARGET=runpod AWS_S3_PREFIX=llm-batch/eva/v1
-python scripts/eva_cloud_batch.py --smoke --dry-run
+python scripts/eva/eva_cloud_batch.py --smoke --dry-run
 python src/de_novo_hallucinations/eva_generate.py --smoke --dry-run
 ```
 

@@ -1,8 +1,10 @@
 from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
+from typing import cast
 
 import torch
 from transformers import AutoTokenizer
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 from de_novo_hallucinations.genererna.model import GPT, GPTConfig
 
@@ -12,12 +14,19 @@ def get_device() -> torch.device:
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def load_tokenizer(tokenizer_path: Path | str) -> AutoTokenizer:
+def load_tokenizer(tokenizer_path: Path | str) -> PreTrainedTokenizerBase:
     """Load a GenerRNA tokenizer and verify AUGC round-trip encoding."""
-    tokenizer = AutoTokenizer.from_pretrained(str(tokenizer_path))
+    tokenizer = cast(
+        PreTrainedTokenizerBase, AutoTokenizer.from_pretrained(str(tokenizer_path))
+    )
     probe = "AUGC"
     ids = tokenizer.encode(probe)
-    decoded = tokenizer.decode(ids).replace(" ", "").upper()
+    decoded_text = tokenizer.decode(ids)
+    if not isinstance(decoded_text, str):
+        raise ValueError(
+            f"Tokenizer decode returned non-string: {type(decoded_text)!r}"
+        )
+    decoded = decoded_text.replace(" ", "").upper()
     if decoded != probe:
         raise ValueError(f"Tokenizer round-trip failed: {probe!r} -> {decoded!r}")
     return tokenizer

@@ -147,7 +147,7 @@ RunPod’s **SSH proxy does not support SCP/SFTP**.
 | **Preferred SSH** | Direct TCP: `ssh -p <mapped_port> -i ~/.ssh/id_ed25519 root@<publicIp>` |
 | Port / IP | From RunPod API: `portMappings["22"]`, `publicIp` (e.g. `38.128.233.132:42225`) |
 | Proxy (often fails if `PUBLIC_KEY` mis-set) | `ssh x0ggh3d7lmi9yn-64410a9d@ssh.runpod.io -i ~/.ssh/id_ed25519` |
-| Helper | [`scripts/runpod_ssh.sh`](../scripts/runpod_ssh.sh) (proxy form from `.env`) |
+| Helper | [`scripts/cloud/runpod_ssh.sh`](../scripts/cloud/runpod_ssh.sh) (proxy form from `.env`) |
 | File ingress | `git clone` / `git pull` **inside** the pod, or direct-TCP `scp -P <port>` (works on direct TCP; not on proxy) |
 | File egress | **boto3 → S3 only** for production artifacts |
 
@@ -163,13 +163,13 @@ RunPod’s **SSH proxy does not support SCP/SFTP**.
 
 | Script | Role |
 |--------|------|
-| [`scripts/llm_cloud_batch.py`](../scripts/llm_cloud_batch.py) | Orchestrator: `sync_down` → GenerRNA → BiRNA → verify → `sync_up` → optional RunPod terminate |
-| [`scripts/llm_cloud_run.sh`](../scripts/llm_cloud_run.sh) | Thin wrapper activating venv and calling `llm_cloud_batch.py` |
+| [`scripts/generation/llm_cloud_batch.py`](../scripts/generation/llm_cloud_batch.py) | Orchestrator: `sync_down` → GenerRNA → BiRNA → verify → `sync_up` → optional RunPod terminate |
+| [`scripts/generation/llm_cloud_run.sh`](../scripts/generation/llm_cloud_run.sh) | Thin wrapper activating venv and calling `llm_cloud_batch.py` |
 | [`cluster/runpod_thermopod.sh`](runpod_thermopod.sh) | Bootstrap: system-site-packages venv, install LLM+AWS deps **without torch**, CUDA check, then batch |
 | [`cluster/runpod_full_batch.sh`](runpod_full_batch.sh) | Non-interactive full-batch launcher template |
 | [`src/de_novo_hallucinations/gener_rna.py`](../src/de_novo_hallucinations/gener_rna.py) | GenerRNA generation, resume, manifest, S3 flush |
 | [`src/validation_embedding/birna_embed.py`](../src/validation_embedding/birna_embed.py) | BiRNA-BERT NUC embeddings (`.npy` + `.json` + manifest) |
-| [`scripts/verify_llm_smoke_outputs.py`](../scripts/verify_llm_smoke_outputs.py) | Validates FASTA + embedding counts |
+| [`scripts/generation/verify_llm_smoke_outputs.py`](../scripts/generation/verify_llm_smoke_outputs.py) | Validates FASTA + embedding counts |
 
 ### 3.4 GenerRNA finalized behavior
 
@@ -229,7 +229,7 @@ cd /workspace/Thermoswitches-MLBIO
 bash cluster/runpod_thermopod.sh --yes
 # or:
 export GENERNA_NUM_SAMPLES=10000 GENERNA_BATCH_SIZE=50
-python scripts/llm_cloud_batch.py
+python scripts/generation/llm_cloud_batch.py
 ```
 
 From Mac (direct TCP example):
@@ -264,7 +264,7 @@ Log on pod: `/workspace/full_10k.log`
 |------|-----|
 | SSH | `ssh -i /Users/amierzuhri/Downloads/Thermo-bio-key.pem ubuntu@35.179.95.63` |
 | SCP | Supported (standard OpenSSH) — used to rsync repo, balanced data, NUPACK wheels |
-| Mac helpers | [`scripts/scp_ec2.sh`](../scripts/scp_ec2.sh), [`scripts/thermo_ec2_run.sh`](../scripts/thermo_ec2_run.sh) |
+| Mac helpers | [`scripts/cloud/scp_ec2.sh`](../scripts/cloud/scp_ec2.sh), [`scripts/cloud/thermo_ec2_run.sh`](../scripts/cloud/thermo_ec2_run.sh) |
 | Artifact egress | **boto3 → S3** via `thermo_s3_batch.py` (finalized; not SCP-only) |
 | Shutdown | `EC2_AUTO_SHUTDOWN=true` → `boto3.client("ec2").stop_instances` |
 
@@ -343,10 +343,10 @@ Physics feature set used for training is the MFE / stem / loop / unpaired / GC /
 
 | Script | Role |
 |--------|------|
-| [`scripts/thermo_s3_batch.py`](../scripts/thermo_s3_batch.py) | **Primary:** `train` / `predict`, S3 upload, EC2 stop |
-| [`scripts/thermo_ec2_batch.py`](../scripts/thermo_ec2_batch.py) | Earlier local-only orchestrator (no S3/stop); superseded for cloud runs |
-| [`scripts/thermo_ec2_run.sh`](../scripts/thermo_ec2_run.sh) | SSH wrapper → `thermo_s3_batch.py` |
-| [`scripts/scp_ec2.sh`](../scripts/scp_ec2.sh) | SCP push/pull helpers (FASTA, model, results) |
+| [`scripts/cloud/thermo_s3_batch.py`](../scripts/cloud/thermo_s3_batch.py) | **Primary:** `train` / `predict`, S3 upload, EC2 stop |
+| [`scripts/cloud/thermo_ec2_batch.py`](../scripts/cloud/thermo_ec2_batch.py) | Earlier local-only orchestrator (no S3/stop); superseded for cloud runs |
+| [`scripts/cloud/thermo_ec2_run.sh`](../scripts/cloud/thermo_ec2_run.sh) | SSH wrapper → `thermo_s3_batch.py` |
+| [`scripts/cloud/scp_ec2.sh`](../scripts/cloud/scp_ec2.sh) | SCP push/pull helpers (FASTA, model, results) |
 | [`cluster/ec2_bootstrap_thermo.sh`](ec2_bootstrap_thermo.sh) | Apt/venv bootstrap (use micromamba path on this AMI) |
 
 ### 4.8 Train command (Step 2 — finalized)
@@ -357,7 +357,7 @@ On EC2:
 cd ~/Thermoswitches-MLBIO
 micromamba activate thermo
 export STORAGE_TARGET=s3 EC2_AUTO_SHUTDOWN=true
-nohup python scripts/thermo_s3_batch.py train \
+nohup python scripts/cloud/thermo_s3_batch.py train \
   --run --resume --workers 2 --batch-size 1 --limit 2396 \
   > /home/ubuntu/thermo_train.log 2>&1 &
 ```
@@ -378,9 +378,9 @@ Progress signals: `data/processed/batch_ram_log.jsonl`, row count of `fused_feat
 # On Mac or EC2: ensure generated.fasta is present
 aws s3 cp s3://thermo-s3-bucket/llm-batch/v1/de_novo/generated.fasta \
   data/processed/de_novo/generated.fasta
-# If Mac: bash scripts/scp_ec2.sh push-fasta
+# If Mac: bash scripts/cloud/scp_ec2.sh push-fasta
 
-python scripts/thermo_s3_batch.py predict \
+python scripts/cloud/thermo_s3_batch.py predict \
   --run --resume --workers 2 --batch-size 1 --limit 10000
 ```
 

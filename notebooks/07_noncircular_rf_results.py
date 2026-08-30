@@ -47,6 +47,8 @@ def _():
     sidecar = json.loads(
         (DATA / "models" / "rf_thermoswitch_noncircular.json").read_text()
     )
+    rus_diag_path = DATA / "rf_noncircular_diagnostics_rus.json"
+    rus_diag = json.loads(rus_diag_path.read_text()) if rus_diag_path.exists() else None
 
     print("feature_set:", sidecar["feature_set"])
     print("trained_at:", sidecar["trained_at"])
@@ -54,7 +56,14 @@ def _():
         f"n={sidecar['n_rows']} ({sidecar['n_pos']} pos / {sidecar['n_neg']} neg), {len(sidecar['feature_columns'])} features"
     )
     print("circular excluded from X:", ", ".join(sidecar["circular_excluded"]))
-    return FIG, Image, diag, display, feat, pd, plt, post
+    if rus_diag is not None:
+        print(
+            f"RUS panel GroupKFold AUC: {rus_diag['noncircular_stratified_group']['roc_auc']:.3f} "
+            f"(n={rus_diag['n']})"
+        )
+    else:
+        print("RUS diagnostics sidecar not present yet.")
+    return FIG, Image, diag, display, feat, pd, plt, post, rus_diag
 
 
 @app.cell(hide_code=True)
@@ -68,7 +77,7 @@ def _(mo):
 
 
 @app.cell
-def _(diag, display, feat, pd):
+def _(diag, display, feat, pd, rus_diag):
     cv = pd.DataFrame(
         {
             "model": [
@@ -94,6 +103,23 @@ def _(diag, display, feat, pd):
         }
     )
     display(cv.round(3))
+
+    if rus_diag is not None:
+        cv_rus = pd.DataFrame(
+            {
+                "panel": ["ENN (historical)", "RUS (no ENN)"],
+                "random_split_AUC": [
+                    diag["noncircular_stratified"]["roc_auc"],
+                    rus_diag["noncircular_stratified"]["roc_auc"],
+                ],
+                "family_holdout_AUC": [
+                    diag["noncircular_stratified_group"]["roc_auc"],
+                    rus_diag["noncircular_stratified_group"]["roc_auc"],
+                ],
+            }
+        )
+        print("ENN vs RUS non-circular RF")
+        display(cv_rus.round(3))
 
     aug = feat["aug_missing"]
     print(

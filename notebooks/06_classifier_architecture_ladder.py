@@ -34,10 +34,12 @@ def _():
     import json
     import sys
     from pathlib import Path
+    from typing import cast
 
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
+    from IPython.display import display
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.metrics import accuracy_score, roc_auc_score
     from sklearn.model_selection import (
@@ -86,7 +88,9 @@ def _():
         StratifiedKFold,
         accuracy_score,
         add_intensive_features,
+        cast,
         cross_val_predict,
+        display,
         json,
         pd,
         plt,
@@ -498,6 +502,7 @@ def _(
     RECOMPUTE_NONCIRCULAR,
     StratifiedGroupKFold,
     StratifiedKFold,
+    cast,
     display,
     eval_estimator,
     grouped_permutation_importance,
@@ -515,7 +520,7 @@ def _(
         nc_clean[GROUP_COL].astype(str) if GROUP_COL in nc_clean.columns else None
     )
     if not RECOMPUTE_NONCIRCULAR and NONCIRC_DIAG.exists():
-        nc_diag = json.loads(NONCIRC_DIAG.read_text())
+        nc_diag = cast(dict[str, object], json.loads(NONCIRC_DIAG.read_text()))
         print(f"Using saved non-circular diagnostics from {NONCIRC_DIAG.name}.")
     else:
         _skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -539,19 +544,30 @@ def _(
         }
         NONCIRC_DIAG.write_text(json.dumps(nc_diag, indent=2))
         print(f"Wrote {NONCIRC_DIAG}")
+
+    def _diag_auc(block: dict[str, object]) -> float:
+        """Read a ROC-AUC scalar from a saved diagnostics block."""
+        value = block.get("roc_auc")
+        if isinstance(value, (int, float)):
+            return float(value)
+        raise KeyError("roc_auc missing from diagnostics block")
+
+    stratified = cast(dict[str, object], nc_diag["noncircular_stratified"])
+    grouped = cast(dict[str, object], nc_diag["noncircular_stratified_group"])
+    grouped_perm = cast(dict[str, object], nc_diag["grouped_permutation_importance"])
     print(
-        f"Non-circular random-split AUC: {nc_diag['noncircular_stratified']['roc_auc']:.3f}; "
-        f"GroupKFold: {nc_diag['noncircular_stratified_group']['roc_auc']:.3f} "
+        f"Non-circular random-split AUC: {_diag_auc(stratified):.3f}; "
+        f"GroupKFold: {_diag_auc(grouped):.3f} "
         f"(n={nc_diag['n']}, {nc_diag['n_features']} features)."
     )
-    imp_groups = nc_diag["grouped_permutation_importance"]["groups"]
+    imp_groups = cast(dict[str, object], grouped_perm["groups"])
     imp_df = pd.DataFrame(
         [
             {
                 "block": name,
-                "n_features": block["n_features"],
-                "mean_AUC_drop": block["mean_auc_drop"],
-                "std_AUC_drop": block["std_auc_drop"],
+                "n_features": cast(dict[str, object], block)["n_features"],
+                "mean_AUC_drop": cast(dict[str, object], block)["mean_auc_drop"],
+                "std_AUC_drop": cast(dict[str, object], block)["std_auc_drop"],
             }
             for name, block in imp_groups.items()
         ]
@@ -575,12 +591,79 @@ def _(
     summary_noncirc = pd.DataFrame(summary_data)
     summary_noncirc.loc[len(summary_noncirc)] = [
         "6. Non-circular X (static 37 °C + k-mers + SD–AUG; melting post-hoc)",
-        round(nc_diag["noncircular_stratified"]["roc_auc"], 2),
-        round(nc_diag["noncircular_stratified_group"]["roc_auc"], 2),
+        round(_diag_auc(stratified), 2),
+        round(_diag_auc(grouped), 2),
         "Melting scalars left X. GroupKFold is still the honesty number.",
     ]
     display(summary_noncirc)
-    return X_nc, groups_nc, y_nc
+    return X_nc, groups_nc, nc_diag, summary_noncirc, y_nc
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## 6b. ENN vs RUS negative-panel ablation
+
+    Parallel sidecars: `rf_noncircular_diagnostics_rus.json` / `rf_posthoc_report_rus.json`.
+    RUS skips k-mer ENN, rematches decontaminated RefSeq UTRs, and retrains the same
+    non-circular RF. Compare stratified vs GroupKFold AUCs and trinucleotide
+    grouped-permutation dominance.
+    """)
+    return
+
+
+@app.cell
+def _(DATA, display, json, nc_diag, pd, summary_noncirc):
+    rus_diag_path = DATA / "rf_noncircular_diagnostics_rus.json"
+    if not rus_diag_path.exists():
+        print(
+            f"RUS diagnostics not found at {rus_diag_path.name}; "
+            "run the RUS panel train/posthoc pipeline first."
+        )
+        enn_rus = summary_noncirc
+    else:
+        rus_diag = json.loads(rus_diag_path.read_text())
+        enn_rus = pd.DataFrame(
+            [
+                {
+                    "panel": "ENN / historical RefSeq match",
+                    "random_AUC": round(
+                        nc_diag["noncircular_stratified"]["roc_auc"], 3
+                    ),
+                    "group_AUC": round(
+                        nc_diag["noncircular_stratified_group"]["roc_auc"], 3
+                    ),
+                    "n": nc_diag["n"],
+                    "top_perm_block": max(
+                        nc_diag["grouped_permutation_importance"]["groups"].items(),
+                        key=lambda kv: kv[1]["mean_auc_drop"],
+                    )[0],
+                },
+                {
+                    "panel": "RUS-only rematch (no ENN)",
+                    "random_AUC": round(
+                        rus_diag["noncircular_stratified"]["roc_auc"], 3
+                    ),
+                    "group_AUC": round(
+                        rus_diag["noncircular_stratified_group"]["roc_auc"], 3
+                    ),
+                    "n": rus_diag["n"],
+                    "top_perm_block": max(
+                        rus_diag["grouped_permutation_importance"]["groups"].items(),
+                        key=lambda kv: kv[1]["mean_auc_drop"],
+                    )[0],
+                },
+            ]
+        )
+        display(enn_rus)
+        summary_noncirc.loc[len(summary_noncirc)] = [
+            "7. Non-circular X on RUS-matched RefSeq panel (ENN skipped)",
+            round(rus_diag["noncircular_stratified"]["roc_auc"], 2),
+            round(rus_diag["noncircular_stratified_group"]["roc_auc"], 2),
+            "Same X; negatives redrawn without ENN neighbourhood pruning.",
+        ]
+        display(summary_noncirc)
+    return
 
 
 @app.cell(hide_code=True)

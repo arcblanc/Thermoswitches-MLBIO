@@ -1,8 +1,10 @@
 import argparse
+import importlib
 import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -50,6 +52,11 @@ DEFAULT_SODIUM = 0.05
 DEFAULT_MAGNESIUM = 0.0
 
 
+def import_nupack() -> Any:
+    """Import the optional NUPACK Python module."""
+    return importlib.import_module("nupack")
+
+
 @dataclass
 class NupackConfig:
     sodium: float = DEFAULT_SODIUM
@@ -62,7 +69,9 @@ class NupackConfig:
 def require_nupack() -> None:
     """Raise if the NUPACK Python module is not importable."""
     try:
-        from nupack import Model, SetSpec, Strand, Tube, tube_analysis  # noqa: F401
+        nupack = import_nupack()
+        for name in ("Model", "SetSpec", "Strand", "Tube", "tube_analysis"):
+            getattr(nupack, name)
     except ImportError as exc:
         wheel = local_nupack_wheel_path()
         hint = (
@@ -75,7 +84,7 @@ def require_nupack() -> None:
 
 def configure_nupack_threads(threads: int | None = None) -> int:
     """Set NUPACK's max thread count and return the value used."""
-    import nupack
+    nupack = import_nupack()
 
     thread_count = threads or os.cpu_count() or 1
     if hasattr(nupack, "set_max_threads"):
@@ -85,7 +94,7 @@ def configure_nupack_threads(threads: int | None = None) -> int:
 
 def build_model(config: NupackConfig) -> object:
     """Build a NUPACK RNA Model from salt and temperature settings."""
-    from nupack import Model
+    Model = import_nupack().Model
 
     kwargs = {
         "material": "rna",
@@ -101,7 +110,10 @@ def build_single_strand_tube(
     sequence: str, concentration: float = DEFAULT_STRAND_CONCENTRATION
 ) -> object:
     """Build a one-strand NUPACK Tube at the given concentration."""
-    from nupack import SetSpec, Strand, Tube
+    nupack = import_nupack()
+    SetSpec = nupack.SetSpec
+    Strand = nupack.Strand
+    Tube = nupack.Tube
 
     strand = Strand(normalize_sequence(sequence), name="utr")
     return Tube(
@@ -113,7 +125,10 @@ def build_single_strand_tube(
 
 def _analyze_complex(sequence: str, config: NupackConfig) -> dict:
     """Compute MFE energy and structure metrics for a single strand."""
-    from nupack import Complex, Strand, complex_analysis
+    nupack = import_nupack()
+    Complex = nupack.Complex
+    Strand = nupack.Strand
+    complex_analysis = nupack.complex_analysis
 
     model = build_model(config)
     strand = Strand(normalize_sequence(sequence), name="utr")
@@ -137,7 +152,7 @@ def _exposure_at_temperature(
     sequence: str, temperature_c: float, config: NupackConfig
 ) -> float:
     """Return the unpaired base fraction at one temperature."""
-    from nupack import tube_analysis
+    tube_analysis = import_nupack().tube_analysis
 
     temp_config = NupackConfig(
         sodium=config.sodium,

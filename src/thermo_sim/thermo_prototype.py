@@ -5,6 +5,7 @@ import threading
 import time
 from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, cast
 
 import pandas as pd
 import psutil
@@ -62,7 +63,9 @@ def _preflight(skip_nupack: bool = False) -> dict:
         return report
 
     require_nupack()
-    import nupack
+    from thermo_sim.nupack_engine import import_nupack
+
+    nupack = import_nupack()
 
     threads = configure_nupack_threads(os.cpu_count())
     report["engines"]["nupack"] = {
@@ -100,15 +103,16 @@ def _run_sequence_benchmark(
         temp_range,
         dangles,
     )
-    vienna_profile = vienna_timed["result"]
-    vienna_result = vienna_profile["result"]
+    vienna_profile = cast(dict[str, Any], vienna_timed["result"])
+    vienna_result = cast(dict[str, Any], vienna_profile["result"])
+    total_elapsed = float(cast(float, vienna_timed["elapsed_sec"]))
     payload = {
         "sequence": sequence_label,
         "panel_role": row_dict.get("panel_role"),
         "seq_length": row_dict.get("seq_length", len(row_dict.get("sequence", ""))),
         "elapsed_sec": {
             "vienna": vienna_timed["elapsed_sec"],
-            "total": vienna_timed["elapsed_sec"],
+            "total": total_elapsed,
         },
         "vienna": {
             "features": {
@@ -134,10 +138,12 @@ def _run_sequence_benchmark(
             threads,
             concentration,
         )
-        nupack_profile = nupack_timed["result"]
-        nupack_result = nupack_profile["result"]
+        nupack_profile = cast(dict[str, Any], nupack_timed["result"])
+        nupack_result = cast(dict[str, Any], nupack_profile["result"])
         payload["elapsed_sec"]["nupack"] = nupack_timed["elapsed_sec"]
-        payload["elapsed_sec"]["total"] += nupack_timed["elapsed_sec"]
+        payload["elapsed_sec"]["total"] = total_elapsed + float(
+            cast(float, nupack_timed["elapsed_sec"])
+        )
         payload["nupack"] = {
             "features": {
                 k: v for k, v in nupack_result.items() if not k.startswith("_")
@@ -189,13 +195,14 @@ def run_prototype_benchmark(
         print(f"  output dir: {output_dir}")
         return panel
 
-    report = _preflight(skip_nupack=skip_nupack)
+    report: dict[str, Any] = _preflight(skip_nupack=skip_nupack)
     report["temp_range"] = temp_range
-    report["biophysics"] = {
+    biophysics: dict[str, Any] = {
         "vienna_dangles_tested": vienna_dangles,
         "nupack_sodium_M": sodium,
         "nupack_magnesium_M": magnesium,
     }
+    report["biophysics"] = biophysics
 
     four_u_row = panel[panel["panel_role"] == "canonical_positive"].iloc[0]
     if vienna_dangles == "both":
@@ -203,12 +210,12 @@ def run_prototype_benchmark(
             four_u_row["sequence"],
             temp_range,
         )
-        report["biophysics"]["chosen_vienna_dangles"] = chosen_dangles
-        report["biophysics"]["dangle_comparison"] = {
+        biophysics["chosen_vienna_dangles"] = chosen_dangles
+        biophysics["dangle_comparison"] = {
             str(dangles): {
-                "rmse": payload["hill"]["rmse"],
-                "Tm": payload["hill"]["Tm"],
-                "fit_status": payload["hill"]["fit_status"],
+                "rmse": cast(dict[str, object], payload["hill"])["rmse"],
+                "Tm": cast(dict[str, object], payload["hill"])["Tm"],
+                "fit_status": cast(dict[str, object], payload["hill"])["fit_status"],
             }
             for dangles, payload in dangle_results.items()
         }

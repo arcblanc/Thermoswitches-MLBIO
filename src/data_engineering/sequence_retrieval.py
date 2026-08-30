@@ -1,4 +1,5 @@
 import argparse
+from typing import cast
 import csv
 import json
 import os
@@ -39,11 +40,11 @@ def configure_entrez() -> None:
     if not api_key:
         raise EnvironmentError("NCBI_API_KEY is not set. Add it to your .env file.")
 
-    Entrez.email = email
-    Entrez.api_key = api_key
-    Entrez.tool = "Thermoswitch_Classifier"
-    Entrez.max_tries = 5
-    Entrez.sleep_between_tries = 15
+    setattr(Entrez, "email", email)
+    setattr(Entrez, "api_key", api_key)
+    setattr(Entrez, "tool", "Thermoswitch_Classifier")
+    setattr(Entrez, "max_tries", 5)
+    setattr(Entrez, "sleep_between_tries", 15)
 
 
 def _read_checkpoint(checkpoint_path: Path) -> int:
@@ -145,7 +146,8 @@ def fetch_fasta_from_df(
     skipped = 0
 
     with output_fasta.open(file_mode) as fasta_file:
-        for index, row in df.iterrows():
+        for row_index, row in df.iterrows():
+            index = int(cast(int, row_index))
             if index <= last_index:
                 skipped += 1
                 continue

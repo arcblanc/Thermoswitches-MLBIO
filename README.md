@@ -1,21 +1,77 @@
 # Thermoswitches-MLBIO
 
+[![CI](https://github.com/arcblanc/Thermoswitches-MLBIO/actions/workflows/ci.yml/badge.svg)](https://github.com/arcblanc/Thermoswitches-MLBIO/actions/workflows/ci.yml)
+
 **Author:** Amier Zuhri  
 **Domain:** RNA thermoswitches — biophysics, Random Forest ranking, de novo EVA generation
 
 Prokaryotic RNA thermoswitches (RNA thermometers) sit in the 5′ UTR, sequester the Shine-Dalgarno sequence at low temperature, and expose it as temperature rises. This repo builds a labelled physics panel, trains a Random Forest on **non-circular 37 °C physics + k-mers + SD–AUG spacing**, then generates new sequences with **EVA** on Macleod GPU and triages them on the Mac. Melting scalars (Tm, Hill, Z, ΔP_RBS) are **post-hoc gates**, not RF inputs. The previous 20-column matrix put those scalars in X and was circular; that story is in [`notebooks/06_classifier_architecture_ladder.py`](notebooks/06_classifier_architecture_ladder.py) §§1–3.
 
-Open the reactive apps with `uv run marimo edit notebooks/<file>.py`.
+---
 
+## Repository layout
+
+```
+Thermoswitches-MLBIO/
+├── src/                    # Importable library (editable install via uv)
+│   ├── data_engineering/   # Corpus curation, CD-HIT, length/GC match
+│   ├── thermo_sim/         # Vienna/NUPACK, RF, post-hoc gates, batch runners
+│   ├── de_novo_hallucinations/  # EVA / GenerRNA generation
+│   ├── novelty_eval/       # BLAST / nhmmer parsing
+│   └── validation_embedding/
+├── scripts/                # Runnable CLIs & shell wrappers (see scripts/README.md)
+│   ├── rf/ eva/ triage/ extraction/ cloud/ generation/ dev/
+├── notebooks/              # Marimo apps (.py) + legacy Jupyter (.ipynb)
+├── tests/                  # pytest suite (noncircular features, EVA gates)
+├── cluster/                # HPC / RunPod / Macleod runbooks
+├── data/                   # Raw reference + processed artifacts (see .gitignore policy)
+├── typings/                # Stubs for optional deps (NUPACK, ViennaRNA)
+├── .github/workflows/      # CI: ruff, ty, pytest
+├── Makefile                # make ci | lint | test | typecheck
+├── pyproject.toml          # uv lockfile, dependency groups, Ruff + ty config
+└── environment.yml         # Conda bio-toolchain (cd-hit, infernal, hmmer)
+```
+
+| Layer | Role |
+|-------|------|
+| **`src/`** | Reusable logic — import after `uv sync` (no `PYTHONPATH` required) |
+| **`scripts/`** | Thin orchestration: cloud batch, EVA install, triage, RF diagnostics |
+| **`notebooks/`** | Interactive Marimo apps; load JSON sidecars, avoid retraining where possible |
+| **`tests/`** | Fast unit tests; run via `make test` or CI |
+
+Thesis prose and supplementary markdown live in the sibling package [`../thesis_md_package/`](../thesis_md_package/) — see [`notebooks/THESIS_MD_PACKAGE.md`](notebooks/THESIS_MD_PACKAGE.md).
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/arcblanc/Thermoswitches-MLBIO.git
+cd Thermoswitches-MLBIO
+
+uv sync --group dev --group biophysics --group notebooks --group cloud --group llm
+cp .env.example .env   # EMAIL, NCBI_API_KEY
+
+make ci                # lint + format check + ty + pytest (matches GitHub Actions)
+```
+
+Open Marimo apps: `uv run marimo edit notebooks/<file>.py`.
+
+Install **NUPACK 4.1** from the licensed wheel under `nupack-4.1.0.1/package/` (gitignored; not on PyPI). ViennaRNA: `uv sync --group biophysics`.
+
+---
 | App | File |
 |-----|------|
-| 1. Rfam & RefSeq dataset curation | [`notebooks/marimo_dataset_curation.py`](notebooks/marimo_dataset_curation.py) |
+| 1. Rfam vs RefSeq curation & EDA | [`notebooks/01_rfam_refseq_curation_eda.py`](notebooks/01_rfam_refseq_curation_eda.py) |
 | 2. Prototype benchmark | [`notebooks/02_prototype_benchmark.py`](notebooks/02_prototype_benchmark.py) |
 | 3. LLM smoke test | [`notebooks/03_llm_smoke_test_results.py`](notebooks/03_llm_smoke_test_results.py) |
 | 4. Full thermo RF analysis | [`notebooks/04_full_thermo_rf_analysis.py`](notebooks/04_full_thermo_rf_analysis.py) |
 | 5. Rfam novelty | [`notebooks/05_novelty_rfam_analysis.py`](notebooks/05_novelty_rfam_analysis.py) |
 | 6. Classifier architecture ladder | [`notebooks/06_classifier_architecture_ladder.py`](notebooks/06_classifier_architecture_ladder.py) |
 | 7. Non-circular RF results | [`notebooks/07_noncircular_rf_results.py`](notebooks/07_noncircular_rf_results.py) |
+| 8. EVA de novo biophysical characterization | [`notebooks/08_eva_denovo_biophysical_characterization.py`](notebooks/08_eva_denovo_biophysical_characterization.py) |
+| 9. Baseline compositional ablation | [`notebooks/09_baseline_compositional_ablation.py`](notebooks/09_baseline_compositional_ablation.py) |
+| Thesis figure export | [`notebooks/thesis_figures.py`](notebooks/thesis_figures.py) |
 
 ---
 
@@ -42,7 +98,7 @@ Mac CPU ──► Vienna Z / ΔP_RBS + Rfam novelty ──► yield candidates
 | **5. EVA** | Pretrained CLM, TaxID-conditioned `mRNA` | De novo RNA on Macleod MIG |
 | **6. Triage** | Z ≤ −2 ∧ ΔP_RBS > 0 ∧ E_Rfam > 10⁻³ *(full eq. in §4)* | Yield of switch-like, novel sequences |
 
-Code lives under `src/` (`data_engineering/`, `thermo_sim/`, `de_novo_hallucinations/`). Paths resolve from the repo root via `data_engineering.paths.resolve_path()`. Secrets go in `.env`.
+Code lives under `src/` (`data_engineering/`, `thermo_sim/`, `de_novo_hallucinations/`). Paths resolve from the repo root via `data_engineering.paths.resolve_path()`. Runnable wrappers are under [`scripts/`](scripts/README.md). Secrets go in `.env`.
 
 ---
 
@@ -51,10 +107,59 @@ Code lives under `src/` (`data_engineering/`, `thermo_sim/`, `de_novo_hallucinat
 **Positives — Rfam**  
 Prokaryotic heat-shock thermoswitch families → Entrez FASTA → CD-HIT 80% → **1,198** representatives.
 
-**Negatives — NCBI RefSeq**  
-Housekeeping 5′ UTRs from complete Pseudomonadota + Bacillota genomes, windows 200–600 nt, Infernal-decontaminated, then **1:1 length/GC matched** to positives (`|ΔL|≤40`, `|ΔGC|≤0.05`, CDS-proximal 3′ end kept). **1,198** matched UTRs.
+**Negatives — NCBI RefSeq (ENN historical panel)**  
+Housekeeping 5′ UTR candidates → Infernal `cmscan` decontamination → length/GC Hungarian match (`|ΔL|≤40`, `|ΔGC|≤0.05`, CDS-proximal truncate) → **1,198** matched UTRs.  
+**Training table:** `data/processed/fused_features_refseq_dynamic.csv` (n = 2,396).
 
-**Training table:** `data/processed/fused_features_refseq_dynamic.csv` (n = 2,396).  
+**Negatives — RUS ablation panel (parallel sidecars)**  
+Same decontaminated pool, but **ENN is skipped**; Random Under-Sampling keeps a noisy matching pool (`rus_cleaned.*`), then Hungarian CDS-truncate match with `|ΔGC|≤0.10` (tightened length by construction; GC gate relaxed vs ENN to clear the long-positive tail). Artifacts:
+
+| Role | Path |
+|------|------|
+| Matched dataset | `data/processed/balanced/length_gc_matched_refseq_rus_dataset.{csv,fasta}` |
+| Fused physics | `data/processed/fused_features_refseq_dynamic_rus.csv` |
+| RF + diagnostics | `rf_thermoswitch_noncircular_rus.joblib`, `rf_noncircular_diagnostics_rus.json`, `rf_posthoc_report_rus.json` |
+
+Rebuild (negatives-only thermo — never point enrich at the full 2396 matched set):
+
+```bash
+PYTHONPATH=src python src/data_engineering/knn_undersample.py --skip-enn
+PYTHONPATH=src python src/data_engineering/length_gc_match.py \
+  --all-positives --cds-truncate --delta-gc 0.10 \
+  --negatives-csv data/processed/balanced/rus_cleaned.csv \
+  --negatives-fasta data/processed/balanced/rus_cleaned.fasta \
+  --output-csv data/processed/balanced/length_gc_matched_refseq_rus_dataset.csv \
+  --output-fasta data/processed/balanced/length_gc_matched_refseq_rus_dataset.fasta \
+  --report-json data/processed/balanced/length_gc_matched_refseq_rus_report.json
+python src/thermo_sim/thermo_batch.py --run --limit 1198 --resume \
+  --input-csv data/processed/balanced/length_gc_matched_refseq_rus_negatives.csv \
+  --input-fasta data/processed/balanced/length_gc_matched_refseq_rus_negatives.fasta \
+  --vienna-csv data/processed/viennarna/refseq_rus_neg_features.csv \
+  --nupack-csv data/processed/nupack/refseq_rus_neg_features.csv \
+  --fused-csv data/processed/fused_features_refseq_rus_neg_only.csv \
+  --workers 4 --batch-size 4
+PYTHONPATH=src python src/thermo_sim/enrich_dynamic_features.py \
+  --fused-csv data/processed/fused_features_refseq_rus_neg_only.csv \
+  --dataset-csv data/processed/balanced/length_gc_matched_refseq_rus_negatives.csv \
+  --dataset-fasta data/processed/balanced/length_gc_matched_refseq_rus_negatives.fasta \
+  --output data/processed/fused_features_refseq_rus_neg_only.csv \
+  --sidecar-csv data/processed/viennarna/refseq_rus_neg_dynamic.csv \
+  --workers 4
+PYTHONPATH=src python scripts/rf/merge_rus_fused_panel.py
+python src/thermo_sim/thermo_classifier.py train \
+  --fused-csv data/processed/fused_features_refseq_dynamic_rus.csv \
+  --model-path data/processed/models/rf_thermoswitch_noncircular_rus.joblib \
+  --dataset-csv data/processed/balanced/length_gc_matched_refseq_rus_dataset.csv \
+  --dataset-fasta data/processed/balanced/length_gc_matched_refseq_rus_dataset.fasta \
+  --feature-log-json data/processed/rf_noncircular_feature_log_rus.json
+python src/thermo_sim/thermo_classifier.py posthoc \
+  --fused-csv data/processed/fused_features_refseq_dynamic_rus.csv \
+  --output-json data/processed/rf_posthoc_report_rus.json \
+  --diagnostics-json data/processed/rf_noncircular_diagnostics_rus.json \
+  --dataset-csv data/processed/balanced/length_gc_matched_refseq_rus_dataset.csv \
+  --dataset-fasta data/processed/balanced/length_gc_matched_refseq_rus_dataset.fasta
+```
+
 Groups for out-of-family CV: Rfam accession for positives, `REFSEQ:{assembly}` for negatives.
 
 ---
@@ -136,29 +241,21 @@ $$Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}$$
 
 ## Setup
 
-### Mac — environment
+Detailed steps below; for a fresh clone see **Quick start** above.
+
+### Development & CI
 
 ```bash
-git clone https://github.com/arcblanc/Thermoswitches-MLBIO.git
-cd Thermoswitches-MLBIO
-
-conda env create -f environment.yml
-conda activate thermoswitches-mlbio
-# or: python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-#     (then install cd-hit, viennarna, infernal, blast, hmmer separately)
-
-cp .env.example .env   # set EMAIL and NCBI_API_KEY
-```
-
-Install the NUPACK 4.1 wheel from `nupack-4.1.0.1/package/` (paid license; gitignored).
-
-Lint with uv (Ruff covers `src/`, `scripts/`, Marimo `.py` apps, and Jupyter `.ipynb`; Marimo check validates reactive notebooks):
-
-```bash
-uv run ruff check --fix .
-uv run ruff format
+make ci          # sync + ruff + format check + uv check + pytest
+make test        # pytest tests/ only
+make lint        # ruff check
+make typecheck   # ty via uv check
 uv run marimo check notebooks/*.py
 ```
+
+GitHub Actions runs the same pipeline on push/PR to `main`.
+
+CLI entry points: [`scripts/README.md`](scripts/README.md) (`rf/`, `eva/`, `triage/`, `extraction/`, `cloud/`, `generation/`, `dev/`).
 
 ### Mac — corpus + non-circular features + RF
 
@@ -169,7 +266,7 @@ python src/data_engineering/sequence_retrieval.py --all
 python src/data_engineering/cd_hit_sequence_similarity.py --all
 
 # Negatives (script sources .env; aborts if NCBI_API_KEY is missing)
-bash scripts/download_refseq_genomes.sh
+bash scripts/extraction/download_refseq_genomes.sh
 PYTHONPATH=src python src/data_engineering/refseq_utr_extract.py
 PYTHONPATH=src python src/data_engineering/cmscan_decontaminate.py
 PYTHONPATH=src python src/data_engineering/length_gc_match.py \
@@ -205,7 +302,7 @@ source ~/sharedscratch/venvs/torch_mod/bin/activate
 export CUDA_VISIBLE_DEVICES=0 CUDA_MODULE_LOADING=LAZY PYTHONPATH=src
 
 # One-shot install + 4-seq smoke (clone ~/EVA, HF checkpoint, eva-generate)
-bash scripts/macleod_eva_install_smoke.sh
+bash scripts/eva/macleod_eva_install_smoke.sh
 ```
 
 Generate (inside the same tmux / `srun`; detach with Ctrl-b d):
@@ -233,13 +330,13 @@ Attach later from **macleod1** only: `module load tmux && tmux attach -t eva`. D
 
 ```bash
 # While GPU runs (poll every 300 s, 250-seq slices, seed past the 512 pilot)
-PYTHONPATH=src python scripts/eva_stream_triage.py \
+PYTHONPATH=src python scripts/triage/eva_stream_triage.py \
   --source ssh --remote t41am25@127.0.0.1 --ssh-port 1024 \
   --remote-fasta /home/t41am25/Thermoswitches-MLBIO/data/processed/de_novo/generated.fasta \
   --stride 250 --seed-count 512 --poll-seconds 300 --workers 4
 
 # After 2000/2000, leftover <250:
-PYTHONPATH=src python scripts/eva_stream_triage.py \
+PYTHONPATH=src python scripts/triage/eva_stream_triage.py \
   --source ssh --remote t41am25@127.0.0.1 --ssh-port 1024 \
   --remote-fasta /home/t41am25/Thermoswitches-MLBIO/data/processed/de_novo/generated.fasta \
   --stride 250 --seed-count 512 --workers 4 \
@@ -265,6 +362,9 @@ When generation is done, `exit` the `srun` to free the MIG, then `tmux kill-sess
 | `data/processed/de_novo/generated.fasta` | EVA accepted sequences (cluster) |
 | `data/processed/eva_pilot/top_candidates.fasta` | 31 pilot passers |
 | `data/processed/eva_stream/top_candidates.fasta` | 74 stream passers |
+| `notebooks/08_eva_denovo_biophysical_characterization.py` | EVA vs Rfam/RefSeq melting audit (Marimo) |
+| `notebooks/08_eva_denovo_biophysical_characterization.ipynb` | Same audit as a Jupyter notebook |
+| `data/processed/eva_denovo_checklist.json` | Four-gate pass rates by cohort |
 | `cluster/MACLEOD_EVA.md` | Install, smoke, generate |
 | `cluster/EVA_OVERVIEW.md` | Why tmux / orchestrator / triage |
 | `cluster/macleod_log.md` | Session log |

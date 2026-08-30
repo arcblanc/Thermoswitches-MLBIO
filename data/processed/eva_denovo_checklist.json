@@ -1,0 +1,143 @@
+{
+  "thresholds": {
+    "tier1_biological_plausibility": {
+      "n_H_min": 1.2,
+      "Tm_C": [
+        35.0,
+        55.0
+      ],
+      "delta_theta_min": 0.2,
+      "P_open_RBS_37_max": 0.35
+    },
+    "tier2_neupert_2008_synbio": {
+      "n_H_min": 1.5,
+      "Tm_C": [
+        42.0,
+        45.0
+      ],
+      "delta_theta_min": 0.4,
+      "delta_theta_ideal": 0.5,
+      "P_open_RBS_37_max": 0.2,
+      "citation": "Neupert et al. 2008 (heat-inducible RBS unmasking)"
+    },
+    "method_benchmark": {
+      "citation": "Hoynes-O'Connor et al. 2015",
+      "role": "experimental stress-test layout for synthetic RNA temperature regulators (dual controls, orthogonality, mechanism rescue) \u2014 heat-repressible RNase E class"
+    },
+    "target_box": {
+      "Tm_C": [
+        42.0,
+        45.0
+      ],
+      "n_H_min": 1.5
+    },
+    "ideal_leakiness": {
+      "P_open_37_max": 0.15,
+      "delta_P_RBS_min": 0.6
+    },
+    "score_weights": {
+      "w_hill": 1.0,
+      "w_amp": 2.0,
+      "w_tm": 0.4,
+      "w_leak": 6.0,
+      "w_engine": 0.25,
+      "w_stroke_penalty": 12.0,
+      "n_h_cap": 3.0,
+      "amp_floor": 0.25
+    }
+  },
+  "cohorts": [
+    {
+      "cohort": "Natural Rfam Positives",
+      "n": 1198,
+      "frac_target_box": 0.0676126878,
+      "t1_passed_nh": 1184,
+      "t1_passed_tm": 474,
+      "t1_passed_amp": 690,
+      "t1_passed_base": 437,
+      "t1_passed_all_four": 29,
+      "t1_frac_all_four": 0.0242070117,
+      "t2_passed_nh": 1181,
+      "t2_passed_tm": 83,
+      "t2_passed_amp": 471,
+      "t2_passed_base": 56,
+      "t2_passed_all_four": 0,
+      "t2_frac_all_four": 0.0,
+      "passed_nh": 1181,
+      "passed_tm": 83,
+      "passed_amp": 471,
+      "passed_base": 56,
+      "passed_all_four": 0,
+      "frac_all_four": 0.0
+    },
+    {
+      "cohort": "RefSeq Negative Controls",
+      "n": 1198,
+      "frac_target_box": 0.070951586,
+      "t1_passed_nh": 1181,
+      "t1_passed_tm": 586,
+      "t1_passed_amp": 688,
+      "t1_passed_base": 281,
+      "t1_passed_all_four": 32,
+      "t1_frac_all_four": 0.0267111853,
+      "t2_passed_nh": 1174,
+      "t2_passed_tm": 85,
+      "t2_passed_amp": 449,
+      "t2_passed_base": 19,
+      "t2_passed_all_four": 0,
+      "t2_frac_all_four": 0.0,
+      "passed_nh": 1174,
+      "passed_tm": 85,
+      "passed_amp": 449,
+      "passed_base": 19,
+      "passed_all_four": 0,
+      "frac_all_four": 0.0
+    },
+    {
+      "cohort": "EVA Pilot Top Passers",
+      "n": 31,
+      "frac_target_box": 0.0967741935,
+      "t1_passed_nh": 31,
+      "t1_passed_tm": 18,
+      "t1_passed_amp": 12,
+      "t1_passed_base": 8,
+      "t1_passed_all_four": 1,
+      "t1_frac_all_four": 0.0322580645,
+      "t2_passed_nh": 30,
+      "t2_passed_tm": 3,
+      "t2_passed_amp": 5,
+      "t2_passed_base": 5,
+      "t2_passed_all_four": 0,
+      "t2_frac_all_four": 0.0,
+      "passed_nh": 30,
+      "passed_tm": 3,
+      "passed_amp": 5,
+      "passed_base": 5,
+      "passed_all_four": 0,
+      "frac_all_four": 0.0
+    },
+    {
+      "cohort": "EVA Stream Top Passers",
+      "n": 74,
+      "frac_target_box": 0.0675675676,
+      "t1_passed_nh": 70,
+      "t1_passed_tm": 36,
+      "t1_passed_amp": 30,
+      "t1_passed_base": 26,
+      "t1_passed_all_four": 1,
+      "t1_frac_all_four": 0.0135135135,
+      "t2_passed_nh": 70,
+      "t2_passed_tm": 5,
+      "t2_passed_amp": 16,
+      "t2_passed_base": 13,
+      "t2_passed_all_four": 0,
+      "t2_frac_all_four": 0.0,
+      "passed_nh": 70,
+      "passed_tm": 5,
+      "passed_amp": 16,
+      "passed_base": 13,
+      "passed_all_four": 0,
+      "frac_all_four": 0.0
+    }
+  ]
+}

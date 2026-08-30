@@ -164,7 +164,7 @@ def _fold_mfe(sequence: str, config: ViennaConfig) -> tuple[float, str]:
 
 def _pf_bundle(
     sequence: str, config: ViennaConfig
-) -> tuple[float, str, float | None, object]:
+) -> tuple[float, str, float | None, np.ndarray | list]:
     """Return (mfe, structure, ensemble_diversity, bpp) from one fold_compound."""
     import RNA
 
@@ -331,9 +331,9 @@ def extract_vienna_features(
 
 def compare_dangles_for_sequence(
     sequence: str, temp_range: list[int]
-) -> tuple[int, dict[int, dict]]:
+) -> tuple[int, dict[int, dict[str, object]]]:
     """Pick the dangles model with the lower Hill-fit RMSE."""
-    results = {}
+    results: dict[int, dict[str, object]] = {}
     for dangles in (2, 3):
         sd_window = sd_window_indices(sequence)
         curve = [
@@ -347,14 +347,17 @@ def compare_dangles_for_sequence(
         ]
         hill = fit_hill_curve(temp_range, curve)
         results[dangles] = {"curve": curve, "hill": hill}
-    winner = min(
-        results,
-        key=lambda d: (
-            results[d]["hill"]["rmse"]
-            if results[d]["hill"]["rmse"] is not None
-            else float("inf")
-        ),
-    )
+
+    def _dangle_rmse(payload: dict[str, object]) -> float:
+        hill = payload.get("hill")
+        if not isinstance(hill, dict):
+            return float("inf")
+        rmse = hill.get("rmse")
+        if rmse is None:
+            return float("inf")
+        return float(rmse)
+
+    winner = min(results, key=lambda d: _dangle_rmse(results[d]))
     return winner, results
 
 

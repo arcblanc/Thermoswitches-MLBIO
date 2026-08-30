@@ -3,8 +3,10 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import joblib
+import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 
@@ -108,12 +110,12 @@ def build_xgboost_monotonic(
     max_depth: int = 4,
     learning_rate: float = 0.05,
     random_state: int = 42,
-) -> tuple[object, tuple[int, ...]]:
+) -> tuple[Any, tuple[int, ...]]:
     """Construct an XGBClassifier with physical monotone_constraints."""
     from xgboost import XGBClassifier
 
     constraints = monotone_constraints_tuple(feature_cols)
-    return XGBClassifier(
+    classifier = XGBClassifier(
         n_estimators=n_estimators,
         max_depth=max_depth,
         learning_rate=learning_rate,
@@ -125,7 +127,8 @@ def build_xgboost_monotonic(
         random_state=random_state,
         n_jobs=-1,
         monotone_constraints=constraints,
-    ), constraints
+    )
+    return classifier, constraints
 
 
 def add_intensive_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -156,8 +159,8 @@ def _available_features(
 
 
 def train_random_forest(
-    fused_csv: str = DEFAULT_TRAINING_FUSED,
-    model_path: str | None = None,
+    fused_csv: str | Path = DEFAULT_TRAINING_FUSED,
+    model_path: str | Path | None = None,
     n_estimators: int = 200,
     random_state: int = 42,
     intensive: bool = True,
@@ -186,10 +189,10 @@ def train_random_forest(
             else DEFAULT_MODEL_PATH
         )
 
-    fused_csv = resolve_path(fused_csv)
-    df = pd.read_csv(fused_csv)
+    fused_path = resolve_path(fused_csv)
+    df = pd.read_csv(fused_path)
     if "label" not in df.columns:
-        raise ValueError(f"{fused_csv} must contain a label column for training.")
+        raise ValueError(f"{fused_path} must contain a label column for training.")
 
     dataset_csv = dataset_csv or DEFAULT_DATASET_CSV
     dataset_fasta = dataset_fasta or DEFAULT_DATASET_FASTA
@@ -229,8 +232,8 @@ def train_random_forest(
     )
     model.fit(x, y)
 
-    model_path = resolve_path(model_path)
-    model_path.parent.mkdir(parents=True, exist_ok=True)
+    model_out = resolve_path(model_path)
+    model_out.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "model": model,
         "feature_columns": feature_cols,
@@ -253,8 +256,8 @@ def train_random_forest(
         if feature_set == "noncircular"
         else [],
     }
-    joblib.dump(payload, model_path)
-    sidecar = model_path.with_suffix(".json")
+    joblib.dump(payload, model_out)
+    sidecar = model_out.with_suffix(".json")
     sidecar.write_text(
         json.dumps({k: v for k, v in payload.items() if k != "model"}, indent=2)
     )
@@ -265,29 +268,29 @@ def train_random_forest(
             feature_cols,
             output_json=feature_log_json,
             dataset_fasta=dataset_fasta,
-            extra={"model_path": str(model_path), "n_fit": int(len(train_df))},
+            extra={"model_path": str(model_out), "n_fit": int(len(train_df))},
         )
 
     print(f"Trained RandomForest on {len(train_df)} rows, {len(feature_cols)} features")
     print(f"  feature_set: {feature_set}")
     print(f"  features: {', '.join(feature_cols)}")
-    print(f"  model:    {model_path}")
-    return model_path
+    print(f"  model:    {model_out}")
+    return model_out
 
 
 def train_xgboost_monotonic(
-    fused_csv: str = DEFAULT_REFSEQ_DYNAMIC_FUSED,
-    model_path: str = DEFAULT_XGB_MODEL_PATH,
+    fused_csv: str | Path = DEFAULT_REFSEQ_DYNAMIC_FUSED,
+    model_path: str | Path = DEFAULT_XGB_MODEL_PATH,
     n_estimators: int = 300,
     max_depth: int = 4,
     learning_rate: float = 0.05,
     random_state: int = 42,
 ) -> Path:
     """Train monotonic XGBoost on intensive+dynamic fused features."""
-    fused_csv = resolve_path(fused_csv)
-    df = pd.read_csv(fused_csv)
+    fused_path = resolve_path(fused_csv)
+    df = pd.read_csv(fused_path)
     if "label" not in df.columns:
-        raise ValueError(f"{fused_csv} must contain a label column for training.")
+        raise ValueError(f"{fused_path} must contain a label column for training.")
     df = add_intensive_features(df)
     feature_cols = _available_features(df, PHYSICS_FEATURE_COLUMNS)
     if not feature_cols:
@@ -306,8 +309,8 @@ def train_xgboost_monotonic(
     )
     model.fit(x, y)
 
-    model_path = resolve_path(model_path)
-    model_path.parent.mkdir(parents=True, exist_ok=True)
+    model_out = resolve_path(model_path)
+    model_out.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(
         {
             "model": model,
@@ -318,15 +321,15 @@ def train_xgboost_monotonic(
             },
             "intensive": True,
         },
-        model_path,
+        model_out,
     )
     print(
         f"Trained monotonic XGBoost on {len(train_df)} rows, {len(feature_cols)} features"
     )
     print(f"  features: {', '.join(feature_cols)}")
     print(f"  monotone_constraints: {constraints}")
-    print(f"  model:    {model_path}")
-    return model_path
+    print(f"  model:    {model_out}")
+    return model_out
 
 
 def _resolve_id_column(df: pd.DataFrame) -> str:
@@ -340,9 +343,9 @@ def _resolve_id_column(df: pd.DataFrame) -> str:
 
 
 def predict_thermoswitches(
-    fused_csv: str = DEFAULT_DENOVO_FUSED,
-    model_path: str = DEFAULT_MODEL_PATH,
-    predictions_csv: str = DEFAULT_PREDICTIONS,
+    fused_csv: str | Path = DEFAULT_DENOVO_FUSED,
+    model_path: str | Path = DEFAULT_MODEL_PATH,
+    predictions_csv: str | Path = DEFAULT_PREDICTIONS,
     join_column: str = "record_id",
     dataset_csv: str | None = None,
     dataset_fasta: str | None = None,
@@ -356,14 +359,14 @@ def predict_thermoswitches(
         physics_dropna_columns,
     )
 
-    fused_csv = resolve_path(fused_csv)
-    model_path = resolve_path(model_path)
-    payload = joblib.load(model_path)
+    fused_path = resolve_path(fused_csv)
+    model_file = resolve_path(model_path)
+    payload = joblib.load(model_file)
     model = payload["model"]
     feature_cols = payload["feature_columns"]
     feature_set = payload.get("feature_set", "circular")
 
-    df = pd.read_csv(fused_csv)
+    df = pd.read_csv(fused_path)
     if feature_set == "noncircular":
         df = add_intensive_features(df) if "seq_length" in df.columns else df
         df = build_noncircular_matrix(
@@ -402,11 +405,11 @@ def predict_thermoswitches(
     results["prob_positive"] = probs
     results["predicted_label"] = labels
 
-    predictions_csv = resolve_path(predictions_csv)
-    predictions_csv.parent.mkdir(parents=True, exist_ok=True)
-    results.to_csv(predictions_csv, index=False)
-    print(f"Wrote {len(results)} predictions to {predictions_csv}")
-    return predictions_csv
+    predictions_out = resolve_path(predictions_csv)
+    predictions_out.parent.mkdir(parents=True, exist_ok=True)
+    results.to_csv(predictions_out, index=False)
+    print(f"Wrote {len(results)} predictions to {predictions_out}")
+    return predictions_out
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -530,7 +533,7 @@ def _run_posthoc_cli(args: argparse.Namespace) -> None:
 
     def _eval_matrix(
         matrix: pd.DataFrame, cv: object, grp: pd.Series | None = None
-    ) -> tuple[dict[str, float], object]:
+    ) -> tuple[dict[str, float], np.ndarray]:
         """Score ROC-AUC and accuracy from out-of-fold RF probabilities."""
         rf = _RF(n_estimators=200, random_state=42, n_jobs=-1)
         kwargs = {"cv": cv, "method": "predict_proba"}

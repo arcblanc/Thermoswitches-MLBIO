@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 
 from data_engineering.cd_hit_sequence_similarity import JOIN_COLUMNS
@@ -126,7 +127,9 @@ def p_paired_rbs_37(p_open: object) -> float | None:
     """Convert RBS unpaired probability at 37 °C to paired probability."""
     if p_open is None or (isinstance(p_open, float) and np.isnan(p_open)):
         return None
-    return float(1.0 - float(p_open))
+    if isinstance(p_open, (int, float, str)):
+        return float(1.0 - float(p_open))
+    return None
 
 
 def attach_sequences(
@@ -286,7 +289,7 @@ def feature_groups(feature_cols: list[str]) -> dict[str, list[str]]:
 
 
 def grouped_permutation_importance(
-    model: object,
+    model: RandomForestClassifier,
     X: pd.DataFrame,
     y: pd.Series,
     *,
@@ -298,8 +301,8 @@ def grouped_permutation_importance(
     feature_cols = list(X.columns)
     groups = groups or feature_groups(feature_cols)
     y_arr = np.asarray(y)
-    classes = list(model.classes_)
-    pos = classes.index(1) if 1 in classes else 0
+    class_labels = [int(c) for c in np.asarray(model.classes_).tolist()]
+    pos = class_labels.index(1) if 1 in class_labels else 0
     baseline_proba = model.predict_proba(X)[:, pos]
     baseline = float(roc_auc_score(y_arr, baseline_proba))
     rng = np.random.RandomState(random_state)

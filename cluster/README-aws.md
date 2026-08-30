@@ -4,7 +4,7 @@ Hybrid workflow: **RunPod** (GenerRNA *or* **EVA** + BiRNA → S3) then **EC2 `a
 
 **EVA smoke / full panel runbook:** [`EVA_RUNPOD.md`](EVA_RUNPOD.md) (Option B TaxIDs, 512-chunk gates, `llm-batch/eva/v1`).
 
-**EVA Docker bake (M3 SSH → Linux VM → Hub):** on a temporary Linux x86_64 VM run `bash scripts/build_push_eva_docker.sh --push` to publish `arcblanc/eva-model:v1`. Do not bake CUDA EVA images on Apple Silicon.
+**EVA Docker bake (M3 SSH → Linux VM → Hub):** on a temporary Linux x86_64 VM run `bash scripts/eva/build_push_eva_docker.sh --push` to publish `arcblanc/eva-model:v1`. Do not bake CUDA EVA images on Apple Silicon.
 
 ## Architecture
 
@@ -43,7 +43,7 @@ cp .env.example .env
 ssh x0ggh3d7lmi9yn-64410a9d@ssh.runpod.io -i ~/.ssh/id_ed25519
 
 # Or from repo:
-bash scripts/runpod_ssh.sh
+bash scripts/cloud/runpod_ssh.sh
 ```
 
 **Inside the pod** — clone repo and create `.env`:
@@ -99,8 +99,8 @@ Or manually:
 ```bash
 pip install -r requirements-llm.txt -r requirements-aws.txt
 export STORAGE_TARGET=runpod
-python scripts/llm_cloud_batch.py --dry-run
-python scripts/llm_cloud_batch.py
+python scripts/generation/llm_cloud_batch.py --dry-run
+python scripts/generation/llm_cloud_batch.py
 ```
 
 Verify from Mac:
@@ -121,13 +121,13 @@ Run on EC2 (separate SSH session). Memory-safe defaults: `--workers 2`, `--batch
 ```bash
 # On EC2
 cd ~/Thermoswitches-MLBIO && source .venv/bin/activate
-python scripts/thermo_ec2_batch.py train --run
+python scripts/cloud/thermo_ec2_batch.py train --run
 ```
 
 Or from Mac:
 
 ```bash
-bash scripts/thermo_ec2_run.sh train --run
+bash scripts/cloud/thermo_ec2_run.sh train --run
 ```
 
 Outputs on EC2:
@@ -138,8 +138,8 @@ Outputs on EC2:
 Pull results:
 
 ```bash
-bash scripts/scp_ec2.sh pull-fused
-bash scripts/scp_ec2.sh pull-all-results
+bash scripts/cloud/scp_ec2.sh pull-fused
+bash scripts/cloud/scp_ec2.sh pull-all-results
 ```
 
 ---
@@ -151,20 +151,20 @@ bash scripts/scp_ec2.sh pull-all-results
 ```bash
 aws s3 cp s3://thermo-s3-bucket/llm-batch/v1/de_novo/generated.fasta \
   data/processed/de_novo/generated.fasta
-bash scripts/scp_ec2.sh push-fasta
+bash scripts/cloud/scp_ec2.sh push-fasta
 ```
 
 **EC2** (second job — run in a fresh SSH session):
 
 ```bash
-python scripts/thermo_ec2_batch.py predict --run
+python scripts/cloud/thermo_ec2_batch.py predict --run
 ```
 
 **Mac:** pull predictions:
 
 ```bash
-bash scripts/scp_ec2.sh pull-predictions
-bash scripts/scp_ec2.sh pull-denovo-fused
+bash scripts/cloud/scp_ec2.sh pull-predictions
+bash scripts/cloud/scp_ec2.sh pull-denovo-fused
 ```
 
 Output: `data/processed/denovo_predictions.csv` with `record_id`, `prob_positive`, `predicted_label`.
@@ -190,7 +190,7 @@ Thermo outputs stay on EC2 until SCP'd back — not uploaded to S3.
 ## Pre-flight checklist
 
 1. S3 bucket exists; AWS credentials on RunPod pod
-2. RunPod SSH works: `bash scripts/runpod_ssh.sh`
+2. RunPod SSH works: `bash scripts/cloud/runpod_ssh.sh`
 3. EC2 running; SCP works; NUPACK wheel installed
 4. Mac `.env`: `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `EC2_REPO_PATH`
 5. Smoke: 2-seq RunPod run; 4-seq EC2 dry-run before full batches

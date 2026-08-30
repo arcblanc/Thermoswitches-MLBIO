@@ -40,6 +40,15 @@ def _categorize(identity_frac: float, has_hit: bool) -> str:
     return "remote_homolog"
 
 
+def _negated_evalue(value: object) -> float:
+    """Return negative e-value for descending sort keys (missing -> -1.0)."""
+    if value is None:
+        return -1.0
+    if isinstance(value, (int, float)):
+        return -float(value)
+    return -float(str(value))
+
+
 def _pick_combined_best(
     blast_row: pd.Series, nhmmer_row: pd.Series
 ) -> dict[str, object]:
@@ -85,7 +94,7 @@ def _pick_combined_best(
         candidates,
         key=lambda row: (
             row["best_identity_frac"] if row["best_identity_frac"] is not None else -1,
-            -(row["best_evalue"] or 1.0),
+            _negated_evalue(row["best_evalue"]),
         ),
     )
 

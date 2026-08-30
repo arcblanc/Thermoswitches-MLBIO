@@ -3,9 +3,11 @@ import pickle
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 from imblearn.under_sampling import EditedNearestNeighbours, RandomUnderSampler
+from scipy.sparse import csr_matrix, spmatrix
 from sklearn.feature_extraction.text import CountVectorizer
 
 SRC_ROOT = Path(__file__).resolve().parent.parent
@@ -55,7 +57,7 @@ def build_kmer_corpus(sequences: list[str], ks: tuple[int, ...] = (2, 3)) -> lis
 
 def build_kmer_matrix(
     sequences: list[str], ks: tuple[int, ...] = (2, 3)
-) -> tuple[object, CountVectorizer]:
+) -> tuple[spmatrix, CountVectorizer]:
     """Fit a k-mer count matrix and return it with the vectorizer."""
     corpus = build_kmer_corpus(sequences, ks=ks)
     vectorizer = CountVectorizer(token_pattern=r"\S+")
@@ -68,9 +70,16 @@ def load_sequences_from_fasta(
 ) -> dict[tuple[str, int, int], str]:
     """Parse FASTA records keyed by rfamseq_acc and coordinates."""
     fasta_path = resolve_path(fasta_path)
-    records = {}
+    records: dict[tuple[str, int, int], str] = {}
     header = None
-    sequence_parts = []
+    sequence_parts: list[str] = []
+
+    def _record_key(parsed: dict[str, str | int]) -> tuple[str, int, int]:
+        return (
+            str(parsed["rfamseq_acc"]),
+            int(parsed["seq_start"]),
+            int(parsed["seq_end"]),
+        )
 
     with fasta_path.open() as handle:
         for line in handle:
@@ -80,8 +89,9 @@ def load_sequences_from_fasta(
             if line.startswith(">"):
                 if header is not None:
                     parsed = parse_fasta_header(header)
-                    key = tuple(parsed[column] for column in JOIN_COLUMNS)
-                    records[key] = normalize_sequence("".join(sequence_parts))
+                    records[_record_key(parsed)] = normalize_sequence(
+                        "".join(sequence_parts)
+                    )
                 header = line
                 sequence_parts = []
             else:
@@ -89,8 +99,7 @@ def load_sequences_from_fasta(
 
     if header is not None:
         parsed = parse_fasta_header(header)
-        key = tuple(parsed[column] for column in JOIN_COLUMNS)
-        records[key] = normalize_sequence("".join(sequence_parts))
+        records[_record_key(parsed)] = normalize_sequence("".join(sequence_parts))
 
     return records
 
@@ -169,7 +178,7 @@ def balance_with_enn_rus(
     with vectorizer_path.open("wb") as handle:
         pickle.dump(vectorizer, handle)
 
-    x_kmer_dense = x_kmer.toarray()
+    x_kmer_dense = cast(csr_matrix, x_kmer).toarray()
     print(f"Step 1 dense array: {x_kmer_dense.shape} (contiguous memory for ENN)")
 
     enn = EditedNearestNeighbours(
@@ -211,10 +220,111 @@ def balance_with_enn_rus(
     return balanced_df
 
 
+def balance_with_rus_only(
+    positives_csv: str | Path = f"{CDHIT_OUTPUT_DIR}/positives_deduped.csv",
+    positives_fasta: str | Path = f"{CDHIT_OUTPUT_DIR}/positives_deduped.fasta",
+    negatives_csv: str | Path = "data/processed/refseq_utr/candidates_clean.csv",
+    negatives_fasta: str | Path = "data/processed/refseq_utr/candidates_clean.fasta",
+    rus_output_csv: str | Path = f"{BALANCED_DIR}/rus_cleaned.csv",
+    rus_output_fasta: str | Path = f"{BALANCED_DIR}/rus_cleaned.fasta",
+    rus_n: int | None = None,
+    random_state: int = RANDOM_STATE,
+) -> pd.DataFrame:
+    """Random-undersample RefSeq negatives only (no ENN); keep REFSEQ group IDs."""
+    positives_df = load_labeled_pool(positives_csv, positives_fasta, label=1)
+    neg_path = resolve_path(negatives_csv)
+    if "sequence" in pd.read_csv(neg_path, nrows=1).columns:
+        negatives_df = pd.read_csv(neg_path)
+        negatives_df["label"] = 0
+        for column in ("seq_start", "seq_end"):
+            if column in negatives_df.columns:
+                negatives_df[column] = negatives_df[column].astype(int)
+        negatives_df["sequence"] = negatives_df["sequence"].map(normalize_sequence)
+    else:
+        negatives_df = load_labeled_pool(negatives_csv, negatives_fasta, label=0)
+
+    if "rfam_acc" not in negatives_df.columns:
+        raise ValueError("Negatives missing rfam_acc (need REFSEQ:{assembly} groups)")
+    n_groups = int(negatives_df["rfam_acc"].nunique())
+    if n_groups <= 1:
+        raise ValueError(f"Degenerate negative groups before RUS: nunique={n_groups}")
+
+    n_pos = int(len(positives_df))
+    n_neg = int(len(negatives_df))
+    target = rus_n if rus_n is not None else 10 * n_pos
+    target = min(int(target), n_neg)
+    if target < n_pos:
+        raise ValueError(
+            f"RUS pool size {target} < n_pos={n_pos}; increase --rus-n or negative pool"
+        )
+
+    print(
+        f"RUS-only input: {n_pos} positives, {n_neg} RefSeq negatives "
+        f"({n_groups} rfam_acc groups); target pool={target}"
+    )
+
+    if target < n_neg:
+        index = negatives_df.index.to_numpy().reshape(-1, 1)
+        y = negatives_df["label"].to_numpy()
+        rus = RandomUnderSampler(
+            sampling_strategy={0: target},
+            random_state=random_state,
+        )
+        _, _ = rus.fit_resample(index, y)
+        rus_df = negatives_df.iloc[rus.sample_indices_].reset_index(drop=True)
+    else:
+        rus_df = negatives_df.reset_index(drop=True)
+
+    n_groups_after = int(rus_df["rfam_acc"].nunique())
+    print(
+        f"RUS: {n_neg} -> {len(rus_df)} negatives "
+        f"({n_groups_after} REFSEQ groups; random_state={random_state})"
+    )
+    if n_groups_after <= 1:
+        raise ValueError(f"Degenerate negative groups after RUS: {n_groups_after}")
+
+    # Keep sequence on disk for length/GC match without re-parsing FASTA headers.
+    out_csv = resolve_path(rus_output_csv)
+    out_fa = resolve_path(rus_output_fasta)
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    cols = [c for c in METADATA_COLUMNS if c in rus_df.columns]
+    if "sequence" not in cols:
+        cols = cols + ["sequence"]
+    extra = [
+        c
+        for c in ("assembly_accession", "seq_length", "gc_content")
+        if c in rus_df.columns and c not in cols
+    ]
+    rus_df[cols + extra].to_csv(out_csv, index=False)
+    with out_fa.open("w") as handle:
+        for _, row in rus_df.iterrows():
+            header = (
+                f"{row['rfam_acc']}|{row.get('rfam_id', 'REFSEQ')}|"
+                f"{row['rfamseq_acc']}|{int(row['seq_start'])}-{int(row['seq_end'])}|"
+                f"label={int(row['label'])}"
+            )
+            handle.write(">" + header + "\n")
+            handle.write(str(row["sequence"]) + "\n")
+    print(f"Wrote RUS pool: {out_csv}")
+    print(f"Wrote RUS FASTA: {out_fa}")
+    return rus_df
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Build the ENN/RUS balancing CLI parser."""
     parser = argparse.ArgumentParser(
-        description="Balance CD-HIT negatives to match positives via k-mer ENN and RUS."
+        description="Balance negatives via k-mer ENN+RUS or RUS-only (no ENN)."
+    )
+    parser.add_argument(
+        "--skip-enn",
+        action="store_true",
+        help="Bypass ENN; RUS-downsample RefSeq candidates_clean into rus_cleaned.*",
+    )
+    parser.add_argument(
+        "--rus-n",
+        type=int,
+        default=None,
+        help="Target RUS negative pool size (default: 10 * n_pos, capped).",
     )
     parser.add_argument(
         "--positives-csv",
@@ -226,11 +336,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--negatives-csv",
-        default=f"{CDHIT_OUTPUT_DIR}/negatives_deduped.csv",
+        default=None,
+        help="Default: CD-HIT negatives (ENN path) or refseq candidates_clean (--skip-enn).",
     )
     parser.add_argument(
         "--negatives-fasta",
-        default=f"{CDHIT_OUTPUT_DIR}/negatives_deduped.fasta",
+        default=None,
     )
     return parser
 
@@ -238,11 +349,27 @@ def _build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     """Parse CLI arguments and write the balanced dataset."""
     args = _build_parser().parse_args()
+    if args.skip_enn:
+        neg_csv = args.negatives_csv or "data/processed/refseq_utr/candidates_clean.csv"
+        neg_fa = (
+            args.negatives_fasta or "data/processed/refseq_utr/candidates_clean.fasta"
+        )
+        balance_with_rus_only(
+            positives_csv=args.positives_csv,
+            positives_fasta=args.positives_fasta,
+            negatives_csv=neg_csv,
+            negatives_fasta=neg_fa,
+            rus_n=args.rus_n,
+        )
+        return
+
+    neg_csv = args.negatives_csv or f"{CDHIT_OUTPUT_DIR}/negatives_deduped.csv"
+    neg_fa = args.negatives_fasta or f"{CDHIT_OUTPUT_DIR}/negatives_deduped.fasta"
     balance_with_enn_rus(
         positives_csv=args.positives_csv,
         positives_fasta=args.positives_fasta,
-        negatives_csv=args.negatives_csv,
-        negatives_fasta=args.negatives_fasta,
+        negatives_csv=neg_csv,
+        negatives_fasta=neg_fa,
     )
 
 

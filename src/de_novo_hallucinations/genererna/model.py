@@ -1,6 +1,7 @@
 import math
 import inspect
 from dataclasses import dataclass
+from typing import cast
 
 import torch
 import torch.nn as nn
@@ -79,7 +80,8 @@ class CausalSelfAttention(nn.Module):
         else:
             # manual implementation of attention
             att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-            att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float("-inf"))
+            bias = cast(torch.Tensor, self.bias)
+            att = att.masked_fill(bias[:, :, :T, :T] == 0, float("-inf"))
             att = F.softmax(att, dim=-1)
             att = self.attn_dropout(att)
             y = att @ v  # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
@@ -155,7 +157,8 @@ class GPT(nn.Module):
             )
         )
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        self.transformer.wte.weight = self.lm_head.weight
+        wte = cast(nn.Embedding, self.transformer["wte"])
+        wte.weight = self.lm_head.weight
 
         # init all weights
         self.apply(self._init_weights)
@@ -178,7 +181,8 @@ class GPT(nn.Module):
         """
         n_params = sum(p.numel() for p in self.parameters())
         if non_embedding:
-            n_params -= self.transformer.wpe.weight.numel()
+            wpe = cast(nn.Embedding, self.transformer["wpe"])
+            n_params -= wpe.weight.numel()
         return n_params
 
     def _init_weights(self, module: nn.Module) -> None:
@@ -204,12 +208,17 @@ class GPT(nn.Module):
         pos = torch.arange(0, t, dtype=torch.long, device=device)  # shape (t)
 
         # forward the GPT model itself
-        tok_emb = self.transformer.wte(idx)  # token embeddings of shape (b, t, n_embd)
-        pos_emb = self.transformer.wpe(pos)  # position embeddings of shape (t, n_embd)
-        x = self.transformer.drop(tok_emb + pos_emb)
-        for block in self.transformer.h:
+        wte = cast(nn.Embedding, self.transformer["wte"])
+        wpe = cast(nn.Embedding, self.transformer["wpe"])
+        drop = cast(nn.Dropout, self.transformer["drop"])
+        blocks = cast(nn.ModuleList, self.transformer["h"])
+        ln_f = cast(LayerNorm, self.transformer["ln_f"])
+        tok_emb = wte(idx)  # token embeddings of shape (b, t, n_embd)
+        pos_emb = wpe(pos)  # position embeddings of shape (t, n_embd)
+        x = drop(tok_emb + pos_emb)
+        for block in blocks:
             x = block(x)
-        x = self.transformer.ln_f(x)
+        x = ln_f(x)
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss
@@ -233,12 +242,14 @@ class GPT(nn.Module):
         # but want to use a smaller block size for some smaller, simpler model
         assert block_size <= self.config.block_size
         self.config.block_size = block_size
-        self.transformer.wpe.weight = nn.Parameter(
-            self.transformer.wpe.weight[:block_size]
-        )
-        for block in self.transformer.h:
-            if hasattr(block.attn, "bias"):
-                block.attn.bias = block.attn.bias[:, :, :block_size, :block_size]
+        wpe = cast(nn.Embedding, self.transformer["wpe"])
+        wpe.weight = nn.Parameter(wpe.weight[:block_size])
+        for block in cast(nn.ModuleList, self.transformer["h"]):
+            attn = cast(CausalSelfAttention, block.attn)
+            if hasattr(attn, "bias"):
+                attn.bias = cast(torch.Tensor, attn.bias)[
+                    :, :, :block_size, :block_size
+                ]
 
     @classmethod
     def from_pretrained(
@@ -254,22 +265,29 @@ class GPT(nn.Module):
         print("loading weights from pretrained gpt: %s" % model_type)
 
         # n_layer, n_head and n_embd are determined from model_type
-        config_args = {
-            "gpt2": dict(n_layer=12, n_head=12, n_embd=768),  # 124M params
-            "gpt2-medium": dict(n_layer=24, n_head=16, n_embd=1024),  # 350M params
-            "gpt2-large": dict(n_layer=36, n_head=20, n_embd=1280),  # 774M params
-            "gpt2-xl": dict(n_layer=48, n_head=25, n_embd=1600),  # 1558M params
-        }[model_type]
-        print("forcing vocab_size=50257, block_size=1024, bias=True")
-        config_args["vocab_size"] = 50257  # always 50257 for GPT model checkpoints
-        config_args["block_size"] = 1024  # always 1024 for GPT model checkpoints
-        config_args["bias"] = True  # always True for GPT model checkpoints
-        # we can override the dropout rate, if desired
+        size_by_type: dict[str, tuple[int, int, int]] = {
+            "gpt2": (12, 12, 768),  # 124M params
+            "gpt2-medium": (24, 16, 1024),  # 350M params
+            "gpt2-large": (36, 20, 1280),  # 774M params
+            "gpt2-xl": (48, 25, 1600),  # 1558M params
+        }
+        n_layer, n_head, n_embd = size_by_type[model_type]
+        dropout_rate = (
+            float(override_args["dropout"]) if "dropout" in override_args else 0.0
+        )
         if "dropout" in override_args:
-            print(f"overriding dropout rate to {override_args['dropout']}")
-            config_args["dropout"] = override_args["dropout"]
+            print(f"overriding dropout rate to {dropout_rate}")
+        print("forcing vocab_size=50257, block_size=1024, bias=True")
         # create a from-scratch initialized minGPT model
-        config = GPTConfig(**config_args)
+        config = GPTConfig(
+            n_layer=n_layer,
+            n_head=n_head,
+            n_embd=n_embd,
+            vocab_size=50257,
+            block_size=1024,
+            bias=True,
+            dropout=dropout_rate,
+        )
         model = GPT(config)
         sd = model.state_dict()
         sd_keys = sd.keys()

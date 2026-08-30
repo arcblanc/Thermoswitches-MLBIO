@@ -1,5 +1,5 @@
 {
-  "written_at": "2026-08-18T15:18:59.501948+00:00",
+  "written_at": "2026-08-20T17:29:13.961921+00:00",
   "n_rows": 2396,
   "n_features": 92,
   "feature_columns": [
@@ -296,14 +296,14 @@
     "CCC"
   ],
   "sd_aug_sentinel": -1,
-  "dataset_fasta": "/Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/balanced/length_gc_matched_refseq_dataset.fasta",
+  "dataset_fasta": "/Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/balanced/length_gc_matched_refseq_rus_dataset.fasta",
   "aug_missing": {
-    "n_missing_aug": 1065,
+    "n_missing_aug": 1064,
     "n_missing_aug_pos": 475,
-    "n_missing_aug_neg": 590,
+    "n_missing_aug_neg": 589,
     "n_pos": 1198,
     "n_neg": 1198
   },
   "grouped_importance_definition": "Grouped permutation: shuffle all columns in a block with one shared row permutation; report ROC-AUC drop. Do not use Gini/MDI.",
-  "diagnostics_json": "/Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/rf_noncircular_diagnostics.json"
+  "diagnostics_json": "/Users/amierzuhri/arcblanc/Thermoswitches-MLBIO/data/processed/rf_noncircular_diagnostics_rus.json"
 }

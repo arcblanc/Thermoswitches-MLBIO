@@ -6,7 +6,7 @@ import time
 import tracemalloc
 import warnings
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -107,7 +107,11 @@ def load_sequences_from_fasta(
             if line.startswith(">"):
                 if header is not None:
                     parsed = parse_fasta_header(header)
-                    key = tuple(parsed[column] for column in JOIN_COLUMNS)
+                    key: tuple[str, int, int] = (
+                        str(parsed["rfamseq_acc"]),
+                        int(parsed["seq_start"]),
+                        int(parsed["seq_end"]),
+                    )
                     records[key] = normalize_sequence("".join(sequence_parts))
                 header = line
                 sequence_parts = []
@@ -116,7 +120,11 @@ def load_sequences_from_fasta(
 
     if header is not None:
         parsed = parse_fasta_header(header)
-        key = tuple(parsed[column] for column in JOIN_COLUMNS)
+        key = (
+            str(parsed["rfamseq_acc"]),
+            int(parsed["seq_start"]),
+            int(parsed["seq_end"]),
+        )
         records[key] = normalize_sequence("".join(sequence_parts))
 
     return records
@@ -414,7 +422,8 @@ def hill_sigmoid(
 
 
 def fit_hill_curve(
-    temps: list[int] | list[float], values: list[float | None]
+    temps: Sequence[int] | Sequence[float],
+    values: Sequence[float | None],
 ) -> dict[str, float | str | None]:
     """Fit a Hill sigmoid and return Tm, slope, amplitude, and status."""
     if not temps or not values or len(temps) != len(values):

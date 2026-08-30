@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -70,36 +71,51 @@ def confidence_bins(yhat: np.ndarray | pd.Series) -> pd.Series:
     return pd.Series(yhat).map(confidence_bin)
 
 
+def _gate_float(value: object) -> float | None:
+    """Return a finite float gate operand, or None when missing."""
+    if value is None or pd.isna(value):
+        return None
+    if isinstance(value, (int, float, str)):
+        return float(value)
+    return None
+
+
 def gate_delta_p_rbs(delta_p: object) -> bool:
     """Return True when ΔP_RBS is defined and strictly positive."""
-    return pd.notna(delta_p) and float(delta_p) > DELTA_P_MIN
+    operand = _gate_float(delta_p)
+    return operand is not None and operand > DELTA_P_MIN
 
 
 def gate_hill(n_h: object, *, threshold: float = HILL_GATE) -> bool:
     """Return True when the Hill coefficient exceeds the threshold."""
-    return pd.notna(n_h) and float(n_h) > threshold
+    operand = _gate_float(n_h)
+    return operand is not None and operand > threshold
 
 
 def gate_tm(tm: object, *, lo: float = TM_MIN, hi: float = TM_MAX) -> bool:
     """Return True when Tm falls inside the inclusive temperature window."""
-    return pd.notna(tm) and lo <= float(tm) <= hi
+    operand = _gate_float(tm)
+    return operand is not None and lo <= operand <= hi
 
 
 def gate_zscore(z: object, *, z_max: float = Z_MAX) -> bool:
     """Return True when the MFE Z-score is at or below z_max."""
-    return pd.notna(z) and float(z) <= z_max
+    operand = _gate_float(z)
+    return operand is not None and operand <= z_max
 
 
 def gate_amplitude(amp: object, *, minimum: float = AMPLITUDE_MIN) -> bool:
     """Return True when melting amplitude meets the minimum dynamic range."""
-    return pd.notna(amp) and float(amp) >= minimum
+    operand = _gate_float(amp)
+    return operand is not None and operand >= minimum
 
 
 def gate_baseline_repression(
     p_open: object, *, maximum: float = P_OPEN_LOCKED_MAX
 ) -> bool:
     """Return True when 37 °C RBS unpaired probability is locked down."""
-    return pd.notna(p_open) and float(p_open) <= maximum
+    operand = _gate_float(p_open)
+    return operand is not None and operand <= maximum
 
 
 def visual_checklist_flags(row: pd.Series) -> dict[str, bool]:
@@ -110,9 +126,10 @@ def visual_checklist_flags(row: pd.Series) -> dict[str, bool]:
     p_open = row.get("viennarna_P_open_RBS_37")
     if p_open is None or (isinstance(p_open, float) and np.isnan(p_open)):
         p_open = row.get("viennarna_hill_bottom")
+    n_h_val = _gate_float(n_h)
     return {
         "sigmoidal_steepness_snap": gate_hill(n_h, threshold=HILL_SNAP),
-        "sigmoidal_ramp": pd.notna(n_h) and float(n_h) <= 1.0,
+        "sigmoidal_ramp": n_h_val is not None and n_h_val <= 1.0,
         "inflection_tm": gate_tm(tm),
         "dynamic_range": gate_amplitude(amp),
         "baseline_repression": gate_baseline_repression(p_open),
@@ -157,7 +174,7 @@ def spearman_consensus(
             ns.append(0)
             continue
         stats = _spearman_pair(subset[v_col], subset[n_col])
-        ns.append(stats["n"])
+        ns.append(int(cast(int, stats["n"])))
         pairs[f"{v_col}_vs_{n_col}"] = stats
     n_complete = int(min(ns) if ns else 0)
     underpowered = bool(require_min_n and n_complete < min_n)

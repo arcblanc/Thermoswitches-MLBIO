@@ -60,7 +60,7 @@ else
   echo "=== EVA FULL PANEL (STORAGE_TARGET=${STORAGE_TARGET}, prefix=${AWS_S3_PREFIX}) ==="
 fi
 
-python scripts/eva_cloud_batch.py "${EXTRA[@]}" --dry-run
+python scripts/eva/eva_cloud_batch.py "${EXTRA[@]}" --dry-run
 
 YES=0
 for arg in "$@"; do
@@ -85,4 +85,4 @@ if [[ ! -d "${EVA_CHECKPOINT_DIR}" ]]; then
   exit 1
 fi
 
-bash scripts/eva_cloud_run.sh "${EXTRA[@]}"
+bash scripts/eva/eva_cloud_run.sh "${EXTRA[@]}"

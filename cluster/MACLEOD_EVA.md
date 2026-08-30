@@ -43,7 +43,7 @@ On the GPU node, with this repo available:
 # git clone https://github.com/arcblanc/Thermoswitches-MLBIO.git
 # cd Thermoswitches-MLBIO
 
-bash scripts/macleod_eva_install_smoke.sh
+bash scripts/eva/macleod_eva_install_smoke.sh
 ```
 
 Phases inside the script:
@@ -204,9 +204,9 @@ PYTHONPATH=src python src/thermo_sim/extract_fasta_dynamic_features.py \
   --workers 4
 
 SOURCE_FASTA=data/processed/eva_pilot/de_novo/generated.fasta \
-  bash scripts/run_eva_pilot_novelty.sh
+  bash scripts/extraction/run_eva_pilot_novelty.sh
 
-PYTHONPATH=src python scripts/eva_yield_ratio.py \
+PYTHONPATH=src python scripts/triage/eva_yield_ratio.py \
   --dynamic-csv data/processed/eva_pilot/dynamic_features.csv
 # Yield: Z<=-2 AND ΔP_RBS>0 AND E_Rfam>1e-3 (no hit ⇒ E=inf)
 ```
@@ -223,7 +223,7 @@ ssh -p 1024 t41am25@127.0.0.1 'echo ok'
 
 # Mac tmux 2: poll every 300s; seed 512 so first slice is 513–762
 cd ~/…/Thermoswitches-MLBIO   # or local repo path
-PYTHONPATH=src python scripts/eva_stream_triage.py \
+PYTHONPATH=src python scripts/triage/eva_stream_triage.py \
   --source ssh \
   --remote t41am25@127.0.0.1 \
   --ssh-port 1024 \
@@ -237,7 +237,7 @@ PYTHONPATH=src python scripts/eva_stream_triage.py \
 **S3-native** (after keys work + `STORAGE_TARGET=s3` on generator — no SSH):
 
 ```bash
-PYTHONPATH=src python scripts/eva_stream_triage.py \
+PYTHONPATH=src python scripts/triage/eva_stream_triage.py \
   --source s3 \
   --s3-bucket thermo-s3-bucket \
   --s3-prefix llm-batch/eva/v1/pilot2k \
@@ -256,7 +256,7 @@ State: `data/processed/eva_stream/triage_state.json`. Masters: `dynamic_features
 Backfill if a slice finished before this hook existed:
 
 ```bash
-PYTHONPATH=src python scripts/eva_stream_triage.py --backfill-analysis
+PYTHONPATH=src python scripts/triage/eva_stream_triage.py --backfill-analysis
 ```
 
 Use an **absolute** remote FASTA path (`/home/t41am25/...`); `~/` expands on the Mac and breaks rsync.

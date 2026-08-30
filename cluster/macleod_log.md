@@ -667,9 +667,9 @@ PYTHONPATH=src python src/thermo_sim/extract_fasta_dynamic_features.py \
   --workers 4
 
 SOURCE_FASTA=data/processed/eva_pilot/de_novo/generated.fasta \
-  bash scripts/run_eva_pilot_novelty.sh
+  bash scripts/extraction/run_eva_pilot_novelty.sh
 
-PYTHONPATH=src python scripts/eva_yield_ratio.py \
+PYTHONPATH=src python scripts/triage/eva_yield_ratio.py \
   --dynamic-csv data/processed/eva_pilot/dynamic_features.csv
 ```
 
@@ -753,8 +753,8 @@ Yield **6.05% ≫ 0.5–2%** band; **31** sequences pass all three gates. Not Ge
 - Top-up: `EVA_NUM_SAMPLES=2000 --resume` → started at **remaining=1488/2000**; soft-drop intact.
 - Observed ~17:55: **Checkpoint 896/2000**, next CLI 128 running.
 - Mac tooling added (does not touch live job):
-  - `scripts/eva_stream_triage.py` — `--source ssh|s3`, stride 250, poll 300s, complete-record FASTA parse, seed 512
-  - `scripts/run_eva_slice_novelty.sh` — slice-scoped novelty paths
+  - `scripts/triage/eva_stream_triage.py` — `--source ssh|s3`, stride 250, poll 300s, complete-record FASTA parse, seed 512
+  - `scripts/extraction/run_eva_slice_novelty.sh` — slice-scoped novelty paths
   - `eva_yield_ratio.py` — `--chunk-id` / rolling fields
   - `eva_generate.py` — writes `accepted_chunks/accepted_XXXX_YYYY.fasta` (deploy to cluster **after** this 2k finishes)
   - Seeded `data/processed/eva_stream/triage_state.json` at `last_triaged_count: 512`
