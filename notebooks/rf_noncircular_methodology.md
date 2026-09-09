@@ -4,7 +4,7 @@
 **Primary model:** `data/processed/models/rf_thermoswitch_noncircular.joblib`  
 **Panel:** `data/processed/fused_features_refseq_dynamic.csv` ($N = 2396$)  
 **Implementation:** `src/thermo_sim/thermo_classifier.py`, `noncircular_features.py`, `rf_posthoc.py`  
-**Architecture / results:** notebooks `06`, `07`; update note `07_noncircular_rf_model_update.md`
+**Architecture / results:** Marimo apps `03` (honesty) and `04` (GroupKFold result); EVA brief in `05_eva_melting_summarised_findings.md`
 
 > Can a Random Forest trained only on **non-circular** 37 °C physics, composition, and $k$-mers rank thermoswitch-like sequences without tautologically encoding the melting phenotype it is meant to help discover?
 
@@ -191,7 +191,7 @@ Let $\mathrm{SD}$ be the detected Shine–Dalgarno window and $\mathrm{AUG}$ the
 
 <br>
 
-RefSeq negatives lack AUG more often than Rfam (documented in App 1 / feature log). Dropping those rows would unbalance classes; sentinels keep $N = 2396$.
+RefSeq negatives lack AUG more often than Rfam (documented in App 01 / feature log). Dropping those rows would unbalance classes; sentinels keep $N = 2396$.
 
 ### 3.5 Explicit exclusions from $X$ (circular scalars)
 
@@ -512,11 +512,11 @@ PYTHONPATH=src python src/thermo_sim/thermo_classifier.py posthoc \
 **Interactive inspection**:
 <br>
 <br>
-- `uv run marimo edit notebooks/06_classifier_architecture_ladder.py`
+- `uv run marimo edit notebooks/03_rf_honesty_noncircular_matrix.py`
 <br>
-- `uv run marimo edit notebooks/07_noncircular_rf_results.py`
+- `uv run marimo edit notebooks/04_groupkfold_auc_showed_no_transfer.py`
 <br>
-- `uv run marimo edit notebooks/thesis_figures.py` (cohort map + RF ensemble cartoon + parameter card)
+- `uv run marimo edit notebooks/07_export_analytical_thesis_figures.py` (analytical Results panels only)
 
 ---
 
@@ -533,7 +533,7 @@ PYTHONPATH=src python src/thermo_sim/thermo_classifier.py posthoc \
 | Non-circular feature build | `src/thermo_sim/noncircular_features.py` |
 | Train / persist RF | `src/thermo_sim/thermo_classifier.py` (`train_random_forest`) |
 | Post-hoc bins / gates | `src/thermo_sim/rf_posthoc.py` |
-| Architecture ladder narrative | `notebooks/06_classifier_architecture_ladder.py` |
-| Results tables | `notebooks/07_noncircular_rf_results.py` |
-| Model update summary | `notebooks/07_noncircular_rf_model_update.md` |
+| Architecture ladder narrative | `notebooks/03_rf_honesty_noncircular_matrix.py` |
+| Results tables | `notebooks/04_groupkfold_auc_showed_no_transfer.py` |
+| Model update summary | Marimo App 04 + `notebooks/05_eva_melting_summarised_findings.md` |
 | Corpus matching / RUS | `README.md` §1; `knn_undersample.py --skip-enn` |

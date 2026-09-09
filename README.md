@@ -1,27 +1,162 @@
-# Thermoswitches-MLBIO
-
 [![CI](https://github.com/arcblanc/Thermoswitches-MLBIO/actions/workflows/ci.yml/badge.svg)](https://github.com/arcblanc/Thermoswitches-MLBIO/actions/workflows/ci.yml)
 
-**Author:** Amier Mohd Zuhri · MSc Data Science, University of Aberdeen (2026)  
-**Thesis:** [*In Silico De Novo Design and Validation of Synthetic RNA Thermoswitches Via Deep Generative Modelling*](thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches.pdf)
+## <a name="started"></a>Getting Started
 
-Executable analysis stack for the thesis: Rfam/RefSeq corpus curation, ViennaRNA/NUPACK thermodynamics, the 92-column Random Forest baseline, EVA generation on Macleod, yield triage, and in silico biophysical validation.
+```sh
+git clone https://github.com/arcblanc/Thermoswitches-MLBIO.git
+cd Thermoswitches-MLBIO
+uv sync --group dev --group notebooks
+cp .env.example .env                         # EMAIL, NCBI_API_KEY (optional until downloads)
+make test                                    # 16 pytest cases (no Vienna/NUPACK required)
 
-**Thesis PDF:** [`thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches.pdf`](thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches.pdf) (annotated draft: [`thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches_AAmarkings.pdf`](thesis/In_Silico_de_novo_Design_and_Validation_of_Synthetic_RNA_Thermoswitches_AAmarkings.pdf))
+# inspect committed JSON sidecars (no retrain)
+python - <<'PY'
+import json
+d = json.load(open("data/processed/rf_noncircular_diagnostics.json"))
+print(d["noncircular_stratified_group"]["roc_auc"])
+PY
 
----
+# open thesis Marimo apps (load sidecars, do not retrain inline)
+uv run marimo edit notebooks/01_curated_matched_rfam_refseq_cohort.py
+uv run marimo edit notebooks/04_groupkfold_auc_showed_no_transfer.py
+uv run marimo edit notebooks/05_eva_yield_gates_then_melting_audit.py
 
-## Scientific summary
+# optional: biophysics engines + full quality gate
+uv sync --group biophysics                   # ViennaRNA → import RNA
+make ci                                      # ruff + format + uv check + pytest
+```
 
-Engineered *Escherichia coli* hosts carry a yield dilemma at 37 °C, and premature leaky expression selects against productive biomass before heat-shock induction. RNA thermoswitches (RNATs) sequester the ribosome binding site in a stem-loop lock at 37 °C and expose it near 42 °C, which offers a chemically free route to decouple growth from production. We curated a balanced benchmark of 1,198 Rfam thermoswitches and 1,198 length/GC-matched RefSeq 5′ UTR controls ($N = 2{,}396$), scored every transcript with dual folding engines, and trained a 200-tree Random Forest on a **92-column feature matrix** of static 37 °C physics, k-mers, and SD–AUG spacing while we withheld melting scalars for post-hoc ranking. StratifiedGroupKFold grouped on Rfam accession returned AUC ≈ **0.28**, which showed that static snapshot features memorised family-correlated trinucleotides rather than transferable switching rules. After that we deployed a frozen **EVA 1.4B CLM** on Macleod gpu02 with TaxID-conditioned `mRNA` prompts, drew 2,000 de novo 5′ UTR sequences, and ran automated biophysical triage in `scripts/triage/` to recover **105 yield-gated candidates** (5.25%) under
+**Note:** NUPACK 4.1 is licensed separately. Install the wheel from `nupack-4.1.0.1/package/` if you need dual-engine sweeps. Yield gates in the thesis path lock to **ViennaRNA only**.
+
+For end-to-end rebuild commands see [`docs/cookbook.md`](docs/cookbook.md). For HPC EVA generation see [`cluster/README.md`](cluster/README.md).
+
+## Table of Contents
+
+- [Getting Started](#started)
+- [Users' Guide](#uguide)
+  - [Installation](#install)
+  - [General usage](#general)
+  - [Use cases](#cases)
+    - [Audit the matched Rfam / RefSeq cohort](#cohort)
+    - [Inspect the honest Random Forest](#rf)
+    - [Triage EVA FASTA and audit melting](#eva)
+    - [Check candidate novelty vs Rfam](#novelty)
+    - [Export analytical thesis figures](#figures)
+  - [Pipeline overview](#pipeline)
+  - [Feature matrix (p = 92)](#features)
+  - [Data artefacts](#data)
+  - [Getting help](#help)
+  - [Citing this work](#cite)
+- [Developers' Guide](#dguide)
+- [Limitations](#limit)
+
+## <a name="uguide"></a>Users' Guide
+
+Thermoswitches-MLBIO is an executable analysis stack for *in silico* design of synthetic RNA thermoswitches (RNATs). Typical use cases include:
+
+1. rebuilding or auditing a length/%GC-matched Rfam vs RefSeq 5′ UTR panel ($N = 2{,}396$)
+2. training and diagnosing a 92-column Random Forest that withholds melting scalars from $X$
+3. running frozen **EVA 1.4B** generation on Macleod and streaming three-gate yield triage
+4. biophysical characterisation of the **105** yield-gated candidates against Rfam/RefSeq controls
+5. BLAST/nhmmer novelty reporting against Rfam
+6. exporting analytical Results figures from committed JSON sidecars
+
+On StratifiedGroupKFold grouped by Rfam accession, the 92-column RF returns AUC ≈ **0.28**, which is below length-alone baselines in some settings and shows that static 37 °C snapshot features do not learn transferable switching rules. After that finding the pipeline pivots to EVA generation (2,000 sequences) and yield triage recovering **105 / 2,000 = 5.25%** under
 
 $$Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}.$$
 
-The yield-gated set advanced to continuous ViennaRNA thermal sweeps and Hill parameterisation in App 08, and the broader EVA cohort remained thermodynamically resistant across the 37–42 °C induction window with largely flat RBS exposure. This repository implements the three-domain architecture from the thesis: **supervised Random Forest baseline**, **EVA de novo generation**, and **in silico biophysical validation**.
+Detailed methods live in [`notebooks/rf_noncircular_methodology.md`](notebooks/rf_noncircular_methodology.md). Melting-audit findings live in [`notebooks/05_eva_melting_summarised_findings.md`](notebooks/05_eva_melting_summarised_findings.md).
 
----
+### <a name="install"></a>Installation
 
-## Pipeline overview
+You need [uv](https://docs.astral.sh/uv/) and Python 3.12+. From the repo root:
+
+```sh
+uv sync --group dev --group notebooks
+```
+
+Common optional groups:
+
+| Group | Provides |
+|-------|----------|
+| `biophysics` | ViennaRNA (`import RNA`) |
+| `cloud` | boto3 / SSH helpers for EC2–S3 batches |
+| `llm` | torch / transformers for EVA or GenerRNA paths |
+| `dev` | ruff, pytest, ty |
+
+For cd-hit, Infernal, and HMMER on a workstation or cluster head node:
+
+```sh
+conda env create -f environment.yml
+```
+
+Paths resolve through `src/data_engineering/paths.py` → `resolve_path()`. Do not commit `.venv`.
+
+### <a name="general"></a>General usage
+
+Library code lives under `src/`. Thin CLIs live under `scripts/` (see [`scripts/README.md`](scripts/README.md)). Interactive audit apps are Marimo scripts under `notebooks/` (see [`notebooks/README.md`](notebooks/README.md)). They **load JSON/CSV sidecars** and do not retrain models inline.
+
+```sh
+# CLI pattern used in playbooks
+PYTHONPATH=src python scripts/<category>/<script>.py [args]
+
+# quality gate matching GitHub Actions
+make ci
+```
+
+Committed lightweight sidecars under `data/processed/*.json` are the audit source of truth. Large CSVs, FASTA pools, and `.joblib` models are gitignored and must be regenerated locally (see [Data artefacts](#data)).
+
+### <a name="cases"></a>Use cases
+
+#### <a name="cohort"></a>Audit the matched Rfam / RefSeq cohort
+
+```sh
+uv run marimo edit notebooks/01_curated_matched_rfam_refseq_cohort.py
+uv run marimo edit notebooks/02_matching_removed_compositional_shortcuts.py
+```
+
+App 01 loads the fused panel and checks length/%GC matching, 37 °C biophysics, SD–AUG geometry, and k-mer dialect. App 02 shows composition-only AUCs $< 0.50$ after Hungarian matching — the shortcut kill required before RF claims.
+
+#### <a name="rf"></a>Inspect the honest Random Forest
+
+```sh
+uv run marimo edit notebooks/03_rf_honesty_noncircular_matrix.py
+uv run marimo edit notebooks/04_groupkfold_auc_showed_no_transfer.py
+PYTHONPATH=src python scripts/rf/rf_length_bias_diagnostics.py --noncircular
+```
+
+Melting scalars ($T_m$, Hill, $Z$, $\Delta P_{\mathrm{RBS}}$) stay out of $X$ and enter post-hoc ranking only. StratifiedGroupKFold on `rfam_acc` / `REFSEQ:{assembly}` is the honesty protocol. Expect GroupKFold AUC ≈ 0.28 in `data/processed/rf_noncircular_diagnostics.json`.
+
+#### <a name="eva"></a>Triage EVA FASTA and audit melting
+
+```sh
+# streaming yield triage (example: SSH source from Macleod)
+PYTHONPATH=src python scripts/triage/eva_stream_triage.py --source ssh
+
+uv run marimo edit notebooks/05_eva_yield_gates_then_melting_audit.py
+```
+
+Generation itself runs on Macleod (`cluster/MACLEOD_EVA.md`). Local machines consume FASTA + triage tables, then App 05 compares Hill / $T_m$ / $P_{\mathrm{open}}$ of the 105 passers to Rfam and RefSeq. It is usually recommended to keep gates on ViennaRNA when NUPACK and Vienna disagree on $T_m$.
+
+#### <a name="novelty"></a>Check candidate novelty vs Rfam
+
+```sh
+bash scripts/extraction/download_rfam.sh          # if regenerating
+bash scripts/extraction/run_novelty_search.sh
+uv run marimo edit notebooks/06_candidates_vs_rfam_novelty.py
+```
+
+App 06 does **not** re-run BLAST/nhmmer. It loads `data/processed/novelty/*.csv` and `*.json` and buckets identical / remote-homolog / no-hit outcomes.
+
+#### <a name="figures"></a>Export analytical thesis figures
+
+```sh
+uv run marimo edit notebooks/07_export_analytical_thesis_figures.py
+```
+
+Writes ROC, permutation, attrition funnel, and Hill overlay PNGs under `notebooks/figures/thesis_figures/`. Flowchart schematics are intentionally omitted.
+
+### <a name="pipeline"></a>Pipeline overview
 
 ```
 Rfam positives (1,198) ──┐
@@ -32,199 +167,78 @@ RefSeq 5′ UTRs (1,198) ──┘                              │             
 
 EVA 1.4B (frozen, TaxID-conditioned mRNA) ── Macleod gpu02 ── generated.fasta (2,000)
         │
-Mac CPU ── Vienna Z / ΔP_RBS + Rfam novelty ── yield gate ── 105 candidates ── App 08 biophysical audit
+Mac CPU ── Vienna Z / ΔP_RBS + Rfam novelty ── yield gate ── 105 candidates ── App 05 melting audit
 ```
 
 | Stage | Role | Primary code |
 |-------|------|----------------|
-| **1. Corpus** | Rfam thermoswitch families vs RefSeq housekeeping 5′ UTRs | `src/data_engineering/` |
-| **2. Features ($X$)** | Static 37 °C physics + composition + 16+64 k-mers + SD–AUG | `src/thermo_sim/noncircular_features.py` |
-| **3. RF** | Bootstrap ensemble and grouped CV diagnostics | `src/thermo_sim/thermo_classifier.py` |
-| **4. Post-hoc** | ŷ bins, ΔP_RBS, $n_H$, $T_m$, $Z$, Vienna–NUPACK Spearman | `src/thermo_sim/rf_posthoc.py` |
-| **5. EVA** | Pretrained CLM generation (not trained here) | `src/de_novo_hallucinations/eva_generate.py` |
-| **6. Triage** | Three-gate yield on streaming FASTA | `scripts/triage/` |
-| **7. De novo audit** | EVA vs Rfam/RefSeq melting cohorts | `src/thermo_sim/eva_denovo_characterization.py` |
+| Corpus | Rfam vs matched RefSeq 5′ UTRs | `src/data_engineering/` |
+| Features ($X$) | Static 37 °C physics + k-mers + SD–AUG | `src/thermo_sim/noncircular_features.py` |
+| RF | Bootstrap ensemble + grouped CV | `src/thermo_sim/thermo_classifier.py` |
+| Post-hoc | ŷ bins, gates, Spearman, checklist | `src/thermo_sim/rf_posthoc.py` |
+| EVA | Frozen CLM generation | `src/de_novo_hallucinations/eva_generate.py` |
+| Triage | Three-gate yield on streaming FASTA | `scripts/triage/` |
+| Audit | EVA vs Rfam/RefSeq melting | `src/thermo_sim/eva_denovo_characterization.py` |
 
----
+### <a name="features"></a>Feature matrix ($p = 92$)
 
-## Analysis map
+**In $X$:** 7 static 37 °C biophysics + 3 composition + 16 dinucleotide + 64 trinucleotide frequencies + 2 SD–AUG spacing/sentinel columns. **Out of $X$:** $T_m$, Hill coefficient, $Z$, $\Delta P_{\mathrm{RBS}}$ (post-hoc only). Missing AUG is retained with a sentinel (`sd_aug_spacing = -1`), because dropping those rows would unbalance RefSeq negatives. Feature log: `data/processed/rf_noncircular_feature_log.json`.
 
-| Content | Repository location | Regenerate / view |
-|---------|---------------------|-------------------|
-| **Panel construction** (matching, 92-column matrix, engines) | `src/data_engineering/`, `src/thermo_sim/` | [Rebuild core panel](#rebuild-core-panel) |
-| **RF results** (grouped permutation, gates) | `data/processed/rf_*.json`, App 07 | `notebooks/07_noncircular_rf_results.py` |
-| **Results figures** (ROC, permutation, funnel, Hill ribbons) | `notebooks/figures/thesis_figures/` | `notebooks/thesis_figures.py`, `src/thermo_sim/thesis_results_figures.py` |
-| **Software stack and Macleod job** | `environment.yml`, `cluster/MACLEOD_EVA.md` | `cluster/EVA_OVERVIEW.md` |
-| **92-col matrix and EVA soft-drop** | `noncircular_features.py`, `eva_quality.py` | `tests/test_noncircular_features.py`, `tests/test_eva_quality.py` |
-| **RF formulae and yield gates** | `thermo_classifier.py`, `rf_posthoc.py` | `notebooks/rf_noncircular_methodology.md` |
-| **105 yield table and attrition** | `data/processed/eva_denovo_checklist.json` | App 08, `notebooks/08_summarised_findings.md` |
-| **GenerRNA prototype and lead-315 PoC** | `src/de_novo_hallucinations/genererna/`, App 08 figures | `notebooks/figures/08_eva_denovo/` |
+### <a name="data"></a>Data artefacts
 
----
-
-## Repository layout
-
-```
-Thermoswitches-MLBIO/
-├── thesis/                      # Thesis PDF (final + annotated draft)
-├── src/                         # Importable library (uv editable install)
-│   ├── data_engineering/        # Rfam extract, RefSeq UTRs, CD-HIT, length/GC match
-│   ├── thermo_sim/              # Vienna/NUPACK, RF, post-hoc, batch, thesis figures
-│   ├── de_novo_hallucinations/  # EVA + GenerRNA wrappers, quality gates
-│   ├── novelty_eval/            # BLAST/nhmmer parsing, novelty reports
-│   └── validation_embedding/    # BiRNA embedding (optional validation path)
-├── scripts/                     # Runnable CLIs by domain → scripts/README.md
-├── notebooks/                   # Marimo apps + exported figures
-├── tests/                       # pytest (16 tests, no Vienna/NUPACK required)
-├── cluster/                     # RunPod, EC2, Macleod EVA runbooks
-├── data/                        # Raw reference + processed artefacts (.gitignore policy)
-├── typings/                     # Stubs for optional NUPACK / ViennaRNA (ty)
-├── .github/workflows/ci.yml     # ruff + ty + pytest
-├── Makefile                     # make ci
-├── pyproject.toml               # uv lockfile, dependency groups
-└── environment.yml              # Conda bio-toolchain (cd-hit, infernal, hmmer)
-```
-
-**Split principle:** `src/` holds reusable logic, `scripts/` holds thin orchestration, and `notebooks/` are interactive viewers and audit apps (prefer loading JSON sidecars over retraining inline). Paths resolve via `src/data_engineering/paths.py` → `resolve_path()`.
-
----
-
-## `src/` packages
-
-| Package | Responsibility | Key modules |
-|---------|----------------|-------------|
-| **`data_engineering`** | Labelled corpus construction | `data_extraction.py`, `sequence_retrieval.py`, `cd_hit_sequence_similarity.py`, `refseq_utr_extract.py`, `cmscan_decontaminate.py`, `length_gc_match.py`, `knn_undersample.py` |
-| **`thermo_sim`** | Folding, features, RF, evaluation | `vienna_rna.py`, `nupack_engine.py`, `thermo_batch.py`, `enrich_dynamic_features.py`, `noncircular_features.py`, `thermo_classifier.py`, `rf_posthoc.py`, `eva_denovo_characterization.py`, `thesis_results_figures.py` |
-| **`de_novo_hallucinations`** | Sequence generation | `eva_generate.py`, `eva_quality.py`, `eva_prompts.py`, `genererna/` |
-| **`novelty_eval`** | Homology search parsing | `parse_blast.py`, `parse_nhmmer.py`, `novelty_report.py` |
-| **`validation_embedding`** | Optional embedding validation | `birna_embed.py`, `storage.py` |
-
----
-
-## Feature matrix ($p = 92$)
-
-We trained the Random Forest on 92 columns of static 37 °C physics, composition, k-mers, and SD–AUG spacing. Melting scalars (**$T_m$**, Hill, **$Z$**, **$\Delta P_{\mathrm{RBS}}$**) remained on the fused table for post-hoc ranking, and we withheld them from $X$.
-
-**In $X$ (92 columns):**
-
-- **7** static 37 °C biophysics (Vienna/NUPACK MFE per nt, ensemble diversity, mean positional entropy, max stem/loop length)
-- **3** composition (%GC, length, $P_{\mathrm{paired,RBS}}(37\,^{\circ}\mathrm{C})$)
-- **16 + 64** dinucleotide and trinucleotide frequencies (intensive, from matched FASTA)
-- **2** SD–AUG spacing + missing-AUG sentinel (`sd_aug_spacing = -1`, `sd_aug_missing`)
-
-Missing AUG was **not** dropped (RefSeq UTRs lack initiators more often than Rfam positives). Feature log: `data/processed/rf_noncircular_feature_log.json`.
-
----
-
-## Key results
-
-| Check | Result | Sidecar |
-|-------|--------|---------|
-| Length-alone AUC | ≈ 0.20 | `rf_noncircular_diagnostics.json` |
-| **GroupKFold AUC (92-col $X$)** | **≈ 0.28** | same |
-| EVA accepted / yield (2,000 panel) | 105 / 2,000 = **5.25%** | `eva_denovo_checklist.json` |
-| Vienna vs NUPACK $T_m$ parity | Gates locked to **ViennaRNA only** | App 08, `notebooks/08_summarised_findings.md` |
-
----
-
-## Marimo applications
-
-```bash
-uv run marimo edit notebooks/<app>.py
-```
-
-| App | File | Purpose |
-|-----|------|---------|
-| 1 | [`01_rfam_refseq_curation_eda.py`](notebooks/01_rfam_refseq_curation_eda.py) | Rfam vs RefSeq curation & EDA |
-| 2 | [`02_prototype_benchmark.py`](notebooks/02_prototype_benchmark.py) | Vienna/NUPACK prototype benchmark |
-| 3 | [`03_llm_smoke_test_results.py`](notebooks/03_llm_smoke_test_results.py) | GenerRNA smoke test |
-| 4 | [`04_full_thermo_rf_analysis.py`](notebooks/04_full_thermo_rf_analysis.py) | Full thermo RF analysis (historical) |
-| 5 | [`05_novelty_rfam_analysis.py`](notebooks/05_novelty_rfam_analysis.py) | Rfam novelty |
-| 6 | [`06_classifier_architecture_ladder.py`](notebooks/06_classifier_architecture_ladder.py) | Feature-set architecture ablation (historical) |
-| 7 | [`07_noncircular_rf_results.py`](notebooks/07_noncircular_rf_results.py) | **Results viewer** (loads JSON, no retrain) |
-| 8 | [`08_eva_denovo_biophysical_characterization.py`](notebooks/08_eva_denovo_biophysical_characterization.py) | EVA vs Rfam/RefSeq melting audit |
-| 9 | [`09_baseline_compositional_ablation.py`](notebooks/09_baseline_compositional_ablation.py) | Compositional ablation |
-| — | [`thesis_figures.py`](notebooks/thesis_figures.py) | Export Chapter 4 figures → `notebooks/figures/thesis_figures/` |
-
-Briefs: [`notebooks/08_summarised_findings.md`](notebooks/08_summarised_findings.md), [`notebooks/rf_noncircular_results.md`](notebooks/rf_noncircular_results.md).
-
----
-
-## Quick start
-
-```bash
-git clone https://github.com/arcblanc/Thermoswitches-MLBIO.git
-cd Thermoswitches-MLBIO
-
-uv sync --group dev --group biophysics --group notebooks --group cloud --group llm
-cp .env.example .env    # EMAIL, NCBI_API_KEY
-
-make ci                 # ruff + format check + uv check + pytest (matches CI)
-```
-
-- **NUPACK 4.1:** manual wheel from `nupack-4.1.0.1/package/` (licensed, gitignored).
-- **ViennaRNA:** `uv sync --group biophysics` (import as `RNA`).
-- **Conda alternative:** `conda env create -f environment.yml` for cd-hit, infernal, hmmer.
-
-### Development commands
-
-| Command | Action |
-|---------|--------|
-| `make ci` | Full pipeline (sync + lint + format + typecheck + test) |
-| `make test` | `pytest tests/ -v` |
-| `make lint` | `ruff check src scripts notebooks tests` |
-| `make typecheck` | `uv check` (ty) |
-
-CLI entry points: [`scripts/README.md`](scripts/README.md). HPC/EVA runbooks: [`cluster/MACLEOD_EVA.md`](cluster/MACLEOD_EVA.md), [`cluster/EVA_OVERVIEW.md`](cluster/EVA_OVERVIEW.md).
-
----
-
-## Rebuild core panel
-
-```bash
-# Positives
-python src/data_engineering/data_extraction.py
-python src/data_engineering/sequence_retrieval.py --all
-python src/data_engineering/cd_hit_sequence_similarity.py --all
-
-# Negatives
-bash scripts/extraction/download_refseq_genomes.sh
-PYTHONPATH=src python src/data_engineering/refseq_utr_extract.py
-PYTHONPATH=src python src/data_engineering/cmscan_decontaminate.py
-PYTHONPATH=src python src/data_engineering/length_gc_match.py \
-  --all-positives --cds-truncate \
-  --negatives-csv data/processed/refseq_utr/candidates_clean.csv \
-  --negatives-fasta data/processed/refseq_utr/candidates_clean.fasta
-
-# Thermo + enrich → fused_features_refseq_dynamic.csv
-python src/thermo_sim/thermo_batch.py --run
-PYTHONPATH=src python src/thermo_sim/enrich_dynamic_features.py --workers 4
-
-# RF training + post-hoc JSON sidecars
-python src/thermo_sim/thermo_classifier.py train \
-  --fused-csv data/processed/fused_features_refseq_dynamic.csv \
-  --model-path data/processed/models/rf_thermoswitch_noncircular.joblib
-python src/thermo_sim/thermo_classifier.py posthoc \
-  --fused-csv data/processed/fused_features_refseq_dynamic.csv
-```
-
-Groups for out-of-family CV: Rfam accession (positives), `REFSEQ:{assembly}` (negatives).
-
----
-
-## Data artefact policy
-
-Large regenerated tables (`fused_features_*.csv`, Vienna/NUPACK CSVs, `.joblib` models, FASTA pools) are **gitignored** under `data/processed/`. Lightweight **JSON metric sidecars** are allowlisted for diff-friendly audit (see `.gitignore`). Prototype golden panel: `data/processed/prototype/` (4-seq smoke fixture).
+Large regenerated tables are gitignored. Lightweight JSON sidecars are committed for audit:
 
 | Path | Contents |
 |------|----------|
-| `data/processed/fused_features_refseq_dynamic.csv` | Labelled panel (local, not committed) |
-| `data/processed/rf_noncircular_diagnostics.json` | GroupKFold AUC + grouped permutation |
+| `data/processed/rf_noncircular_diagnostics.json` | GroupKFold AUC + permutation |
 | `data/processed/rf_posthoc_report.json` | ŷ bins, gates, Spearman, checklist |
 | `data/processed/eva_denovo_checklist.json` | Four-gate pass rates by cohort |
-| `notebooks/figures/thesis_figures/` | Chapter 4 export PNGs |
-| `notebooks/figures/08_eva_denovo/` | App 08 audit figures |
+| `data/processed/novelty/` | BLAST / nhmmer reports |
+| `notebooks/figures/thesis_figures/` | Analytical Chapter 4 PNGs |
+| `notebooks/figures/05_eva_melting/` | App 05 melting / PoC figures |
 
----
+Prototype 4-sequence fixture: `data/processed/prototype/`.
 
-See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+### <a name="help"></a>Getting help
+
+- Troubleshooting: [`FAQ.md`](FAQ.md)
+- Full rebuild recipes: [`docs/cookbook.md`](docs/cookbook.md)
+- CLI catalogue: [`scripts/README.md`](scripts/README.md)
+- Marimo app map: [`notebooks/README.md`](notebooks/README.md)
+- Macleod / cloud runbooks: [`cluster/README.md`](cluster/README.md)
+- Release notes: [`CHANGELOG.md`](CHANGELOG.md)
+
+Open a GitHub issue for reproducible bugs (include command, sidecar path, and `uv` / OS versions). There is not a separate mailing list.
+
+### <a name="cite"></a>Citing this work
+
+Amier Mohd Zuhri (2026). *In Silico De Novo Design and Validation of Synthetic RNA Thermoswitches Via Deep Generative Modelling*. MSc Data Science, University of Aberdeen. Repository: <https://github.com/arcblanc/Thermoswitches-MLBIO>.
+
+If you use ViennaRNA, NUPACK, EVA, Rfam, or Infernal/HMMER, cite those tools separately.
+
+## <a name="dguide"></a>Developers' Guide
+
+Editable install and CI:
+
+```sh
+uv sync --group dev --group biophysics --group notebooks --group cloud --group llm
+make lint && make format-fix && make typecheck && make test
+```
+
+| Package | Responsibility |
+|---------|----------------|
+| `data_engineering` | Rfam extract, RefSeq UTRs, CD-HIT, length/%GC match |
+| `thermo_sim` | Vienna/NUPACK, RF, post-hoc, batch, thesis figures |
+| `de_novo_hallucinations` | EVA (+ GenerRNA appendix) wrappers, quality gates |
+| `novelty_eval` | BLAST / nhmmer parsing |
+| `validation_embedding` | Optional BiRNA embedding path |
+
+Type stubs for optional engines live in `typings/`. Prefer adding logic under `src/` and thin wrappers under `scripts/<category>/`. Marimo apps should load sidecars rather than embed training loops.
+
+## <a name="limit"></a>Limitations
+
+- The 92-column RF is a ranking diagnostic, not a wet-lab gate. GroupKFold AUC ≈ 0.28 means it does **not** transfer thermoswitch rules across Rfam families.
+- Yield triage admits structured RNA under $Z$, $\Delta P_{\mathrm{RBS}}$, and Rfam $E$-value. It does not guarantee Neupert-spec heat-shock controllers (Tier 2 survival is rare even among natural Rfam).
+- Dual-engine $T_m$ can disagree, so thesis gates lock to ViennaRNA.
+- EVA weights and large FASTA/CSV artefacts are not shipped in git. GenerRNA source is retained as an appendix path. Local weights are optional and large.
+- Marimo apps assume committed sidecars under `data/processed/`. Missing CSVs will fail cells that regenerate from fused panels.

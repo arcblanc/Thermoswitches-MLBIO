@@ -108,7 +108,7 @@ DEFAULT_SWEEP_CACHE = f"{DEFAULT_CACHE_DIR}/eva_temp_sweeps.csv"
 DEFAULT_HILL_CACHE = f"{DEFAULT_CACHE_DIR}/eva_hill_fits.csv"
 DEFAULT_CHECKLIST_JSON = "data/processed/eva_denovo_checklist.json"
 DEFAULT_LEADS_FASTA = "data/processed/leads/eva_top10_experimental_leads.fasta"
-DEFAULT_FIG_DIR = "notebooks/figures/08_eva_denovo"
+DEFAULT_FIG_DIR = "notebooks/figures/05_eva_melting"
 
 
 def resolve_project_root(start: Path | None = None) -> Path:

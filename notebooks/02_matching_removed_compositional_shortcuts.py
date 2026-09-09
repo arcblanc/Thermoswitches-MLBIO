@@ -1,9 +1,10 @@
-"""Marimo: compositional ablation (length / %GC shortcuts + distribution parity).
+"""02 · Matching removed compositional shortcuts.
 
-Thesis figure panel — proves Hungarian matching killed compositional shortcuts.
+We ablated length / %GC–only Random Forests on the matched panel and found
+composition-only AUCs below chance, so Hungarian matching had killed the shortcut.
 
 Run:
-    uv run marimo edit notebooks/09_baseline_compositional_ablation.py
+    uv run marimo edit notebooks/02_matching_removed_compositional_shortcuts.py
 """
 
 import marimo
@@ -11,7 +12,7 @@ import marimo
 __generated_with = "0.24.0"
 app = marimo.App(
     width="medium",
-    app_title="Baseline compositional ablation",
+    app_title="02 · Matching removed compositional shortcuts",
 )
 
 
@@ -36,7 +37,7 @@ def _():
     from thermo_sim import curation_eda as eda
     from thermo_sim import thesis_results_figures as trf
 
-    fig_dir = PROJECT_ROOT / "notebooks" / "figures" / "09_baseline_ablation"
+    fig_dir = PROJECT_ROOT / "notebooks" / "figures" / "02_compositional_ablation"
     fig_dir.mkdir(parents=True, exist_ok=True)
     thesis_fig_dir = PROJECT_ROOT / "notebooks" / "figures" / "thesis_figures"
     thesis_fig_dir.mkdir(parents=True, exist_ok=True)
@@ -81,9 +82,9 @@ def _(PROJECT_ROOT, eda, mo):
 
     intro = mo.md(
         r"""
-    # Baseline compositional ablation
+    # 02 · Matching removed compositional shortcuts
 
-    > Did Hungarian length / %GC matching kill trivial classification shortcuts?
+    > We asked whether length / %GC alone could still classify the matched panel.
 
     <br>
     **Matching gate**:
@@ -94,7 +95,8 @@ def _(PROJECT_ROOT, eda, mo):
     $|\Delta GC| \le 0.05$.
     <br>
     <br>
-    **Panel**: $N = 2396$ ($1198$ Rfam / $1198$ RefSeq).
+    **Finding we needed before RF:** composition-only AUCs stay $< 0.50$ on the matched panel
+    ($N = 2396$).
     """
     )
 

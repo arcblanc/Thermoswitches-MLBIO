@@ -1,4 +1,4 @@
-"""Exploratory visuals and tests for Rfam vs RefSeq curation (Marimo App 1).
+"""Exploratory visuals and tests for Rfam vs RefSeq curation (Marimo App 01).
 
 Helpers keep plotting and statistics out of reactive cells so Ruff D103 and
 type hints stay enforceable under ``uv run ruff check``.

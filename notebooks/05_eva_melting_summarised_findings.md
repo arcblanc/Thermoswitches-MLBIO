@@ -1,9 +1,9 @@
 # Evaluating EVA as a Generator of Candidate RNA Thermoswitches
 
-**Source:** Marimo App 8 — `notebooks/08_eva_denovo_biophysical_characterization.py`  
+**Source:** Marimo App 05 — `notebooks/05_eva_yield_gates_then_melting_audit.py`  
 **Cohort:** 105 yield-gated EVA sequences (31 pilot + 74 stream) vs 1,198 Rfam / 1,198 RefSeq  
 **Updates:** two-tier Neupert checklist, recalibrated lead score, top-3 deep audits, §13 Lead-315 G–C clamp PoC  
-**Artifacts:** `data/processed/eva_denovo_checklist.json`, `data/processed/eva_characterization/top3_deep_audit.json`, `data/processed/eva_characterization/poc_315_gc_clamp.json`, `notebooks/figures/08_eva_denovo/`
+**Artifacts:** `data/processed/eva_denovo_checklist.json`, `data/processed/eva_characterization/top3_deep_audit.json`, `data/processed/eva_characterization/poc_315_gc_clamp.json`, `notebooks/figures/05_eva_melting/`
 
 ---
 
@@ -100,7 +100,7 @@ None of the top 3 shows a clean “SD lights up, scaffold stays dark” Neupert 
 - **1914:** SD stays locked (good basal) and does **not** open at 43 °C (no local switch).  
 - **505:** SD opens somewhat, but baseline is already leaky and global melt is high.
 
-Figures: `notebooks/figures/08_eva_denovo/heatmap_eva_sample_{315,1914,505}.png`
+Figures: `notebooks/figures/05_eva_melting/heatmap_eva_sample_{315,1914,505}.png`
 
 ### 5.2 MDS structural embedding (full EVA library)
 
@@ -112,7 +112,7 @@ Figures: `notebooks/figures/08_eva_denovo/heatmap_eva_sample_{315,1914,505}.png`
 EVA is **not** mode-collapsed at the secondary-structure level after yield triage — topological diversity is high.  
 Diversity ≠ Neupert phenotype; many distinct folds still fail Tier 2.
 
-Figure: `notebooks/figures/08_eva_denovo/structure_manifold.png`
+Figure: `notebooks/figures/05_eva_melting/structure_manifold.png`
 
 ### 5.3 Mutational disrupt / rescue (Hoynes-O’Connor-style causality)
 
@@ -125,7 +125,7 @@ Figure: `notebooks/figures/08_eva_denovo/structure_manifold.png`
 **Finding.**  
 Stem edits change RBS exposure, so pairing chemistry matters — but none of the top 3 shows the clean Neupert-style narrative “mismatch destroys heat-shock snap; compensatory rescue restores $42$–$45^\circ\mathrm{C}$ sigmoid.”
 
-Figure: `notebooks/figures/08_eva_denovo/mutation_rescue.png`
+Figure: `notebooks/figures/05_eva_melting/mutation_rescue.png`
 
 ---
 
@@ -146,7 +146,7 @@ Figure: `notebooks/figures/08_eva_denovo/mutation_rescue.png`
 
 **Balanced claim.**
 
-> EVA is a viable *proposal engine* for heat-inducible thermoswitch discovery when scored with Tier 1 / Tier 2 separation and stroke-aware ranking — but App 8 still shows that generative admission and structural diversity are upstream of Neupert-spec function. The next bottleneck is redesign (or constrained generation) for simultaneous heat-shock $T_m$, $\Delta\theta \ge 0.40$–$0.50$, and $P_{\mathrm{open}}^{37} \le 0.20$, validated by local heatmaps and mutational rescue. A one-sequence scaffold G–C clamp on lead 315 (**Scenario 3**) confirms that instability is distributed, not a single-stem fix.
+> EVA is a viable *proposal engine* for heat-inducible thermoswitch discovery when scored with Tier 1 / Tier 2 separation and stroke-aware ranking — but App 05 still shows that generative admission and structural diversity are upstream of Neupert-spec function. The next bottleneck is redesign (or constrained generation) for simultaneous heat-shock $T_m$, $\Delta\theta \ge 0.40$–$0.50$, and $P_{\mathrm{open}}^{37} \le 0.20$, validated by local heatmaps and mutational rescue. A one-sequence scaffold G–C clamp on lead 315 (**Scenario 3**) confirms that instability is distributed, not a single-stem fix.
 
 ---
 
@@ -176,7 +176,7 @@ Under a two-tier Neupert-grounded checklist and a stroke-capped ranking function
 Testing a manual 1-sequence rescue on **`eva_sample_315`** compares the positional melting heatmap of the wild-type EVA sequence against an engineered variant where 2–3 base pairs in the non-RBS structural stem are mutated to strong G–C clamps.
 
 **Edits applied (farthest non-SD A–U pairs in the MFE):** nt15–31 U–A→C–G, nt17–29 A–U→G–C, nt18–28 U–A→C–G (0-based: 14/30, 16/28, 17/27).  
-**Figure:** `notebooks/figures/08_eva_denovo/poc_315_before_after_heatmap.png`  
+**Figure:** `notebooks/figures/05_eva_melting/poc_315_before_after_heatmap.png`  
 **Metrics cache:** `data/processed/eva_characterization/poc_315_gc_clamp.json`
 
 Running this test produces one of three distinct biophysical outcomes:

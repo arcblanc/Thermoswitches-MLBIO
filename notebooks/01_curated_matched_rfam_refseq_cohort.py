@@ -1,16 +1,19 @@
-"""Marimo App 1: Rfam vs RefSeq curation & exploratory EDA.
+"""01 · Curated matched Rfam / RefSeq cohort.
 
-Five reactive cells — cohort KPIs, length/%GC matching audit, 37 °C biophysics,
-SD–AUG geometry, and k-mer manifold — with plain-language analogies.
+We built a length/%GC-matched panel (N = 2,396) and audited whether folding,
+SD–AUG geometry, and k-mer dialect still separate thermoswitches from controls.
 
 Run:
-    uv run marimo edit notebooks/01_rfam_refseq_curation_eda.py
+    uv run marimo edit notebooks/01_curated_matched_rfam_refseq_cohort.py
 """
 
 import marimo
 
 __generated_with = "0.24.0"
-app = marimo.App(width="full", app_title="App 1 · Rfam vs RefSeq Curation EDA")
+app = marimo.App(
+    width="full",
+    app_title="01 · Curated matched Rfam / RefSeq cohort",
+)
 
 
 @app.cell
@@ -47,16 +50,13 @@ def _(PROJECT_ROOT, eda, mo):
 
     intro = mo.md(
         r"""
-    # App 1 · Rfam vs RefSeq curation & exploratory EDA
+    # 01 · We curated a matched Rfam / RefSeq cohort
 
-    **Question in plain words:** After we matched thermoswitches to ordinary 5′ UTRs
-    on length and %GC, do the two groups still look different — in folding energy,
-    ribosome-binding geometry, or sequence “dialect”?
+    **What we did:** paired 1,198 Rfam thermoswitches with 1,198 length/%GC-matched
+    RefSeq 5′ UTRs ($N = 2{,}396$).
 
-    **Analogy:** Think of matching as pairing runners of the same height and weight
-    before comparing race times. If times still differ, the difference is not just
-    body size — something else is going on. Here length and %GC are the “body size”
-    we already balanced.
+    **What we asked next:** after matching on body-size proxies (length, %GC), do
+    folding energy, SD–AUG geometry, or k-mer dialect still separate the classes?
     """
     )
     checkpoints = mo.vstack(
@@ -586,10 +586,10 @@ def _(checkpoints, mo):
     **Reproduce**
 
     ```bash
-    uv run marimo edit notebooks/01_rfam_refseq_curation_eda.py
+    uv run marimo edit notebooks/01_curated_matched_rfam_refseq_cohort.py
     ```
 
-    Helpers live in `src/thermo_sim/curation_eda.py` (typed, docstringed, Ruff-clean).
+    Helpers live in `src/thermo_sim/curation_eda.py`.
     """
             ),
         ]

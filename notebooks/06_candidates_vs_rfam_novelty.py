@@ -1,7 +1,19 @@
+"""06 · Candidates vs Rfam novelty.
+
+We loaded saved BLAST / nhmmer reports for physics-filtered candidates and
+bucketed identical, remote-homolog, and no-hit outcomes against Rfam.
+
+Run:
+    uv run marimo edit notebooks/06_candidates_vs_rfam_novelty.py
+"""
+
 import marimo
 
 __generated_with = "0.24.0"
-app = marimo.App()
+app = marimo.App(
+    width="full",
+    app_title="06 · Candidates vs Rfam novelty",
+)
 
 
 @app.cell
@@ -14,17 +26,15 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Rfam Novelty Analysis — BLAST + nhmmer
+    # 06 · We checked candidates against Rfam homology
 
-    Evaluates whether the 99 RF-filtered de novo thermoswitch candidates are:
+    **What we did:** load saved BLAST / nhmmer reports under
+    `data/processed/novelty/` (this app does **not** re-run the search).
 
-    1. **Identical / near-identical** (≥90% identity to Rfam) — likely memorization
-    2. **Remote homologs** (<90% identity, E≤0.1) — novel but evolutionarily related
-    3. **No hits** (E>0.1 from both tools) — de novo hallucination
+    **What we report:** identical / near-identical (≥90%), remote homologs
+    (E≤0.1, <90%), and no-hit buckets that support *de novo* claims.
 
-    Methods mirror GenerRNA (relaxed nhmmer E-value 0.1) with Rfam 14.9 as reference.
-
-    Run the pipeline first:
+    To regenerate artefacts (optional):
     ```bash
     bash scripts/extraction/download_rfam.sh
     bash scripts/extraction/run_novelty_search.sh
@@ -101,7 +111,7 @@ def _(FIG_DIR, plt, report):
         [labels.get(k, k) for k in counts.index], rotation=15, ha="right"
     )
     ax.set_ylabel("count")
-    ax.set_title("Novelty categories — 99 de novo candidates vs Rfam 14.9")
+    ax.set_title(f"Novelty categories — {len(report)} candidates vs Rfam")
     for i, v in enumerate(counts.values):
         ax.text(i, v + 1, f"{v} ({v / len(report):.0%})", ha="center")
     plt.tight_layout()
@@ -176,14 +186,16 @@ def _(mo):
 @app.cell
 def _(summary):
     c = summary["categories"]
+    n = summary.get("n_candidates", sum(v["count"] for v in c.values()))
     methods = f"""
-    Novelty of 99 physics-filtered de novo candidates was assessed against Rfam 14.9
+    Novelty of {n} physics-filtered candidates was assessed against Rfam
     (Rfam.fa) using blastn (-task blastn, E≤{summary["evalue_threshold"]}) and nhmmer
-    (--rna, -E {summary["evalue_threshold"]}). Per-sequence identity was defined as matching
-    nucleotides divided by alignment length (GenerRNA convention). The best hit across both
-    tools was retained. Sequences with ≥90% identity were classified as near-identical
-    (n={c["identical_near"]["count"]}), <90% as remote homologs (n={c["remote_homolog"]["count"]}),
-    and sequences with no hit at E≤{summary["evalue_threshold"]} as no-hit (n={c["no_hit"]["count"]}).
+    (--rna, -E {summary["evalue_threshold"]}). Per-sequence identity was matching
+    nucleotides divided by alignment length. The best hit across both tools was
+    retained. Sequences with ≥90% identity were classified as near-identical
+    (n={c["identical_near"]["count"]}), <90% as remote homologs
+    (n={c["remote_homolog"]["count"]}), and sequences with no hit at
+    E≤{summary["evalue_threshold"]} as no-hit (n={c["no_hit"]["count"]}).
     """.strip()
     print(methods)
     return

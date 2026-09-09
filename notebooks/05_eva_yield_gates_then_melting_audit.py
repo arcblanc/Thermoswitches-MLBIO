@@ -1,9 +1,10 @@
-"""Marimo App 8: EVA de novo biophysical characterization.
+"""05 · EVA yield gates, then melting audit.
 
-Compares 105 yield-gated EVA thermoswitch candidates to Rfam / RefSeq controls.
+After the RF pivot we generated 2,000 EVA 5′ UTRs, yield-gated to 105 (5.25%),
+and compared melting / Hill behaviour to Rfam and RefSeq controls.
 
 Run:
-    uv run marimo edit notebooks/08_eva_denovo_biophysical_characterization.py
+    uv run marimo edit notebooks/05_eva_yield_gates_then_melting_audit.py
 """
 
 import marimo
@@ -11,7 +12,7 @@ import marimo
 __generated_with = "0.24.0"
 app = marimo.App(
     width="full",
-    app_title="EVA de novo biophysical characterization",
+    app_title="05 · EVA yield gates → melting audit",
 )
 
 
@@ -140,10 +141,12 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # EVA de novo biophysical characterization
+    # 05 · EVA yield gates, then melting audit
 
-    We take **105** EVA candidates that already passed yield triage
-    (**31 pilot** + **74 stream**) and ask a harder question:
+    **What we did:** after GroupKFold AUC ≈ 0.28 killed the RF path, we generated
+    2,000 EVA 5′ UTRs and kept **105** yield-gated candidates (**31 pilot** + **74 stream**).
+
+    **What we ask here:**
 
     > Do they melt like real thermoswitches, or only look good under one software score?
 
@@ -1225,7 +1228,7 @@ def _(mo):
     **What:** pick the 3 farthest non-SD A–U / U–A MFE pairs, mutate them to G–C /
     C–G, then re-run `positional_unpairing_matrix` and compare Before vs After.
 
-    **Why:** App 8 showed lead 315 melts globally rather than as a modular RBS
+    **Why:** the melting audit showed lead 315 melts globally rather than as a modular RBS
     cassette. A one-sequence clamp test asks whether that fraying is a local
     scaffold weakness (fixable by hand) or a distributed ensemble problem.
 

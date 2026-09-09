@@ -1,7 +1,19 @@
+"""04 · GroupKFold AUC showed no transferable switch rule.
+
+We scored the honest 92-column RF under StratifiedGroupKFold and found AUC ≈ 0.28,
+so static snapshot features did not learn transferable thermoswitch rules.
+
+Run:
+    uv run marimo edit notebooks/04_groupkfold_auc_showed_no_transfer.py
+"""
+
 import marimo
 
 __generated_with = "0.24.0"
-app = marimo.App()
+app = marimo.App(
+    width="full",
+    app_title="04 · GroupKFold AUC ≈ 0.28 — no transfer",
+)
 
 
 @app.cell
@@ -14,11 +26,17 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Non-circular RF — results (loads logged JSON)
+    # 04 · We scored the honest RF — and it failed to transfer
 
-    Written brief: [`07_noncircular_rf_model_update.md`](07_noncircular_rf_model_update.md). Architecture history: [`06_classifier_architecture_ladder.py`](06_classifier_architecture_ladder.py).
+    **What we did:** load the noncircular RF diagnostic JSON (no retrain).
 
-    This notebook **does not retrain**. It reads the diagnostic JSON sidecars from the 18 August 2026 non-circular RF fit.
+    **What we found:** StratifiedGroupKFold AUC ≈ **0.28** on the 92-column matrix —
+    family-correlated trinucleotides, not a portable switching rule.
+
+    Methods: [`rf_noncircular_methodology.md`](rf_noncircular_methodology.md).  
+    Honesty story: [`03_rf_honesty_noncircular_matrix.py`](03_rf_honesty_noncircular_matrix.py).
+
+    That failure is why the thesis pivots to EVA generation + yield gates (App 05).
     """)
     return
 
@@ -39,7 +57,7 @@ def _():
         PROJECT_ROOT = PROJECT_ROOT.parent
 
     DATA = PROJECT_ROOT / "data" / "processed"
-    FIG = PROJECT_ROOT / "notebooks" / "figures" / "07_classifier"
+    FIG = PROJECT_ROOT / "notebooks" / "figures" / "03_rf_honesty"
 
     diag = json.loads((DATA / "rf_noncircular_diagnostics.json").read_text())
     post = json.loads((DATA / "rf_posthoc_report.json").read_text())
