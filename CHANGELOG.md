@@ -21,8 +21,8 @@ where version tags are applied.
 - Leakage-aware diagnostics (`scripts/rf/rf_length_bias_diagnostics.py`): length-alone gate, stratified contrast, and `StratifiedGroupKFold` by `rfam_acc` / `REFSEQ:{assembly}`.
 - Monotonic XGBoost path (`thermo_classifier.py train-xgb` + `scripts/rf/xgb_monotonic_diagnostics.py`): physical `monotone_constraints` on intensive+dynamic features; diagnostic JSON `xgb_refseq_dynamic_diagnostics.json`.
 - Non-circular RF inputs (`src/thermo_sim/noncircular_features.py`): static 37 °C physics, 16+64 k-mer frequencies, SD–AUG sentinel (`-1` + `sd_aug_missing`, no row drop), grouped permutation importance.
-- Post-hoc module (`src/thermo_sim/rf_posthoc.py` + `thermo_classifier.py posthoc`): OOF confidence bins, ΔP_RBS / Hill / Tm / Z gates, panel-wide Spearman (high-bin \(r_s\) only if \(N \ge 25\)), MW/KS, visual checklist pass rates.
-- Cheap \(P_{\mathrm{open,RBS}}\) backfill (`enrich_dynamic_features.py --p-open-only`) without 100-shuffle Z recompute.
+- Post-hoc module (`src/thermo_sim/rf_posthoc.py` + `thermo_classifier.py posthoc`): OOF confidence bins, ΔP_RBS / Hill / Tm / Z gates, panel-wide Spearman (high-bin $r_s$ only if $N \ge 25$), MW/KS, visual checklist pass rates.
+- Cheap $P_{\mathrm{open,RBS}}$ backfill (`enrich_dynamic_features.py --p-open-only`) without 100-shuffle Z recompute.
 - Notebook 06 §§4–7: usable X, non-circular CV, post-hoc, visual diagnostic checklist.
 - Results brief: `notebooks/07_noncircular_rf_model_update.md` + `notebooks/07_noncircular_rf_results.py`.
 - Marimo apps: `notebooks/marimo_dataset_curation.py` (App 1) plus converted notebooks `02`–`07` (`03_prototype` is now `02`).
@@ -46,7 +46,7 @@ where version tags are applied.
 - Length-alone AUC ≈ **0.20** (length shortcut removed).
 - Stratified intensive AUC ≈ **0.80** (optimistic / family leakage).
 - StratifiedGroupKFold AUC ≈ **0.19** (unconstrained RF on the circular 20-col set; no transferable out-of-family detector).
-- Non-circular RF (static 37 °C + k-mers + SD–AUG): Stratified AUC ≈ **0.97** (family leakage via motifs); StratifiedGroupKFold AUC ≈ **0.28**. High-confidence OOF bin \(N=6\) so high-bin Spearman is underpowered; panel-wide Vienna–NUPACK \(r_s\) is the consensus metric.
+- Non-circular RF (static 37 °C + k-mers + SD–AUG): Stratified AUC ≈ **0.97** (family leakage via motifs); StratifiedGroupKFold AUC ≈ **0.28**. High-confidence OOF bin $N=6$ so high-bin Spearman is underpowered; panel-wide Vienna–NUPACK $r_s$ is the consensus metric.
 - Monotonic XGBoost StratifiedGroupKFold AUC ≈ **0.20** (Δ ≈ +0.01 vs RF) — monotone physical invariants do not rescue out-of-family performance.
 - Mean MFE Z: positives ≈ **−2.54** vs RefSeq negatives ≈ **−1.34**.
 

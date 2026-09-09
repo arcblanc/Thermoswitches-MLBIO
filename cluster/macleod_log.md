@@ -673,7 +673,7 @@ PYTHONPATH=src python scripts/triage/eva_yield_ratio.py \
   --dynamic-csv data/processed/eva_pilot/dynamic_features.csv
 ```
 
-Yield: \(Z\le -2\) AND \(\Delta P_{\mathrm{RBS}}>0\) AND \(E_{\mathrm{Rfam}}>10^{-3}\) (no hit ⇒ \(E=\infty\)).
+Yield: $Z\le -2$ AND $\Delta P_{\mathrm{RBS}}>0$ AND $E_{\mathrm{Rfam}}>10^{-3}$ (no hit ⇒ $E=\infty$).
 
 ---
 
@@ -713,14 +713,14 @@ Novelty **done** (~04:01–04:57, ~1.9 h): blastn + nhmmer vs Rfam 14.9.
 | remote homolog | 123 | 24.0% |
 | **no hit** | **282** | **55.1%** |
 
-Yield join (`eva_yield_ratio.py`) — gates \(Z\le-2\), \(\Delta P_{\mathrm{RBS}}>0\), \(E_{\mathrm{Rfam}}>10^{-3}\) (no hit ⇒ \(E=\infty\)):
+Yield join (`eva_yield_ratio.py`) — gates $Z\le-2$, $\Delta P_{\mathrm{RBS}}>0$, $E_{\mathrm{Rfam}}>10^{-3}$ (no hit ⇒ $E=\infty$):
 
 | Metric | Value |
 |--------|------:|
 | 1. N quality-gated | **512** |
-| 2. Structurally ordered (\(Z\le-2\)) | **58** (11.3%) |
-| 3. Thermal RBS open (\(\Delta P_{\mathrm{RBS}}>0\)) | **457** (89.3%) |
-| 4. Novel (\(E_{\mathrm{Rfam}}>10^{-3}\) or no hit) | **351** (of which 282 no-hit/inf) |
+| 2. Structurally ordered ($Z\le-2$) | **58** (11.3%) |
+| 3. Thermal RBS open ($\Delta P_{\mathrm{RBS}}>0$) | **457** (89.3%) |
+| 4. Novel ($E_{\mathrm{Rfam}}>10^{-3}$ or no hit) | **351** (of which 282 no-hit/inf) |
 | 5. **Biophysical yield** (all three) | **31 / 512 = 6.05%** |
 
 Artifacts:

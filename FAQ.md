@@ -8,9 +8,9 @@ No. StratifiedGroupKFold grouped on Rfam accession measures **out-of-family** tr
 
 No. The 16 pytest cases exercise feature construction, EVA soft filters, and gate helpers without folding engines. Install `uv sync --group biophysics` for ViennaRNA when you rebuild thermo tables or run App 05 sweeps.
 
-#### 3. Why do yield gates ignore NUPACK \(T_m\)?
+#### 3. Why do yield gates ignore NUPACK $T_m$?
 
-Empirical Vienna vs NUPACK \(T_m\) parity on the EVA cohort is imperfect. The locked policy is ViennaRNA-only for \(Z\) / \(\Delta P_{\mathrm{RBS}}\) / Hill gates. Dual-engine plots remain useful for concordance audits in App 05.
+Empirical Vienna vs NUPACK $T_m$ parity on the EVA cohort is imperfect. The locked policy is ViennaRNA-only for $Z$ / $\Delta P_{\mathrm{RBS}}$ / Hill gates. Dual-engine plots remain useful for concordance audits in App 05.
 
 #### 4. Marimo cells fail with missing CSV / fused panel. What now?
 

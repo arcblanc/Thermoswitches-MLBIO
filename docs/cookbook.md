@@ -48,7 +48,7 @@ python src/thermo_sim/thermo_batch.py --run
 PYTHONPATH=src python src/thermo_sim/enrich_dynamic_features.py --workers 4
 ```
 
-**Output:** `data/processed/fused_features_refseq_dynamic.csv` (gitignored, \(N = 2396\)).
+**Output:** `data/processed/fused_features_refseq_dynamic.csv` (gitignored, $N = 2396$).
 
 ## 3. Retrain the noncircular RF and write sidecars
 
@@ -87,7 +87,7 @@ PYTHONPATH=src python scripts/triage/eva_stream_triage.py --source ssh
 PYTHONPATH=src python scripts/triage/eva_yield_ratio.py
 ```
 
-**Locked yield rule:** \(Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}\) (ViennaRNA). Thesis yield: **105 / 2,000 = 5.25%**. Checklist sidecar: `data/processed/eva_denovo_checklist.json`.
+**Locked yield rule:** $Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}$ (ViennaRNA). Thesis yield: **105 / 2,000 = 5.25%**. Checklist sidecar: `data/processed/eva_denovo_checklist.json`.
 
 ## 5. Melting audit of the 105 passers
 
@@ -121,14 +121,14 @@ uv run marimo edit notebooks/07_export_analytical_thesis_figures.py
 uv run marimo edit notebooks/02_matching_removed_compositional_shortcuts.py
 ```
 
-Reads `data/processed/rf_compositional_ablation.json`. Expect composition-only AUCs \(< 0.50\) on the matched panel.
+Reads `data/processed/rf_compositional_ablation.json`. Expect composition-only AUCs $< 0.50$ on the matched panel.
 
 ## Interpretation checklist
 
 | Step | Success signal |
 |------|----------------|
 | Install | `make test` green |
-| Matching | App 02 composition AUCs \(< 0.50\) |
+| Matching | App 02 composition AUCs $< 0.50$ |
 | Honest RF | GroupKFold AUC ≈ 0.28 in diagnostics JSON |
 | EVA triage | ~5% yield (105 passers for the thesis panel) |
 | Melting | Flat 37–42 °C RBS exposure relative to FourU-class controls |

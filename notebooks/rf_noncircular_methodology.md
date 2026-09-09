@@ -2,11 +2,11 @@
 
 **Purpose:** reproducible Methods write-up for the supervised Random Forest enacted in Thermoswitches-MLBIO  
 **Primary model:** `data/processed/models/rf_thermoswitch_noncircular.joblib`  
-**Panel:** `data/processed/fused_features_refseq_dynamic.csv` (\(N = 2396\))  
+**Panel:** `data/processed/fused_features_refseq_dynamic.csv` ($N = 2396$)  
 **Implementation:** `src/thermo_sim/thermo_classifier.py`, `noncircular_features.py`, `rf_posthoc.py`  
 **Architecture / results:** Marimo apps `03` (honesty) and `04` (GroupKFold result); EVA brief in `05_eva_melting_summarised_findings.md`
 
-> Can a Random Forest trained only on **non-circular** 37 °C physics, composition, and \(k\)-mers rank thermoswitch-like sequences without tautologically encoding the melting phenotype it is meant to help discover?
+> Can a Random Forest trained only on **non-circular** 37 °C physics, composition, and $k$-mers rank thermoswitch-like sequences without tautologically encoding the melting phenotype it is meant to help discover?
 
 <br>
 
@@ -15,7 +15,7 @@
 <br>
 - Define the labelled panel and matching rules,
 <br>
-- define the feature matrix \(X\) and label \(y\),
+- define the feature matrix $X$ and label $y$,
 <br>
 - state the ensemble equations and scikit-learn parameters,
 <br>
@@ -28,9 +28,9 @@
 **What this model is not**:
 <br>
 <br>
-- a wet-lab thermoswitch call (\(\hat{y} \ge 0.5\) is **not** a gate),
+- a wet-lab thermoswitch call ($\hat{y} \ge 0.5$ is **not** a gate),
 <br>
-- a replacement for EVA yield triage (\(Z\), \(\Delta P_{\mathrm{RBS}}\), \(E_{\mathrm{Rfam}}\)).
+- a replacement for EVA yield triage ($Z$, $\Delta P_{\mathrm{RBS}}$, $E_{\mathrm{Rfam}}$).
 
 ---
 
@@ -43,20 +43,20 @@ RNA thermometers (thermoswitches) are structured 5′ UTRs that sequester the Sh
 **Circular failure mode (historical 20-column RF)**:
 <br>
 <br>
-- \(X\) included \(T_m\), Hill \(n_{\mathrm{H}}\), amplitude, MFE \(Z\), \(\Delta P_{\mathrm{RBS}}\), \(\Delta\Delta G\),
+- $X$ included $T_m$, Hill $n_{\mathrm{H}}$, amplitude, MFE $Z$, $\Delta P_{\mathrm{RBS}}$, $\Delta\Delta G$,
 <br>
 - those scalars *are* the melting phenotype,
 <br>
-- StratifiedGroupKFold AUC collapsed to \(\approx 0.19\) (no transferable detector).
+- StratifiedGroupKFold AUC collapsed to $\approx 0.19$ (no transferable detector).
 
 <br>
 
 **Non-circular principle (this model)**:
 <br>
 <br>
-- \(X\) uses only **static 37 °C** biophysics, composition, intensive \(k\)-mer frequencies, and SD–AUG geometry,
+- $X$ uses only **static 37 °C** biophysics, composition, intensive $k$-mer frequencies, and SD–AUG geometry,
 <br>
-- melting scalars remain on the fused table and are scored **after** \(\hat{y}\) as post-hoc gates.
+- melting scalars remain on the fused table and are scored **after** $\hat{y}$ as post-hoc gates.
 
 ---
 
@@ -64,10 +64,10 @@ RNA thermometers (thermoswitches) are structured 5′ UTRs that sequester the Sh
 
 ### 2.1 Classes
 
-| Class | Source | Label \(y\) | \(N\) |
+| Class | Source | Label $y$ | $N$ |
 |-------|--------|-----------|-----|
-| Positive RNATs | Rfam prokaryotic thermoswitch families | \(1\) | \(1198\) |
-| Negative controls | NCBI RefSeq housekeeping 5′ UTRs | \(0\) | \(1198\) |
+| Positive RNATs | Rfam prokaryotic thermoswitch families | $1$ | $1198$ |
+| Negative controls | NCBI RefSeq housekeeping 5′ UTRs | $0$ | $1198$ |
 
 <br>
 
@@ -76,7 +76,7 @@ RNA thermometers (thermoswitches) are structured 5′ UTRs that sequester the Sh
 <br>
 - Rfam thermoswitch families → Entrez FASTA,
 <br>
-- CD-HIT at **80%** identity → \(1198\) representatives.
+- CD-HIT at **80%** identity → $1198$ representatives.
 
 <br>
 
@@ -87,9 +87,9 @@ RNA thermometers (thermoswitches) are structured 5′ UTRs that sequester the Sh
 <br>
 - Infernal `cmscan` decontamination,
 <br>
-- length / %GC Hungarian match with \(|\Delta L| \le 40\), \(|\Delta GC| \le 0.05\) (CDS-proximal truncate),
+- length / %GC Hungarian match with $`|\Delta L| \le 40`$, $`|\Delta GC| \le 0.05`$ (CDS-proximal truncate),
 <br>
-- balanced table \(N = 2396\).
+- balanced table $N = 2396$.
 
 <br>
 
@@ -100,7 +100,7 @@ RNA thermometers (thermoswitches) are structured 5′ UTRs that sequester the Sh
 <br>
 - **ENN skipped**; `RandomUnderSampler` → `rus_cleaned.*`,
 <br>
-- rematch with \(|\Delta GC| \le 0.10\),
+- rematch with $`|\Delta GC| \le 0.10`$,
 <br>
 - artifacts: `fused_features_refseq_dynamic_rus.csv`, `rf_*_rus.*`.
 
@@ -115,84 +115,84 @@ RNA thermometers (thermoswitches) are structured 5′ UTRs that sequester the Sh
 
 ---
 
-## 3. Feature representation \(X\)
+## 3. Feature representation $X$
 
-Let each sequence be \(s \in \{A,U,G,C\}^L\). Features are **intensive** where relevant so length does not re-enter as a raw count proxy.
+Let each sequence be $s \in \{A,U,G,C\}^L$. Features are **intensive** where relevant so length does not re-enter as a raw count proxy.
 
 ### 3.1 Static 37 °C biophysics (Vienna / NUPACK)
 
-Computed at \(37^\circ\mathrm{C}\) (and related static ensemble summaries), including:
+Computed at $37^\circ\mathrm{C}$ (and related static ensemble summaries), including:
 
 <br>
 
-- \(E_{\mathrm{MFE}} / L\) (`*_MFE_per_nt`),
+- $E_{\mathrm{MFE}} / L$ (`*_MFE_per_nt`),
 <br>
 - ensemble diversity, mean positional entropy,
 <br>
 - max stem / max loop lengths,
 <br>
-- \(P_{\mathrm{paired,RBS}}(37^\circ\mathrm{C})\) (`P_paired_RBS_37`).
+- $P_{\mathrm{paired,RBS}}(37^\circ\mathrm{C})$ (`P_paired_RBS_37`).
 
 <br>
 
 **MFE intensity**:
 <br>
 <br>
-\[
+$$
 \mathrm{MFE\_per\_nt} = \frac{E_{\mathrm{MFE}}(s, 37^\circ\mathrm{C})}{L}.
-\]
+$$
 
 ### 3.2 Composition
 
 <br>
 
-- sequence length \(L\),
+- sequence length $L$,
 <br>
 - %GC (Vienna column retained, and duplicate NUPACK GC dropped when redundant),
 <br>
-- \(P_{\mathrm{paired,RBS}}(37^\circ\mathrm{C})\).
+- $P_{\mathrm{paired,RBS}}(37^\circ\mathrm{C})$.
 
-### 3.3 Intensive \(k\)-mer frequencies
+### 3.3 Intensive $k$-mer frequencies
 
-For \(k \in \{2,3\}\) over alphabet \(\{A,U,G,C\}\):
+For $k \in \{2,3\}$ over alphabet $\{A,U,G,C\}$:
 
 <br>
 
-\[
+$$
 f_m(s) = \frac{N_m(s)}{L - k + 1}, \qquad m \in \Sigma^{k},
-\]
+$$
 
 <br>
 
-where \(N_m(s)\) is the number of (possibly overlapping) occurrences of \(k\)-mer \(m\) in \(s\), and \(f_m = 0\) if \(L < k\).
+where $N_m(s)$ is the number of (possibly overlapping) occurrences of $k$-mer $m$ in $s$, and $f_m = 0$ if $L < k$.
 
 <br>
 
 **Column counts**:
 <br>
 <br>
-- \(16\) dinucleotides (`dinuc_*`),
+- $16$ dinucleotides (`dinuc_*`),
 <br>
-- \(64\) trinucleotides (`trinuc_*`).
+- $64$ trinucleotides (`trinuc_*`).
 
 ### 3.4 SD–AUG geometry
 
-Let \(\mathrm{SD}\) be the detected Shine–Dalgarno window and \(\mathrm{AUG}\) the initiator codon.
+Let $\mathrm{SD}$ be the detected Shine–Dalgarno window and $\mathrm{AUG}$ the initiator codon.
 
 <br>
 
 **Encoding (never drop a row for missing AUG)**:
 <br>
 <br>
-- if AUG found downstream of SD: \(\texttt{sd\_aug\_spacing} = \mathrm{AUG\_start} - \mathrm{SD\_end}\), \(\texttt{sd\_aug\_missing} = 0\),
+- if AUG found downstream of SD: $\texttt{sd\_aug\_spacing} = \mathrm{AUG\_start} - \mathrm{SD\_end}$, $\texttt{sd\_aug\_missing} = 0$,
 <br>
-- if missing: \(\texttt{sd\_aug\_spacing} = -1\) (sentinel), \(\texttt{sd\_aug\_missing} = 1\).
+- if missing: $\texttt{sd\_aug\_spacing} = -1$ (sentinel), $\texttt{sd\_aug\_missing} = 1$.
 
 <br>
 
-RefSeq negatives lack AUG more often than Rfam (documented in App 01 / feature log). Dropping those rows would unbalance classes. Sentinels keep \(N = 2396\).
+RefSeq negatives lack AUG more often than Rfam (documented in App 01 / feature log). Dropping those rows would unbalance classes. Sentinels keep $N = 2396$.
 
-### 3.5 Explicit exclusions from \(X\) (circular scalars)
+### 3.5 Explicit exclusions from $X$ (circular scalars)
 
 The following are **forbidden** as RF inputs and reserved for post-hoc scoring:
 
@@ -214,24 +214,24 @@ From `rf_noncircular_feature_log.json` / diagnostics:
 
 <br>
 
-- \(n = 2396\) rows (\(1198\) pos / \(1198\) neg),
+- $n = 2396$ rows ($1198$ pos / $1198$ neg),
 <br>
-- \(p = 92\) columns in \(X\),
+- $p = 92$ columns in $X$,
 <br>
 - physics NaNs may drop a row; SD–AUG sentinels never do.
 
 <br>
 
-**Block structure of \(X\)** (for grouped permutation):
+**Block structure of $X$** (for grouped permutation):
 
 | Block | Approx. width |
 |-------|---------------|
-| Static 37 °C biophysics | \(7\) |
-| Composition | \(3\) |
-| Dinucleotides | \(16\) |
-| Trinucleotides | \(64\) |
-| SD–AUG | \(2\) |
-| **Total** | **\(92\)** |
+| Static 37 °C biophysics | $7$ |
+| Composition | $3$ |
+| Dinucleotides | $16$ |
+| Trinucleotides | $64$ |
+| SD–AUG | $2$ |
+| **Total** | **$92$** |
 
 ---
 
@@ -239,25 +239,25 @@ From `rf_noncircular_feature_log.json` / diagnostics:
 
 ### 4.1 Ensemble definition
 
-A Random Forest is a bagged ensemble of \(T\) classification trees \(\{h_t\}_{t=1}^{T}\).
+A Random Forest is a bagged ensemble of $T$ classification trees $\{h_t\}_{t=1}^{T}$.
 
 <br>
 
 **Bootstrap aggregation**:
 <br>
 <br>
-- each tree \(h_t\) is grown on a bootstrap sample of the training rows,
+- each tree $h_t$ is grown on a bootstrap sample of the training rows,
 <br>
 - at each split, a random subset of features is considered (sklearn default `max_features="sqrt"` for classification).
 
 <br>
 
-**Gini impurity** at a node with class proportions \(p_c\):
+**Gini impurity** at a node with class proportions $p_c$:
 <br>
 <br>
-\[
+$$
 G = 1 - \sum_{c \in \{0,1\}} p_c^2.
-\]
+$$
 
 <br>
 
@@ -268,33 +268,33 @@ A split is chosen to minimise the weighted child Gini (sklearn `criterion="gini"
 **Majority vote / soft aggregation**:
 <br>
 <br>
-\[
+$$
 \hat{y}(x) = \frac{1}{T} \sum_{t=1}^{T} h_t(x) \in [0,1],
-\]
+$$
 
 <br>
 
-where \(h_t(x)\) is the tree’s estimated class-\(1\) probability (fraction of training labels in the leaf). Hard call (not used as a wet-lab gate):
+where $h_t(x)$ is the tree’s estimated class-$1$ probability (fraction of training labels in the leaf). Hard call (not used as a wet-lab gate):
 
 <br>
 
-\[
+$$
 \hat{c}(x) = \mathbf{1}\{\hat{y}(x) \ge 0.5\}.
-\]
+$$
 
 ### 4.2 scikit-learn parameters (production non-circular RF)
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
 | Class | `sklearn.ensemble.RandomForestClassifier` | |
-| `n_estimators` (\(T\)) | **\(200\)** | |
+| `n_estimators` ($T$) | **$200$** | |
 | `max_depth` | **`None`** | unconstrained depth |
 | `criterion` | `"gini"` | sklearn default |
 | `max_features` | `"sqrt"` | sklearn classification default |
 | `bootstrap` | `True` | default |
-| `random_state` | **\(42\)** | |
-| `n_jobs` | **\(-1\)** | all cores |
-| `class_weight` | `None` | balanced by construction (\(1{:}1\)) |
+| `random_state` | **$42$** | |
+| `n_jobs` | **$-1$** | all cores |
+| `class_weight` | `None` | balanced by construction ($1{:}1$) |
 
 <br>
 
@@ -312,11 +312,11 @@ RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1).fit(X, y)
 <br>
 - model + feature list → `rf_thermoswitch_noncircular.joblib`,
 <br>
-- JSON sidecar records `feature_set: "noncircular"`, \(n\), circular exclusions.
+- JSON sidecar records `feature_set: "noncircular"`, $n$, circular exclusions.
 
 <br>
 
-**Not the honesty ladder**: a separate shallow path in `thermo_classifier.py` uses \(T=300\), `max_depth=4` (monotonic XGB / legacy paths). Do **not** confuse that with the non-circular RF.
+**Not the honesty ladder**: a separate shallow path in `thermo_classifier.py` uses $T=300$, `max_depth=4` (monotonic XGB / legacy paths). Do **not** confuse that with the non-circular RF.
 
 ### 4.3 Schematic train / test figure vs honesty CV
 
@@ -329,7 +329,7 @@ Thesis figures may show a **40% / 60%** train–test cartoon for pedagogy.
 <br>
 - **full-panel fit** for the deployed joblib,
 <br>
-- **5-fold StratifiedGroupKFold** for out-of-family AUC and OOF \(\hat{y}\) (below).
+- **5-fold StratifiedGroupKFold** for out-of-family AUC and OOF $\hat{y}$ (below).
 
 <br>
 
@@ -353,34 +353,34 @@ Each row carries a group id:
 
 | Protocol | Class | Folds | Role |
 |----------|-------|-------|------|
-| StratifiedKFold | `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` | \(5\) | **leaky** upper bound (family motifs can appear in train and test) |
-| StratifiedGroupKFold | `StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)` | \(5\) | **honesty** — no group shared across train/test |
+| StratifiedKFold | `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` | $5$ | **leaky** upper bound (family motifs can appear in train and test) |
+| StratifiedGroupKFold | `StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)` | $5$ | **honesty** — no group shared across train/test |
 
 <br>
 
-**Primary metric**: ROC-AUC of \(\hat{y}\) vs \(y\).
+**Primary metric**: ROC-AUC of $\hat{y}$ vs $y$.
 
 <br>
 
 **Reported non-circular results** (`rf_noncircular_diagnostics.json`):
 <br>
 <br>
-- Stratified (leaky) AUC \(\approx \mathbf{0.97}\),
+- Stratified (leaky) AUC $\approx \mathbf{0.97}$,
 <br>
-- StratifiedGroupKFold AUC \(\approx \mathbf{0.28}\),
+- StratifiedGroupKFold AUC $\approx \mathbf{0.28}$,
 <br>
-- length-alone control AUC \(\approx 0.20\) (length shortcut removed),
+- length-alone control AUC $\approx 0.20$ (length shortcut removed),
 <br>
-- historical circular 20-col GroupKFold AUC \(\approx 0.19\).
+- historical circular 20-col GroupKFold AUC $\approx 0.19$.
 
 <br>
 
 **Interpretation**:
 <br>
 <br>
-- \(0.97\) is family-shaped \(k\)-mer memory on a random split,
+- $0.97$ is family-shaped $k$-mer memory on a random split,
 <br>
-- \(0.28\) is near-chance out of family — ranking aid, not a transferable detector.
+- $0.28$ is near-chance out of family — ranking aid, not a transferable detector.
 
 ### 5.3 Attribution: grouped permutation importance
 
@@ -402,15 +402,15 @@ Do **not** use Gini/MDI for scientific attribution (trinucleotides fragment impo
 **Observed block drops** (in-sample forest; see update note):
 <br>
 <br>
-- trinucleotides \(\approx 0.34\) AUC drop,
+- trinucleotides $\approx 0.34$ AUC drop,
 <br>
-- dinucleotides \(\approx 0.004\),
+- dinucleotides $\approx 0.004$,
 <br>
-- static physics / composition / SD–AUG \(\approx 0\).
+- static physics / composition / SD–AUG $\approx 0$.
 
 ---
 
-## 6. Post-hoc scoring (not in \(X\))
+## 6. Post-hoc scoring (not in $X$)
 
 Out-of-fold probabilities from StratifiedGroupKFold are binned, then melting scalars filter rows.
 
@@ -418,48 +418,48 @@ Out-of-fold probabilities from StratifiedGroupKFold are binned, then melting sca
 
 | Bin | Rule |
 |-----|------|
-| High | \(\hat{y} \ge 0.80\) |
-| Mid | \(0.40 < \hat{y} < 0.60\) |
-| Low | \(\hat{y} \le 0.20\) |
+| High | $\hat{y} \ge 0.80$ |
+| Mid | $0.40 < \hat{y} < 0.60$ |
+| Low | $\hat{y} \le 0.20$ |
 | Other | remainder |
 
 <br>
 
-On the labelled panel, the high bin is tiny (\(n \approx 6\)) under GroupKFold — another view of weak transfer.
+On the labelled panel, the high bin is tiny ($n \approx 6$) under GroupKFold — another view of weak transfer.
 
 ### 6.2 Melting / structural gates (panel diagnostics)
 
 | Gate | Rule |
 |------|------|
-| Heat-shock \(T_m\) | \(T_m \in [42, 45]^{\circ}\mathrm{C}\) |
-| Hill (numeric) | \(n_{\mathrm{H}} > 1.0\) |
-| Hill snap (visual) | \(n_{\mathrm{H}} > 1.5\) |
-| Amplitude | \(\Delta\theta \ge 0.50\) |
-| Baseline lock | \(P_{\mathrm{open}}^{\mathrm{RBS}}(37^\circ\mathrm{C}) \le 0.20\) |
-| MFE \(Z\) | \(Z \le -2\) |
-| \(\Delta P_{\mathrm{RBS}}\) | \(\Delta P_{\mathrm{RBS}} > 0\) |
+| Heat-shock $T_m$ | $T_m \in [42, 45]^{\circ}\mathrm{C}$ |
+| Hill (numeric) | $n_{\mathrm{H}} > 1.0$ |
+| Hill snap (visual) | $n_{\mathrm{H}} > 1.5$ |
+| Amplitude | $\Delta\theta \ge 0.50$ |
+| Baseline lock | $P_{\mathrm{open}}^{\mathrm{RBS}}(37^\circ\mathrm{C}) \le 0.20$ |
+| MFE $Z$ | $Z \le -2$ |
+| $\Delta P_{\mathrm{RBS}}$ | $\Delta P_{\mathrm{RBS}} > 0$ |
 
 <br>
 
-**Visual checklist intersection (all four of snap, \(T_m\) window, amplitude, baseline)**: historically **\(0 / 2396\)** on the labelled panel.
+**Visual checklist intersection (all four of snap, $T_m$ window, amplitude, baseline)**: historically **$0 / 2396$** on the labelled panel.
 
 ### 6.3 Cross-engine consensus
 
-Panel-wide Spearman between Vienna and NUPACK (\(T_m\), Hill, amplitude) is near zero on this corpus; high-bin Spearman requires \(N \ge 25\) and is underpowered when the high bin has \(N < 25\).
+Panel-wide Spearman between Vienna and NUPACK ($T_m$, Hill, amplitude) is near zero on this corpus; high-bin Spearman requires $N \ge 25$ and is underpowered when the high bin has $N < 25$.
 
 ### 6.4 Relation to EVA yield (locked, separate)
 
-EVA stream triage does **not** use RF \(\hat{y}\). Locked yield gate:
+EVA stream triage does **not** use RF $\hat{y}$. Locked yield gate:
 
 <br>
 
-\[
+```math
 Z \le -2
 \quad\wedge\quad
 \Delta P_{\mathrm{RBS}} > 0
 \quad\wedge\quad
 E_{\mathrm{Rfam}} > 10^{-3}.
-\]
+```
 
 ---
 
@@ -467,7 +467,7 @@ E_{\mathrm{Rfam}} > 10^{-3}.
 
 | Component | Spec |
 |-----------|------|
-| Python | \(\ge 3.11\) (project `requires-python`) |
+| Python | $\ge 3.11$ (project `requires-python`) |
 | scikit-learn | `RandomForestClassifier`, `StratifiedGroupKFold`, `StratifiedKFold` |
 | pandas / numpy | matrix assembly |
 | scipy | post-hoc MW / KS / Spearman; Hill fits elsewhere |
@@ -502,7 +502,7 @@ PYTHONPATH=src python src/thermo_sim/thermo_classifier.py posthoc \
 |------|----------|
 | `data/processed/models/rf_thermoswitch_noncircular.joblib` | Fitted forest + feature list |
 | `data/processed/models/rf_thermoswitch_noncircular.json` | Sidecar metadata |
-| `data/processed/rf_noncircular_feature_log.json` | \(X\) columns, AUG-missing rates |
+| `data/processed/rf_noncircular_feature_log.json` | $X$ columns, AUG-missing rates |
 | `data/processed/rf_noncircular_diagnostics.json` | Stratified vs GroupKFold AUC, permutation |
 | `data/processed/rf_posthoc_report.json` | Bins, gates, Spearman, checklist |
 
@@ -521,7 +521,7 @@ PYTHONPATH=src python src/thermo_sim/thermo_classifier.py posthoc \
 
 ## 9. Concise Methods paragraph (paste-ready)
 
-> We trained a scikit-learn Random Forest classifier (\(T = 200\) trees, unconstrained depth, Gini splits, `random_state=42`) on a length/%GC-matched panel of \(N = 2396\) sequences (\(1198\) Rfam positives, \(1198\) RefSeq 5′ UTR negatives). The feature matrix comprised \(92\) non-circular columns: static \(37^\circ\mathrm{C}\) Vienna/NUPACK biophysics, length and %GC, RBS pairing probability at \(37^\circ\mathrm{C}\), intensive dinucleotide and trinucleotide frequencies, and SD–AUG spacing with a missing-AUG sentinel. Melting scalars (\(T_m\), Hill coefficient, amplitude, MFE \(Z\), \(\Delta P_{\mathrm{RBS}}\), \(\Delta\Delta G\)) were excluded from \(X\) and reserved for post-hoc gates. Honesty was assessed with \(5\)-fold `StratifiedGroupKFold` grouped by Rfam accession / RefSeq assembly (out-of-family ROC-AUC \(\approx 0.28\)), contrasted with leaky stratified splits (AUC \(\approx 0.97\)). The forest is used as a ranking aid, not as a binary wet-lab gate; EVA candidates continue to be admitted by the locked yield rule \(Z \le -2 \wedge \Delta P_{\mathrm{RBS}} > 0 \wedge E_{\mathrm{Rfam}} > 10^{-3}\).
+> We trained a scikit-learn Random Forest classifier ($T = 200$ trees, unconstrained depth, Gini splits, `random_state=42`) on a length/%GC-matched panel of $N = 2396$ sequences ($1198$ Rfam positives, $1198$ RefSeq 5′ UTR negatives). The feature matrix comprised $92$ non-circular columns: static $37^\circ\mathrm{C}$ Vienna/NUPACK biophysics, length and %GC, RBS pairing probability at $37^\circ\mathrm{C}$, intensive dinucleotide and trinucleotide frequencies, and SD–AUG spacing with a missing-AUG sentinel. Melting scalars ($T_m$, Hill coefficient, amplitude, MFE $Z$, $\Delta P_{\mathrm{RBS}}$, $\Delta\Delta G$) were excluded from $X$ and reserved for post-hoc gates. Honesty was assessed with $5$-fold `StratifiedGroupKFold` grouped by Rfam accession / RefSeq assembly (out-of-family ROC-AUC $\approx 0.28$), contrasted with leaky stratified splits (AUC $\approx 0.97$). The forest is used as a ranking aid, not as a binary wet-lab gate; EVA candidates continue to be admitted by the locked yield rule $Z \le -2 \wedge \Delta P_{\mathrm{RBS}} > 0 \wedge E_{\mathrm{Rfam}} > 10^{-3}$.
 
 ---
 

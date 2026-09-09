@@ -54,8 +54,8 @@ For end-to-end rebuild commands see [`docs/cookbook.md`](docs/cookbook.md). For 
 
 Thermoswitches-MLBIO is an executable analysis stack for *in silico* design of synthetic RNA thermoswitches (RNATs). Typical use cases include:
 
-1. rebuilding or auditing a length/%GC-matched Rfam vs RefSeq 5′ UTR panel (\(N = 2{,}396\))
-2. training and diagnosing a 92-column Random Forest that withholds melting scalars from \(X\)
+1. rebuilding or auditing a length/%GC-matched Rfam vs RefSeq 5′ UTR panel ($N = 2{,}396$)
+2. training and diagnosing a 92-column Random Forest that withholds melting scalars from $X$
 3. running frozen **EVA 1.4B** generation on Macleod and streaming three-gate yield triage
 4. biophysical characterisation of the **105** yield-gated candidates against Rfam/RefSeq controls
 5. BLAST/nhmmer novelty reporting against Rfam
@@ -63,7 +63,9 @@ Thermoswitches-MLBIO is an executable analysis stack for *in silico* design of s
 
 On StratifiedGroupKFold grouped by Rfam accession, the 92-column RF returns AUC ≈ **0.28**, which is below length-alone baselines in some settings and shows that static 37 °C snapshot features do not learn transferable switching rules. After that finding the pipeline pivots to EVA generation (2,000 sequences) and yield triage recovering **105 / 2,000 = 5.25%** under
 
-\[Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}.\]
+$$
+Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}.
+$$
 
 Detailed methods live in [`notebooks/rf_noncircular_methodology.md`](notebooks/rf_noncircular_methodology.md). Melting-audit findings live in [`notebooks/05_eva_melting_summarised_findings.md`](notebooks/05_eva_melting_summarised_findings.md).
 
@@ -115,7 +117,7 @@ uv run marimo edit notebooks/01_curated_matched_rfam_refseq_cohort.py
 uv run marimo edit notebooks/02_matching_removed_compositional_shortcuts.py
 ```
 
-App 01 loads the fused panel and checks length/%GC matching, 37 °C biophysics, SD–AUG geometry, and k-mer dialect. App 02 shows composition-only AUCs \(< 0.50\) after Hungarian matching — the shortcut kill required before RF claims.
+App 01 loads the fused panel and checks length/%GC matching, 37 °C biophysics, SD–AUG geometry, and k-mer dialect. App 02 shows composition-only AUCs $< 0.50$ after Hungarian matching — the shortcut kill required before RF claims.
 
 #### <a name="rf"></a>Inspect the honest Random Forest
 
@@ -125,7 +127,7 @@ uv run marimo edit notebooks/04_groupkfold_auc_showed_no_transfer.py
 PYTHONPATH=src python scripts/rf/rf_length_bias_diagnostics.py --noncircular
 ```
 
-Melting scalars (\(T_m\), Hill, \(Z\), \(\Delta P_{\mathrm{RBS}}\)) stay out of \(X\) and enter post-hoc ranking only. StratifiedGroupKFold on `rfam_acc` / `REFSEQ:{assembly}` is the honesty protocol. Expect GroupKFold AUC ≈ 0.28 in `data/processed/rf_noncircular_diagnostics.json`.
+Melting scalars ($T_m$, Hill, $Z$, $\Delta P_{\mathrm{RBS}}$) stay out of $X$ and enter post-hoc ranking only. StratifiedGroupKFold on `rfam_acc` / `REFSEQ:{assembly}` is the honesty protocol. Expect GroupKFold AUC ≈ 0.28 in `data/processed/rf_noncircular_diagnostics.json`.
 
 #### <a name="eva"></a>Triage EVA FASTA and audit melting
 
@@ -136,7 +138,7 @@ PYTHONPATH=src python scripts/triage/eva_stream_triage.py --source ssh
 uv run marimo edit notebooks/05_eva_yield_gates_then_melting_audit.py
 ```
 
-Generation itself runs on Macleod (`cluster/MACLEOD_EVA.md`). Local machines consume FASTA + triage tables, then App 05 compares Hill / \(T_m\) / \(P_{\mathrm{open}}\) of the 105 passers to Rfam and RefSeq. It is usually recommended to keep gates on ViennaRNA when NUPACK and Vienna disagree on \(T_m\).
+Generation itself runs on Macleod (`cluster/MACLEOD_EVA.md`). Local machines consume FASTA + triage tables, then App 05 compares Hill / $T_m$ / $P_{\mathrm{open}}$ of the 105 passers to Rfam and RefSeq. It is usually recommended to keep gates on ViennaRNA when NUPACK and Vienna disagree on $T_m$.
 
 #### <a name="novelty"></a>Check candidate novelty vs Rfam
 
@@ -173,16 +175,16 @@ Mac CPU ── Vienna Z / ΔP_RBS + Rfam novelty ── yield gate ── 105 ca
 | Stage | Role | Primary code |
 |-------|------|----------------|
 | Corpus | Rfam vs matched RefSeq 5′ UTRs | `src/data_engineering/` |
-| Features (\(X\)) | Static 37 °C physics + k-mers + SD–AUG | `src/thermo_sim/noncircular_features.py` |
+| Features ($X$) | Static 37 °C physics + k-mers + SD–AUG | `src/thermo_sim/noncircular_features.py` |
 | RF | Bootstrap ensemble + grouped CV | `src/thermo_sim/thermo_classifier.py` |
 | Post-hoc | ŷ bins, gates, Spearman, checklist | `src/thermo_sim/rf_posthoc.py` |
 | EVA | Frozen CLM generation | `src/de_novo_hallucinations/eva_generate.py` |
 | Triage | Three-gate yield on streaming FASTA | `scripts/triage/` |
 | Audit | EVA vs Rfam/RefSeq melting | `src/thermo_sim/eva_denovo_characterization.py` |
 
-### <a name="features"></a>Feature matrix (\(p = 92\))
+### <a name="features"></a>Feature matrix ($p = 92$)
 
-**In \(X\):** 7 static 37 °C biophysics + 3 composition + 16 dinucleotide + 64 trinucleotide frequencies + 2 SD–AUG spacing/sentinel columns. **Out of \(X\):** \(T_m\), Hill coefficient, \(Z\), \(\Delta P_{\mathrm{RBS}}\) (post-hoc only). Missing AUG is retained with a sentinel (`sd_aug_spacing = -1`), because dropping those rows would unbalance RefSeq negatives. Feature log: `data/processed/rf_noncircular_feature_log.json`.
+**In $X$:** 7 static 37 °C biophysics + 3 composition + 16 dinucleotide + 64 trinucleotide frequencies + 2 SD–AUG spacing/sentinel columns. **Out of $X$:** $T_m$, Hill coefficient, $Z$, $\Delta P_{\mathrm{RBS}}$ (post-hoc only). Missing AUG is retained with a sentinel (`sd_aug_spacing = -1`), because dropping those rows would unbalance RefSeq negatives. Feature log: `data/processed/rf_noncircular_feature_log.json`.
 
 ### <a name="data"></a>Data artefacts
 
@@ -238,7 +240,7 @@ Type stubs for optional engines live in `typings/`. Prefer adding logic under `s
 ## <a name="limit"></a>Limitations
 
 - The 92-column RF is a ranking diagnostic, not a wet-lab gate. GroupKFold AUC ≈ 0.28 means it does **not** transfer thermoswitch rules across Rfam families.
-- Yield triage admits structured RNA under \(Z\), \(\Delta P_{\mathrm{RBS}}\), and Rfam \(E\)-value. It does not guarantee Neupert-spec heat-shock controllers (Tier 2 survival is rare even among natural Rfam).
-- Dual-engine \(T_m\) can disagree, so thesis gates lock to ViennaRNA.
+- Yield triage admits structured RNA under $Z$, $\Delta P_{\mathrm{RBS}}$, and Rfam $E$-value. It does not guarantee Neupert-spec heat-shock controllers (Tier 2 survival is rare even among natural Rfam).
+- Dual-engine $T_m$ can disagree, so thesis gates lock to ViennaRNA.
 - EVA weights and large FASTA/CSV artefacts are not shipped in git. GenerRNA source is retained as an appendix path. Local weights are optional and large.
 - Marimo apps assume committed sidecars under `data/processed/`. Missing CSVs will fail cells that regenerate from fused panels.
