@@ -139,7 +139,7 @@ Computed at $37^\circ\mathrm{C}$ (and related static ensemble summaries), includ
 <br>
 <br>
 $$
-\mathrm{MFE\_per\_nt} = \frac{E_{\mathrm{MFE}}(s;\,37^\circ\mathrm{C})}{L}.
+\mathrm{MFE\_per\_nt} = \frac{E_{\mathrm{MFE}}(s,\,37^\circ\mathrm{C})}{L}.
 $$
 
 ### 3.2 Composition
@@ -148,7 +148,7 @@ $$
 
 - sequence length $L$,
 <br>
-- %GC (Vienna column retained; duplicate NUPACK GC dropped when redundant),
+- %GC (Vienna column retained, and duplicate NUPACK GC dropped when redundant),
 <br>
 - $P_{\mathrm{paired,RBS}}(37^\circ\mathrm{C})$.
 
@@ -159,7 +159,7 @@ For $k \in \{2,3\}$ over alphabet $\{A,U,G,C\}$:
 <br>
 
 $$
-f_m(s) = \frac{\#\{i : s_{i:i+k-1} = m\}}{L - k + 1},
+f_m(s) = \frac{\lvert\{i : s_{i:i+k-1} = m\}\rvert}{L - k + 1},
 \qquad m \in \Sigma^k,
 $$
 
@@ -191,7 +191,7 @@ Let $\mathrm{SD}$ be the detected Shine–Dalgarno window and $\mathrm{AUG}$ the
 
 <br>
 
-RefSeq negatives lack AUG more often than Rfam (documented in App 01 / feature log). Dropping those rows would unbalance classes; sentinels keep $N = 2396$.
+RefSeq negatives lack AUG more often than Rfam (documented in App 01 / feature log). Dropping those rows would unbalance classes. Sentinels keep $N = 2396$.
 
 ### 3.5 Explicit exclusions from $X$ (circular scalars)
 
@@ -432,7 +432,7 @@ On the labelled panel, the high bin is tiny ($n \approx 6$) under GroupKFold —
 
 | Gate | Rule |
 |------|------|
-| Heat-shock $T_m$ | $T_m \in [42, 45]^\circ\mathrm{C}$ |
+| Heat-shock $T_m$ | $T_m \in [42,\,45]^{\circ}\mathrm{C}$ |
 | Hill (numeric) | $n_{\mathrm{H}} > 1.0$ |
 | Hill snap (visual) | $n_{\mathrm{H}} > 1.5$ |
 | Amplitude | $\Delta\theta \ge 0.50$ |
