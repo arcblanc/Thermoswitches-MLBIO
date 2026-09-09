@@ -11,7 +11,7 @@ uv run marimo edit notebooks/<app>.py
 | # | File | We did | We found |
 |---|------|--------|----------|
 | 01 | [`01_curated_matched_rfam_refseq_cohort.py`](01_curated_matched_rfam_refseq_cohort.py) | Matched Rfam to RefSeq on length/%GC | Cohort still differs in folding / geometry / dialect |
-| 02 | [`02_matching_removed_compositional_shortcuts.py`](02_matching_removed_compositional_shortcuts.py) | Ablated length/%GC-only RFs | Composition AUCs $< 0.50$ |
+| 02 | [`02_matching_removed_compositional_shortcuts.py`](02_matching_removed_compositional_shortcuts.py) | Ablated length/%GC-only RFs | Composition AUCs \(< 0.50\) |
 | 03 | [`03_rf_honesty_noncircular_matrix.py`](03_rf_honesty_noncircular_matrix.py) | Withheld melting scalars and used GroupKFold | Honest 92-col protocol locked |
 | 04 | [`04_groupkfold_auc_showed_no_transfer.py`](04_groupkfold_auc_showed_no_transfer.py) | Scored noncircular RF sidecars | GroupKFold AUC ≈ **0.28** → pivot to EVA |
 | 05 | [`05_eva_yield_gates_then_melting_audit.py`](05_eva_yield_gates_then_melting_audit.py) | Yield-gated 2,000 → 105 and ran melting audit | Flat 37–42 °C RBS exposure. Tier-2 hard |

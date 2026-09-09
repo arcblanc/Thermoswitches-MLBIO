@@ -17,19 +17,19 @@
 
 ### Tier 1 — Biological plausibility
 
-- $n_{\mathrm{H}} > 1.2$
-- $T_{\mathrm{m}} \in [35,\,55]^{\circ}\mathrm{C}$
-- $\Delta\theta \ge 0.20$
-- $P_{\mathrm{open}}(37^\circ\mathrm{C}) \le 0.35$
+- \(n_{\mathrm{H}} > 1.2\)
+- \(T_{\mathrm{m}} \in [35, 55]^{\circ}\mathrm{C}\)
+- \(\Delta\theta \ge 0.20\)
+- \(P_{\mathrm{open}}(37^\circ\mathrm{C}) \le 0.35\)
 
 **Purpose:** non-zero survival baseline for natural Rfam; ask whether EVA samples viable folds.
 
 ### Tier 2 — Neupert 2008 / synbio heat-inducible spec
 
-- $n_{\mathrm{H}} > 1.5$
-- $T_{\mathrm{m}} \in [42,\,45]^{\circ}\mathrm{C}$
-- $\Delta\theta \ge 0.40$ (ideal $\rightarrow 0.50$)
-- $P_{\mathrm{open}}(37^\circ\mathrm{C}) \le 0.20$
+- \(n_{\mathrm{H}} > 1.5\)
+- \(T_{\mathrm{m}} \in [42, 45]^{\circ}\mathrm{C}\)
+- \(\Delta\theta \ge 0.40\) (ideal \(\rightarrow 0.50\))
+- \(P_{\mathrm{open}}(37^\circ\mathrm{C}) \le 0.20\)
 
 **Purpose:** turnkey controllers for heat-shock induction without secondary redesign.
 
@@ -40,7 +40,7 @@
 
 ## 3. Two-tier checklist results
 
-| Cohort | $N$ | Tier 1 all-4 | Tier 1 frac | Tier 2 all-4 | Tier 2 frac |
+| Cohort | \(N\) | Tier 1 all-4 | Tier 1 frac | Tier 2 all-4 | Tier 2 frac |
 |--------|----:|-------------:|------------:|-------------:|------------:|
 | Natural Rfam | 1198 | **29** | 2.4% | **0** | 0% |
 | RefSeq negatives | 1198 | 32 | 2.7% | **0** | 0% |
@@ -56,7 +56,7 @@ The strict filter is therefore not an EVA-only failure — it is a hard joint ph
 
 ## 4. Recalibrated ranking objective
 
-$$
+\[
 \mathrm{Score}
 = w_1 \min(n_{\mathrm{H}}, 3)
 + w_2 |\Delta\theta|
@@ -64,15 +64,15 @@ $$
 - w_4 P_{\mathrm{open}}(37^\circ\mathrm{C})
 - w_5 |\Delta T_{\mathrm{m}}^{\mathrm{Vienna-NP}}|
 - \mathrm{Penalty}_{\mathrm{stroke}}
-$$
+\]
 
-with $\mathrm{Penalty}_{\mathrm{stroke}} = 12 \cdot \max(0,\ 0.25-|\Delta\theta|)$, $w_4=6$, $w_2=2$.
+with \(\mathrm{Penalty}_{\mathrm{stroke}} = 12 \cdot \max(0,\ 0.25-|\Delta\theta|)\), \(w_4=6\), \(w_2=2\).
 
-**Effect vs prior $n_{\mathrm{H}}=20$ ranking:** top ranks now prefer measurable stroke and heat-shock-proximal $T_m$, not optimiser ceilings.
+**Effect vs prior \(n_{\mathrm{H}}=20\) ranking:** top ranks now prefer measurable stroke and heat-shock-proximal \(T_m\), not optimiser ceilings.
 
 ### Re-ranked top 10 (excerpt)
 
-| Rank | ID | Score | $n_{\mathrm{H}}$ | $T_m$ | $\Delta\theta$ | $P_{\mathrm{open}}(37^\circ\mathrm{C})$ |
+| Rank | ID | Score | \(n_{\mathrm{H}}\) | \(T_m\) | \(\Delta\theta\) | \(P_{\mathrm{open}}(37^\circ\mathrm{C})\) |
 |-----:|----|------:|------:|------:|---------------:|---------:|
 | 1 | eva_sample_315 | +1.09 | 8.08 | 46.1 | **0.46** | 0.30 |
 | 2 | eva_sample_1914 | −0.04 | 8.71 | **44.1** | −0.03 | **0.03** |
@@ -80,7 +80,7 @@ with $\mathrm{Penalty}_{\mathrm{stroke}} = 12 \cdot \max(0,\ 0.25-|\Delta\theta|
 
 Lead **315** is the only top entry with Tier-1-grade stroke near the Tier-2 floor.  
 **1914** is tightly locked but essentially stroke-less (fails the new amplitude logic despite excellent leak).  
-**505** has moderate stroke but $T_m$ below the Neupert window and a leaky baseline.
+**505** has moderate stroke but \(T_m\) below the Neupert window and a leaky baseline.
 
 ---
 
@@ -88,7 +88,7 @@ Lead **315** is the only top entry with Tier-1-grade stroke near the Tier-2 floo
 
 ### 5.1 Positional unpairing heatmaps
 
-| Lead | SD window | $P_{\mathrm{unpaired}}^{\mathrm{SD}}(37)$ | $P_{\mathrm{unpaired}}^{\mathrm{SD}}(43)$ | Global mean (43) |
+| Lead | SD window | \(P_{\mathrm{unpaired}}^{\mathrm{SD}}(37)\) | \(P_{\mathrm{unpaired}}^{\mathrm{SD}}(43)\) | Global mean (43) |
 |------|-----------|------------------------------------------:|------------------------------------------:|-----------------:|
 | 315 | nt 400–405 | 0.30 | 0.39 | 0.64 |
 | 1914 | nt 42–45 | 0.030 | 0.025 | 0.37 |
@@ -104,9 +104,9 @@ Figures: `notebooks/figures/05_eva_melting/heatmap_eva_sample_{315,1914,505}.png
 
 ### 5.2 MDS structural embedding (full EVA library)
 
-- $N=105$ MFE structures  
+- \(N=105\) MFE structures  
 - **105 unique** dot-brackets  
-- mean / median tree-edit distance $\approx 367$ / $382$
+- mean / median tree-edit distance \(\approx 367\) / \(382\)
 
 **Finding.**  
 EVA is **not** mode-collapsed at the secondary-structure level after yield triage — topological diversity is high.  
@@ -116,14 +116,14 @@ Figure: `notebooks/figures/05_eva_melting/structure_manifold.png`
 
 ### 5.3 Mutational disrupt / rescue (Hoynes-O’Connor-style causality)
 
-| Lead | WT $\Delta P_{43-37}$ | Disrupt $P_{\mathrm{open}}(37^\circ\mathrm{C})$ | Rescue $P_{\mathrm{open}}(37^\circ\mathrm{C})$ | Causal pattern? |
+| Lead | WT \(\Delta P_{43-37}\) | Disrupt \(P_{\mathrm{open}}(37^\circ\mathrm{C})\) | Rescue \(P_{\mathrm{open}}(37^\circ\mathrm{C})\) | Causal pattern? |
 |------|----------------------:|-----------------:|----------------:|-----------------|
 | 315 | +0.093 | 0.60 (opened) | 0.81 (worse leak) | Partial: disrupt kills lock; rescue does **not** restore WT |
 | 1914 | −0.006 | 0.29 | 0.29 | No: WT has no ON stroke; mutate barely moves curve |
 | 505 | +0.083 | 0.24 | 0.37 | Mixed: disrupt lowers leak oddly; rescue ≠ WT snap |
 
 **Finding.**  
-Stem edits change RBS exposure, so pairing chemistry matters — but none of the top 3 shows the clean Neupert-style narrative “mismatch destroys heat-shock snap; compensatory rescue restores $42^\circ\mathrm{C}$–$45^\circ\mathrm{C}$ sigmoid.”
+Stem edits change RBS exposure, so pairing chemistry matters — but none of the top 3 shows the clean Neupert-style narrative “mismatch destroys heat-shock snap; compensatory rescue restores \(42^\circ\mathrm{C}\)–\(45^\circ\mathrm{C}\) sigmoid.”
 
 Figure: `notebooks/figures/05_eva_melting/mutation_rescue.png`
 
@@ -135,7 +135,7 @@ Figure: `notebooks/figures/05_eva_melting/mutation_rescue.png`
 
 1. Yield triage + EVA produces over-stabilised, structurally diverse RNA.  
 2. Tier 1 proves a non-zero biological baseline (Rfam 29; EVA 2 all-four).  
-3. Recalibrated scoring demotes $n_{\mathrm{H}}=20$ / zero-stroke artifacts.  
+3. Recalibrated scoring demotes \(n_{\mathrm{H}}=20\) / zero-stroke artifacts.  
 4. Deep audits supply Hoynes-O’Connor-style mechanism tests in silico.
 
 **What does not hold.**
@@ -146,7 +146,7 @@ Figure: `notebooks/figures/05_eva_melting/mutation_rescue.png`
 
 **Balanced claim.**
 
-> EVA is a viable *proposal engine* for heat-inducible thermoswitch discovery when scored with Tier 1 / Tier 2 separation and stroke-aware ranking — but App 05 still shows that generative admission and structural diversity are upstream of Neupert-spec function. The next bottleneck is redesign (or constrained generation) for simultaneous heat-shock $T_m$, $\Delta\theta \ge 0.40$–$0.50$, and $P_{\mathrm{open}}(37^\circ\mathrm{C}) \le 0.20$, validated by local heatmaps and mutational rescue. A one-sequence scaffold G–C clamp on lead 315 (**Scenario 3**) confirms that instability is distributed, not a single-stem fix.
+> EVA is a viable *proposal engine* for heat-inducible thermoswitch discovery when scored with Tier 1 / Tier 2 separation and stroke-aware ranking — but App 05 still shows that generative admission and structural diversity are upstream of Neupert-spec function. The next bottleneck is redesign (or constrained generation) for simultaneous heat-shock \(T_m\), \(\Delta\theta \ge 0.40\)–\(0.50\), and \(P_{\mathrm{open}}(37^\circ\mathrm{C}) \le 0.20\), validated by local heatmaps and mutational rescue. A one-sequence scaffold G–C clamp on lead 315 (**Scenario 3**) confirms that instability is distributed, not a single-stem fix.
 
 ---
 
@@ -162,8 +162,8 @@ Under a two-tier Neupert-grounded checklist and a stroke-capped ranking function
 |----------|--------|
 | Tier 1 all-4 (Rfam / EVA) | 29 / 2 |
 | Tier 2 all-4 (all cohorts) | 0 |
-| Score $n_{\mathrm{H}}$ cap / stroke floor | 3.0 / 0.25 |
-| Top-1 lead | eva_sample_315 ($T_m\approx46^\circ\mathrm{C}$, $|\Delta\theta|\approx0.46$) |
+| Score \(n_{\mathrm{H}}\) cap / stroke floor | 3.0 / 0.25 |
+| Top-1 lead | eva_sample_315 (\(T_m\approx46^\circ\mathrm{C}\), \(|\Delta\theta|\approx0.46\)) |
 | Unique MFE topologies (EVA) | 105 / 105 |
 | Top-3 clean Neupert heatmap | 0 / 3 |
 | Top-3 clean disrupt→rescue restore | 0 / 3 |
@@ -185,19 +185,19 @@ Running this test produces one of three distinct biophysical outcomes:
 
 | Rescue Outcome | Heatmap Visual Readout | Biophysical Metric Shift | Scientific Meaning |
 | --- | --- | --- | --- |
-| **1. Ideal Modular Rescue** *(Best Case)* | The non-RBS scaffold remains dark/paired at $42^\circ\mathrm{C}\text{--}45^\circ\mathrm{C}$, while only the SD window (nt 400–405) lights up bright yellow/unpaired. | Global mean unpairing drops from **$0.64 \to \le 0.25$**; SD stroke increases from **$0.09 \to \ge 0.40$**. | **Validates the Hybrid Design Hypothesis:** Proves EVA generated a viable functional topology that only lacked scaffold stability, completing the *de novo* design pipeline. |
-| **2. Negative Design Trap** *(Misfolded / Locked)* | The entire sequence remains dark/paired across all temperatures ($30^\circ\mathrm{C}\text{--}50^\circ\mathrm{C}$); the SD never opens. | $P_{\text{open}}^{\text{SD}}(43^\circ\text{C})$ collapses to $\le 0.10$; dynamic stroke $\Delta\theta \approx 0$. | **Exposes Alternative Base-Pair Trapping:** The newly introduced G and C bases accidentally paired with the Shine–Dalgarno sequence, creating an unintended, permanently locked ground state. |
-| **3. Partial / Ineffective Rescue** *(Scaffold Still Frays)* | The heatmap shows slightly delayed melting, but the entire scaffold still lights up above $45^\circ\text{C}$. | Global unpairing stays high ($\ge 0.50$); $T_{\text{m}}$ shifts upward by only $1^\circ\mathrm{C}\text{--}2^\circ\mathrm{C}$. | **Reveals Distributed Structural Instability:** Instability in EVA’s generated fold is not isolated to one stem, but distributed across multiple internal loops, requiring multi-stem combinatorial optimization. |
+| **1. Ideal Modular Rescue** *(Best Case)* | The non-RBS scaffold remains dark/paired at \(42^\circ\mathrm{C}\text{--}45^\circ\mathrm{C}\), while only the SD window (nt 400–405) lights up bright yellow/unpaired. | Global mean unpairing drops from **\(0.64 \to \le 0.25\)**; SD stroke increases from **\(0.09 \to \ge 0.40\)**. | **Validates the Hybrid Design Hypothesis:** Proves EVA generated a viable functional topology that only lacked scaffold stability, completing the *de novo* design pipeline. |
+| **2. Negative Design Trap** *(Misfolded / Locked)* | The entire sequence remains dark/paired across all temperatures (\(30^\circ\mathrm{C}\text{--}50^\circ\mathrm{C}\)); the SD never opens. | \(P_{\text{open}}^{\text{SD}}(43^\circ\text{C})\) collapses to \(\le 0.10\); dynamic stroke \(\Delta\theta \approx 0\). | **Exposes Alternative Base-Pair Trapping:** The newly introduced G and C bases accidentally paired with the Shine–Dalgarno sequence, creating an unintended, permanently locked ground state. |
+| **3. Partial / Ineffective Rescue** *(Scaffold Still Frays)* | The heatmap shows slightly delayed melting, but the entire scaffold still lights up above \(45^\circ\text{C}\). | Global unpairing stays high (\(\ge 0.50\)); \(T_{\text{m}}\) shifts upward by only \(1^\circ\mathrm{C}\text{--}2^\circ\mathrm{C}\). | **Reveals Distributed Structural Instability:** Instability in EVA’s generated fold is not isolated to one stem, but distributed across multiple internal loops, requiring multi-stem combinatorial optimization. |
 
 ### What this run showed (Scenario 3)
 
 | Metric | Wild-type | +3 G–C clamps |
 |--------|----------:|--------------:|
-| Global $P_{\mathrm{unpaired}}$ @ 43 °C | 0.64 | **0.65** (no drop) |
+| Global \(P_{\mathrm{unpaired}}\) @ 43 °C | 0.64 | **0.65** (no drop) |
 | Scaffold (non-SD) @ 43 °C | 0.65 | 0.65 |
-| SD $P_{\mathrm{open}}$ @ 37 °C | 0.30 | **0.73** (leakier) |
-| SD $P_{\mathrm{open}}$ @ 43 °C | 0.39 | 0.81 |
-| SD stroke $\Delta\theta$ (43−37) | 0.09 | **0.08** (unchanged) |
+| SD \(P_{\mathrm{open}}\) @ 37 °C | 0.30 | **0.73** (leakier) |
+| SD \(P_{\mathrm{open}}\) @ 43 °C | 0.39 | 0.81 |
+| SD stroke \(\Delta\theta\) (43−37) | 0.09 | **0.08** (unchanged) |
 
 **Verdict: Scenario 3 — Partial / Ineffective Rescue**, with a leakiness side-effect.
 
