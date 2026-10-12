@@ -9,14 +9,14 @@ uv sync --group dev --group notebooks
 cp .env.example .env                         # EMAIL, NCBI_API_KEY (optional until downloads)
 make test                                    # 16 pytest cases (no Vienna/NUPACK required)
 
-# inspect committed JSON sidecars (no retrain)
+# Loads finished runs - for eg. a groupkfold AUC -> rf_noncircular_diagnostics.json
 python - <<'PY'
 import json
 d = json.load(open("data/processed/rf_noncircular_diagnostics.json"))
 print(d["noncircular_stratified_group"]["roc_auc"])
 PY
 
-# open thesis Marimo apps (load sidecars, do not retrain inline)
+# open thesis apps (same stage order as below)
 uv run marimo edit notebooks/01_curated_matched_rfam_refseq_cohort.py
 uv run marimo edit notebooks/04_groupkfold_auc_showed_no_transfer.py
 uv run marimo edit notebooks/05_eva_yield_gates_then_melting_audit.py
@@ -26,7 +26,7 @@ uv sync --group biophysics                   # ViennaRNA → import RNA
 make ci                                      # ruff + format + uv check + pytest
 ```
 
-**Note:** NUPACK 4.1 is licensed separately. Install the wheel from `nupack-4.1.0.1/package/` if you need dual-engine sweeps. Yield gates in the thesis path lock to **ViennaRNA only**.
+**Note:** This project can be enacted with dual engine support. NUPACK 4.1 is licensed separately. Install the wheel from `nupack-4.1.0.1/package/` if you need dual-engine sweeps. However, in the thesis, the yield gates in the thesis path lock to **ViennaRNA only**.
 
 For end-to-end rebuild commands see [`docs/cookbook.md`](docs/cookbook.md). For HPC EVA generation see [`cluster/README.md`](cluster/README.md).
 
@@ -52,22 +52,63 @@ For end-to-end rebuild commands see [`docs/cookbook.md`](docs/cookbook.md). For 
 
 ## <a name="uguide"></a>Users' Guide
 
-Thermoswitches-MLBIO is an executable analysis stack for *in silico* design of synthetic RNA thermoswitches (RNATs). Typical use cases include:
+Thermoswitches-MLBIO is the code I used for *in silico* design of synthetic RNA thermoswitches (RNATs). **Marimo** is a reactive Python notebook tool: each file under `notebooks/` is an app that opens in the browser, loads committed JSON/CSV sidecars, and walks one stage of the thesis path without retraining models inline. The layout follows that same order.
 
-1. rebuilding or auditing a length/%GC-matched Rfam vs RefSeq 5′ UTR panel ($N = 2{,}396$)
-2. training and diagnosing a 92-column Random Forest that withholds melting scalars from $X$
-3. running frozen **EVA 1.4B** generation on Macleod and streaming three-gate yield triage
-4. biophysical characterisation of the **105** yield-gated candidates against Rfam/RefSeq controls
-5. BLAST/nhmmer novelty reporting against Rfam
-6. exporting analytical Results figures from committed JSON sidecars
+```text
+length/%GC-matched Rfam vs RefSeq 5′ UTR panel (N = 2,396)
+        │
+        ▼
+composition-only Random Forests (length and %GC alone)
+test for length/%GC proxy memorisation → AUC < 0.50
+        │
+        ▼
+92-column Random Forest
+melting scalars kept out of feature matrix X
+StratifiedGroupKFold by Rfam accession
+        │
+        ▼
+GroupKFold AUC ≈ 0.28
+(static 37 °C features did not transfer across Rfam families)
+        │
+        ▼
+frozen EVA 1.4B on Macleod → 2,000 sequences
+        │
+        ▼
+yield filters (all three required):
+  Z ≤ −2
+  ΔP_RBS > 0
+  E_Rfam > 10⁻³
+        │
+        ▼
+105 sequences pass
+        │
+        ├── melting curves vs Rfam / RefSeq controls
+        ├── BLAST / nhmmer novelty vs Rfam
+        └── Results figures from committed JSON sidecars
+```
 
-On StratifiedGroupKFold grouped by Rfam accession, the 92-column RF returns AUC ≈ **0.28**, which is below length-alone baselines in some settings and shows that static 37 °C snapshot features do not learn transferable switching rules. After that finding the pipeline pivots to EVA generation (2,000 sequences) and yield triage recovering **105 / 2,000 = 5.25%** under
+What I did, in thesis order:
 
-$$
-Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3}.
-$$
+1. I built a length/%GC-matched panel of Rfam thermoswitch 5′ UTRs against RefSeq controls ($N = 2{,}396$).
+   After matching I checked folding energy, SD–AUG geometry, and k-mer composition between the two classes.
+2. I trained Random Forests that used **only** length and %GC on that matched panel.
+   The reason was to test whether the classifier could still separate classes by memorising length and %GC as proxies for class, which matching was meant to remove.
+   Those composition-only models returned AUCs $< 0.50$.
+3. I trained a 92-column Random Forest on static 37 °C biophysics, dinucleotide and trinucleotide frequencies, and SD–AUG spacing.
+   Melting scalars ($T_m$, Hill coefficient, $Z$, $\Delta P_{\mathrm{RBS}}$) stayed out of the feature matrix $X$ because those same quantities are applied later as yield filters.
+4. Under StratifiedGroupKFold grouped by Rfam accession, that model returned AUC ≈ **0.28**.
+   Family-held-out transfer failed, so I moved on from the Random Forest as a portable switch detector.
+5. I generated 2,000 sequences with frozen **EVA 1.4B** on Macleod.
+   Sequences had to pass all three yield filters
+   $$
+   Z \le -2 \land \Delta P_{\mathrm{RBS}} > 0 \land E_{\mathrm{Rfam}} > 10^{-3},
+   $$
+   which left **105 / 2,000 = 5.25%**.
+6. I compared melting behaviour of those 105 sequences to Rfam and RefSeq controls (Hill coefficient, $T_m$, $P_{\mathrm{open}}$).
+   I scored novelty against Rfam with BLAST and nhmmer.
+   I exported Results figures from the committed JSON sidecars.
 
-Detailed methods live in [`notebooks/rf_noncircular_methodology.md`](notebooks/rf_noncircular_methodology.md). Melting-audit findings live in [`notebooks/05_eva_melting_summarised_findings.md`](notebooks/05_eva_melting_summarised_findings.md).
+Methods detail: [`notebooks/rf_noncircular_methodology.md`](notebooks/rf_noncircular_methodology.md). Melting-audit findings: [`notebooks/05_eva_melting_summarised_findings.md`](notebooks/05_eva_melting_summarised_findings.md).
 
 ### <a name="install"></a>Installation
 
@@ -92,11 +133,11 @@ For cd-hit, Infernal, and HMMER on a workstation or cluster head node:
 conda env create -f environment.yml
 ```
 
-Paths resolve through `src/data_engineering/paths.py` → `resolve_path()`. Do not commit `.venv`.
+Paths resolve through `src/data_engineering/paths.py` → `resolve_path()`. 
 
 ### <a name="general"></a>General usage
 
-Library code lives under `src/`. Thin CLIs live under `scripts/` (see [`scripts/README.md`](scripts/README.md)). Interactive audit apps are Marimo scripts under `notebooks/` (see [`notebooks/README.md`](notebooks/README.md)). They **load JSON/CSV sidecars** and do not retrain models inline.
+Reusable library code lives under `src/`. Command-line entry points under `scripts/` are short wrappers that call into `src/` (argument parsing, paths, and orchestration only — see [`scripts/README.md`](scripts/README.md)). Thesis stages live under `notebooks/` (see [`notebooks/README.md`](notebooks/README.md)).
 
 ```sh
 # CLI pattern used in playbooks
@@ -117,7 +158,13 @@ uv run marimo edit notebooks/01_curated_matched_rfam_refseq_cohort.py
 uv run marimo edit notebooks/02_matching_removed_compositional_shortcuts.py
 ```
 
-App 01 loads the fused panel and checks length/%GC matching, 37 °C biophysics, SD–AUG geometry, and k-mer dialect. App 02 shows composition-only AUCs $< 0.50$ after Hungarian matching — the shortcut kill required before RF claims.
+App 01 loads the fused panel.
+It checks length/%GC matching, 37 °C biophysics, SD–AUG geometry, and k-mer dialect on the matched cohort.
+
+App 02 trains Random Forests that use **only** length and %GC after Hungarian matching.
+I ran that check to see whether the model could still separate Rfam from RefSeq by memorising length and %GC as class proxies.
+Matching was built to remove that length/%GC route.
+Those composition-only models returned AUCs $< 0.50$.
 
 #### <a name="rf"></a>Inspect the honest Random Forest
 
@@ -235,7 +282,7 @@ make lint && make format-fix && make typecheck && make test
 | `novelty_eval` | BLAST / nhmmer parsing |
 | `validation_embedding` | Optional BiRNA embedding path |
 
-Type stubs for optional engines live in `typings/`. Prefer adding logic under `src/` and thin wrappers under `scripts/<category>/`. Marimo apps should load sidecars rather than embed training loops.
+Type stubs for optional engines live in `typings/`. Prefer adding logic under `src/` and short command-line wrappers under `scripts/<category>/`. Apps under `notebooks/` should load sidecars rather than embed training loops.
 
 ## <a name="limit"></a>Limitations
 
