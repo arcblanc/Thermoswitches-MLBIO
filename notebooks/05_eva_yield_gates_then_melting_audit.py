@@ -199,14 +199,14 @@ def _(mo):
     <br>
     **What a positive shows:**
     <br>
-    - sharp, cooperative, switch-like unfold ($n_{\mathrm{H}} > 1.5$),
+    - sharp, cooperative, switch-like unfold ($n_{\mathrm{H}} > 1.5$).
     <br>
-    - not a non-specific linear ramp ($n_{\mathrm{H}} \le 1.0$).
+    Linear thermal denaturation sits near $n_{\mathrm{H}} \le 1.0$.
 
     <br>
     **Significance:**
     <br>
-    Distinguishes allosteric molecular switches from generic thermal denaturing.
+    Separates allosteric molecular switches from generic thermal denaturing.
 
     <br><br>
     **Heat-shock midpoint ($T_{\mathrm{m}} \in [42, 45]^\circ\mathrm{C}$)**
@@ -1228,9 +1228,9 @@ def _(mo):
     **What:** pick the 3 farthest non-SD A–U / U–A MFE pairs, mutate them to G–C /
     C–G, then re-run `positional_unpairing_matrix` and compare Before vs After.
 
-    **Why:** the melting audit showed lead 315 melts globally rather than as a modular RBS
-    cassette. A one-sequence clamp test asks whether that fraying is a local
-    scaffold weakness (fixable by hand) or a distributed ensemble problem.
+    **Why:** the melting audit showed lead 315 melts globally across the scaffold.
+    A one-sequence clamp test asks whether that fraying is a local scaffold weakness
+    (fixable by hand) or a distributed ensemble problem.
 
     **Looking for:** Scenario 1 (scaffold dark, SD stroke ↑), Scenario 2 (SD
     locked / negative design trap), or Scenario 3 (scaffold still frays).

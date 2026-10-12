@@ -27,16 +27,17 @@ def _():
 def _(mo):
     mo.md(
         r"""
-    # 03 · We made the RF honest (noncircular $X$)
+    # 03 · Noncircular feature matrix and GroupKFold protocol
 
-    **What we did:** withheld $T_m$, Hill, $Z$, and $\Delta P_{\mathrm{RBS}}$ from the
-    feature matrix, and scored with StratifiedGroupKFold grouped on Rfam accession.
+    **What I did:** withheld $T_m$, Hill, $Z$, and $\Delta P_{\mathrm{RBS}}$ from the
+    feature matrix $X$.
+    I scored with StratifiedGroupKFold grouped on Rfam accession.
 
-    **Why:** circular melting features and family-leaky CV overstate transfer.
-    This app **does not train** — it loads diagnostic JSON sidecars.
+    **Why:** melting scalars are reserved for yield filters and post-hoc ranking.
+    Grouping by Rfam accession measures out-of-family transfer.
 
-    Next: App 04 shows the honest score (GroupKFold AUC ≈ 0.28) that forced the
-    pivot to EVA + yield gates.
+    This app loads diagnostic JSON sidecars.
+    App 04 reports GroupKFold AUC ≈ 0.28 on the same protocol.
     """
     )
     return
@@ -164,7 +165,7 @@ def _(ablation, diag, mo, pd, post):
     if ablation is not None:
         abl_note = (
             "Compositional ablation sidecar present — see App 02 for the "
-            "length/%GC shortcut kill."
+            "length/%GC-only proxy memorisation check."
         )
 
     mo.vstack(
@@ -177,8 +178,9 @@ def _(ablation, diag, mo, pd, post):
             mo.md(abl_note) if abl_note else mo.md(""),
             mo.md(
                 """
-    **Finding locked here:** honest protocol + noncircular $X$ is the thesis RF
-    baseline. App 04 loads the same sidecars to show AUC ≈ 0.28 and the pivot.
+    **Finding locked here:** noncircular $X$ plus StratifiedGroupKFold is the
+    thesis RF baseline.
+    App 04 loads the same sidecars and reports AUC ≈ 0.28.
     """
             ),
         ]

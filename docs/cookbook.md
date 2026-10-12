@@ -115,13 +115,14 @@ uv run marimo edit notebooks/07_export_analytical_thesis_figures.py
 
 **Outputs:** `notebooks/figures/thesis_figures/04_*.png` and related analytical panels (no schematic flowcharts).
 
-## 8. Compositional ablation (shortcut kill)
+## 8. Composition-only length/%GC Random Forests (proxy memorisation check)
 
 ```sh
 uv run marimo edit notebooks/02_matching_removed_compositional_shortcuts.py
 ```
 
-Reads `data/processed/rf_compositional_ablation.json`. Expect composition-only AUCs $< 0.50$ on the matched panel.
+Reads `data/processed/rf_compositional_ablation.json`.
+Composition-only AUCs $< 0.50$ on the matched panel means length and %GC alone no longer separate the classes.
 
 ## Interpretation checklist
 
@@ -129,7 +130,7 @@ Reads `data/processed/rf_compositional_ablation.json`. Expect composition-only A
 |------|----------------|
 | Install | `make test` green |
 | Matching | App 02 composition AUCs $< 0.50$ |
-| Honest RF | GroupKFold AUC ≈ 0.28 in diagnostics JSON |
+| Noncircular RF | GroupKFold AUC ≈ 0.28 in diagnostics JSON |
 | EVA triage | ~5% yield (105 passers for the thesis panel) |
 | Melting | Flat 37–42 °C RBS exposure relative to FourU-class controls |
 | Novelty | Category counts in `novelty_summary.json` |

@@ -298,9 +298,8 @@ def _(alt, df, eda, mo):
 
     {_parity_icon} **Verdict:** {_parity_verdict}.
 
-    **Why this check:** with $N \\approx 2400$, KS $p$ can reject tiny shape differences that
-    do not open a useful classification shortcut. Prefer $D$ and mean $|\\Delta GC|$
-    alongside $p > 0.05$.
+    **Why this check:** with $N \\approx 2400$, KS $p$ can reject tiny shape differences.
+    Report $D$ and mean $|\\Delta GC|$ alongside $p > 0.05$.
     """
     )
 
@@ -319,13 +318,11 @@ def _(alt, df, eda, mo):
     <br>
     the **KS test** asks if the two clouds could still be the same population ($p > 0.05$ is what we want after matching).
 
-    **Analogy:** KS is a strict twin test — if two silhouette cutouts still
-    overlap almost perfectly, matching did its job and classifiers cannot cheat
-    by memorizing “long GC-rich = switch.”
+    Matching aims to align length and %GC so class labels are harder to recover from those two body-size features alone.
 
-    From what I can see, it looks like, Rfseq has a larger spread density in length around 300 nt - 500 nt what seems to be double the hill of RFAM postive thermo switches
+    From what I can see, RefSeq has a larger spread density in length around 300 nt–500 nt, roughly double the hill of Rfam positives.
     <br>
-    length ecdf seems to only show rfam thermoswitches. maybe its completely overlapped so there is not much shifts.
+    Length eCDF looks heavily overlapped between classes.
     <br>
     %GC shows similar refseq doubling of density similar to length
     <br>

@@ -26,15 +26,15 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # 06 · We checked candidates against Rfam homology
+    # 06 · Candidates vs Rfam homology
 
-    **What we did:** load saved BLAST / nhmmer reports under
-    `data/processed/novelty/` (this app does **not** re-run the search).
+    **What I did:** load saved BLAST / nhmmer reports under
+    `data/processed/novelty/`.
 
-    **What we report:** identical / near-identical (≥90%), remote homologs
+    **What I report:** identical / near-identical (≥90%), remote homologs
     (E≤0.1, <90%), and no-hit buckets that support *de novo* claims.
 
-    To regenerate artefacts (optional):
+    To regenerate reports (optional):
     ```bash
     bash scripts/extraction/download_rfam.sh
     bash scripts/extraction/run_novelty_search.sh

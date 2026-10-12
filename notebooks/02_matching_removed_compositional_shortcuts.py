@@ -1,7 +1,8 @@
-"""02 · Matching removed compositional shortcuts.
+"""02 · Length/%GC-only forests after matching.
 
-We ablated length / %GC–only Random Forests on the matched panel and found
-composition-only AUCs below chance, so Hungarian matching had killed the shortcut.
+Trained Random Forests on length and/or %GC alone on the matched panel to test
+whether class labels could still be memorised through those proxies.
+Composition-only AUCs fell below chance.
 
 Run:
     uv run marimo edit notebooks/02_matching_removed_compositional_shortcuts.py
@@ -12,7 +13,7 @@ import marimo
 __generated_with = "0.24.0"
 app = marimo.App(
     width="medium",
-    app_title="02 · Matching removed compositional shortcuts",
+    app_title="02 · Length/%GC proxy memorisation check",
 )
 
 
@@ -82,9 +83,9 @@ def _(PROJECT_ROOT, eda, mo):
 
     intro = mo.md(
         r"""
-    # 02 · Matching removed compositional shortcuts
+    # 02 · Length/%GC-only forests after matching
 
-    > We asked whether length / %GC alone could still classify the matched panel.
+    > I trained forests on length and/or %GC alone to test proxy memorisation on the matched panel.
 
     <br>
     **Matching gate**:
@@ -95,7 +96,7 @@ def _(PROJECT_ROOT, eda, mo):
     $|\Delta GC| \le 0.05$.
     <br>
     <br>
-    **Finding we needed before RF:** composition-only AUCs stay $< 0.50$ on the matched panel
+    **Finding before the 92-column RF:** composition-only AUCs stay $< 0.50$ on the matched panel
     ($N = 2396$).
     """
     )
@@ -178,8 +179,8 @@ def _(
         )
         .tab_source_note(
             source_note=md(
-                "Hungarian matching ($|\\Delta L| \\le 40$, $|\\Delta GC| \\le 0.05$) "
-                "killed compositional shortcuts. All composition-only AUCs $< 0.50$. "
+                "Hungarian matching ($|\\Delta L| \\le 40$, $|\\Delta GC| \\le 0.05$). "
+                "Length/%GC-only AUCs $< 0.50$ on the matched panel. "
                 "PNG: 4× zoom + 96 DPI for Docs paste."
             )
         )
@@ -209,16 +210,16 @@ def _(
         """
     )
 
-    section = mo.md("## Shortcut check")
+    section = mo.md("## Length/%GC-only Random Forests")
     caption = mo.md(
         rf"""
-    **Caption.** Compositional ablation. Random Forests trained on
-    length alone (AUC ${float(report["length_alone_stratified"]["roc_auc"]):.3f}$),
+    **Caption.** Composition-only ablation.
+    Random Forests trained on length alone (AUC ${float(report["length_alone_stratified"]["roc_auc"]):.3f}$),
     %GC alone (${float(report["gc_alone_stratified"]["roc_auc"]):.3f}$),
     or length + %GC (${float(report["length_gc_stratified"]["roc_auc"]):.3f}$)
-    all fall **below** chance ($0.50$), confirming that Hungarian matching
-    ($|\\Delta L| \\le 40$, $|\\Delta GC| \\le 0.05$) eliminated trivial
-    compositional shortcuts prior to thermodynamic / $k$-mer feature extraction.
+    all fall **below** chance ($0.50$) on the matched panel
+    ($|\\Delta L| \\le 40$, $|\\Delta GC| \\le 0.05$).
+    Matching removed length/%GC as a class-proxy route before thermodynamic / $k$-mer features.
     """
     )
     takeaway = mo.md(

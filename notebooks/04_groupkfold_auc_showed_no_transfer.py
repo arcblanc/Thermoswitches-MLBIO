@@ -26,17 +26,17 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # 04 · We scored the honest RF — and it failed to transfer
+    # 04 · GroupKFold AUC ≈ 0.28 on the 92-column matrix
 
-    **What we did:** load the noncircular RF diagnostic JSON (no retrain).
+    **What I did:** load the noncircular RF diagnostic JSON sidecars.
 
-    **What we found:** StratifiedGroupKFold AUC ≈ **0.28** on the 92-column matrix —
-    family-correlated trinucleotides, not a portable switching rule.
+    **What I found:** StratifiedGroupKFold AUC ≈ **0.28** on the 92-column matrix.
+    The held-out signal tracks family-correlated trinucleotides.
 
-    Methods: [`rf_noncircular_methodology.md`](rf_noncircular_methodology.md).  
-    Honesty story: [`03_rf_honesty_noncircular_matrix.py`](03_rf_honesty_noncircular_matrix.py).
+    Methods: [`rf_noncircular_methodology.md`](rf_noncircular_methodology.md).
+    Protocol: [`03_rf_honesty_noncircular_matrix.py`](03_rf_honesty_noncircular_matrix.py).
 
-    That failure is why the thesis pivots to EVA generation + yield gates (App 05).
+    From here the thesis path moves to EVA generation and yield filters (App 05).
     """)
     return
 
@@ -87,9 +87,10 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## CV vs the circular 20-column RF
+    ## CV comparison: grouped holdout vs random split
 
-    Family holdout is the number that matters. Random-split 0.97 on the new matrix is k-mer family leakage, not a switch detector.
+    StratifiedGroupKFold is the transfer metric on this panel.
+    Random-split AUC ≈ 0.97 on the same matrix tracks k-mer family leakage.
     """)
     return
 
@@ -114,7 +115,7 @@ def _(diag, display, feat, pd, rus_diag):
                 diag["noncircular_stratified_group"]["roc_auc"],
             ],
             "note": [
-                "Length shortcut removed on this panel",
+                "Length-alone AUC low after matching",
                 "Tm / Hill / Z / ΔP_RBS were in X (circular)",
                 "92-col X; melting scalars post-hoc only",
             ],

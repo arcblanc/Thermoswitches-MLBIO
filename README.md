@@ -195,7 +195,8 @@ bash scripts/extraction/run_novelty_search.sh
 uv run marimo edit notebooks/06_candidates_vs_rfam_novelty.py
 ```
 
-App 06 does **not** re-run BLAST/nhmmer. It loads `data/processed/novelty/*.csv` and `*.json` and buckets identical / remote-homolog / no-hit outcomes.
+App 06 loads `data/processed/novelty/*.csv` and `*.json`.
+It buckets identical / remote-homolog / no-hit outcomes from the committed BLAST and nhmmer reports.
 
 #### <a name="figures"></a>Export analytical thesis figures
 
@@ -257,7 +258,7 @@ Prototype 4-sequence fixture: `data/processed/prototype/`.
 - Macleod / cloud runbooks: [`cluster/README.md`](cluster/README.md)
 - Release notes: [`CHANGELOG.md`](CHANGELOG.md)
 
-Open a GitHub issue for reproducible bugs (include command, sidecar path, and `uv` / OS versions). There is not a separate mailing list.
+Open a GitHub issue for reproducible bugs (include command, sidecar path, and `uv` / OS versions).
 
 ### <a name="cite"></a>Citing this work
 
@@ -282,12 +283,21 @@ make lint && make format-fix && make typecheck && make test
 | `novelty_eval` | BLAST / nhmmer parsing |
 | `validation_embedding` | Optional BiRNA embedding path |
 
-Type stubs for optional engines live in `typings/`. Prefer adding logic under `src/` and short command-line wrappers under `scripts/<category>/`. Apps under `notebooks/` should load sidecars rather than embed training loops.
+Type stubs for optional engines live in `typings/`.
+Reusable logic belongs under `src/`.
+Short command-line wrappers belong under `scripts/<category>/`.
+Apps under `notebooks/` load committed sidecars for audit.
 
 ## <a name="limit"></a>Limitations
 
-- The 92-column RF is a ranking diagnostic, not a wet-lab gate. GroupKFold AUC ≈ 0.28 means it does **not** transfer thermoswitch rules across Rfam families.
-- Yield triage admits structured RNA under $Z$, $\Delta P_{\mathrm{RBS}}$, and Rfam $E$-value. It does not guarantee Neupert-spec heat-shock controllers (Tier 2 survival is rare even among natural Rfam).
-- Dual-engine $T_m$ can disagree, so thesis gates lock to ViennaRNA.
-- EVA weights and large FASTA/CSV artefacts are not shipped in git. GenerRNA source is retained as an appendix path. Local weights are optional and large.
-- Marimo apps assume committed sidecars under `data/processed/`. Missing CSVs will fail cells that regenerate from fused panels.
+- The 92-column Random Forest is a ranking diagnostic on static 37 °C features.
+  StratifiedGroupKFold grouped by Rfam accession returned AUC ≈ **0.28**.
+- Yield triage keeps sequences that pass $Z \le -2$, $\Delta P_{\mathrm{RBS}} > 0$, and $E_{\mathrm{Rfam}} > 10^{-3}$.
+  Tier 2 Neupert-style heat-shock checklist survival is rare on both the 105 EVA passers and natural Rfam.
+- ViennaRNA and NUPACK can return different $T_m$ values on the same sequence.
+  Thesis yield filters therefore lock to ViennaRNA.
+- Git ships lightweight JSON sidecars under `data/processed/`.
+  EVA weights, large FASTA pools, and fused CSVs stay local or on the cluster.
+  GenerRNA source remains in-tree as an appendix path.
+- Apps under `notebooks/` read committed sidecars under `data/processed/`.
+  Cells that rebuild from fused panels need those CSVs present locally.

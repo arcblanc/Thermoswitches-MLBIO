@@ -97,7 +97,7 @@ Lead **315** is the only top entry with Tier-1-grade stroke near the Tier-2 floo
 **Finding.**  
 None of the top 3 shows a clean “SD lights up, scaffold stays dark” Neupert signature at 42–45 °C.  
 - **315:** SD opens modestly with heat, but the transcript is already globally unpaired (~0.63).  
-- **1914:** SD stays locked (good basal) and does **not** open at 43 °C (no local switch).  
+- **1914:** SD stays locked at basal temperature and stays locked at 43 °C.  
 - **505:** SD opens somewhat, but baseline is already leaky and global melt is high.
 
 Figures: `notebooks/figures/05_eva_melting/heatmap_eva_sample_{315,1914,505}.png`
@@ -118,7 +118,7 @@ Figure: `notebooks/figures/05_eva_melting/structure_manifold.png`
 
 | Lead | WT $\Delta P_{43-37}$ | Disrupt $P_{\mathrm{open}}(37^\circ\mathrm{C})$ | Rescue $P_{\mathrm{open}}(37^\circ\mathrm{C})$ | Causal pattern? |
 |------|----------------------:|-----------------:|----------------:|-----------------|
-| 315 | +0.093 | 0.60 (opened) | 0.81 (worse leak) | Partial: disrupt kills lock; rescue does **not** restore WT |
+| 315 | +0.093 | 0.60 (opened) | 0.81 (worse leak) | Partial: disrupt opens the lock; rescue leaves WT unrestored |
 | 1914 | −0.006 | 0.29 | 0.29 | No: WT has no ON stroke; mutate barely moves curve |
 | 505 | +0.083 | 0.24 | 0.37 | Mixed: disrupt lowers leak oddly; rescue ≠ WT snap |
 
@@ -138,21 +138,26 @@ Figure: `notebooks/figures/05_eva_melting/mutation_rescue.png`
 3. Recalibrated scoring demotes $n_{\mathrm{H}}=20$ / zero-stroke artifacts.  
 4. Deep audits supply Hoynes-O’Connor-style mechanism tests in silico.
 
-**What does not hold.**
+**Measured Tier 2 and mechanism outcomes.**
 
-1. Tier 2 Neupert readiness remains **0 / 105** (and **0 / 1198** Rfam).  
-2. Top-3 heatmaps do not show modular RBS-local melting at heat shock.  
-3. Disrupt/rescue does not yet certify a finished, causally clean thermometer.
+1. Tier 2 Neupert readiness remains **0 / 105** EVA passers and **0 / 1198** Rfam.  
+2. Top-3 heatmaps show global melting at heat shock.
+   RBS-local modular opening is absent on those leads.  
+3. Disrupt/rescue on the audited leads remains a mechanism probe on design intermediates.
 
-**Balanced claim.**
+**Claim.**
 
-> EVA is a viable *proposal engine* for heat-inducible thermoswitch discovery when scored with Tier 1 / Tier 2 separation and stroke-aware ranking — but App 05 still shows that generative admission and structural diversity are upstream of Neupert-spec function. The next bottleneck is redesign (or constrained generation) for simultaneous heat-shock $T_m$, $\Delta\theta \ge 0.40$–$0.50$, and $P_{\mathrm{open}}(37^\circ\mathrm{C}) \le 0.20$, validated by local heatmaps and mutational rescue. A one-sequence scaffold G–C clamp on lead 315 (**Scenario 3**) confirms that instability is distributed, not a single-stem fix.
+> EVA is a viable *proposal engine* for heat-inducible thermoswitch discovery when scored with Tier 1 / Tier 2 separation and stroke-aware ranking.
+> Generative admission and structural diversity sit upstream of Neupert-spec function.
+> The next bottleneck is redesign (or constrained generation) for simultaneous heat-shock $T_m$, $\Delta\theta \ge 0.40$–$0.50$, and $P_{\mathrm{open}}(37^\circ\mathrm{C}) \le 0.20$, validated by local heatmaps and mutational rescue.
+> A one-sequence scaffold G–C clamp on lead 315 (**Scenario 3**) shows distributed instability across stems.
 
 ---
 
 ## 7. One-sentence abstract
 
-Under a two-tier Neupert-grounded checklist and a stroke-capped ranking function, EVA yields rare Tier-1 survivors and diverse folds, yet zero Tier-2 turnkey thermoswitches; top-3 audits and a Lead-315 scaffold G–C clamp PoC (Scenario 3) confirm current leads are distributed-instability design intermediates, not finished heat-shock RBS controllers.
+Under a two-tier Neupert-grounded checklist and a stroke-capped ranking function, EVA yields rare Tier-1 survivors and diverse folds, with Tier-2 readiness at 0/105.
+Top-3 audits and a Lead-315 scaffold G–C clamp PoC (Scenario 3) place current leads as distributed-instability design intermediates.
 
 ---
 
@@ -219,5 +224,6 @@ Running this test produces one of three distinct biophysical outcomes:
 
 **If You Get Scenario 3 (Partial Rescue):** ← *this run*
 
-* **The Claim:** You prove that EVA's generative prior sampled a globally diffuse folding ensemble rather than an isolated modular cassette.
-* **Thesis Impact:** Establishes the exact design boundary for future generative RNA models, showing they must be trained with explicit structural modularity constraints rather than sequence-level thermodynamic loss functions alone. Manual 2–3 pair G–C clamps are insufficient; multi-stem / multi-state redesign is the next step.
+* **The Claim:** EVA's generative prior sampled a globally diffuse folding ensemble on the audited leads.
+* **Thesis Impact:** Future generative RNA work needs structural modularity constraints alongside sequence-level thermodynamic objectives.
+  Multi-stem / multi-state redesign is the next step after single-stem G–C clamps.

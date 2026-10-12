@@ -226,7 +226,7 @@ def _(GT, PROJECT_ROOT, data_dir, fig_dir, loc, md, mo, np, pd, plt, px, style, 
         .tab_source_note(
             source_note=md(
                 "Hungarian matching ($|\\Delta L| \\le 40$, $|\\Delta GC| \\le 0.05$) "
-                "killed compositional shortcuts. All composition-only AUCs $< 0.50$. "
+                "Length/%GC-only AUCs $< 0.50$ on the matched panel. "
                 "PNG: 4× zoom + 96 DPI for Docs paste."
             )
         )
@@ -342,7 +342,7 @@ def _(GT, PROJECT_ROOT, data_dir, fig_dir, loc, md, mo, np, pd, plt, px, style, 
         rf"""
     ## Cohort matching and control baseline
 
-    > Did Hungarian length / %GC matching kill trivial classification shortcuts?
+    > Did length/%GC-only forests still separate classes after Hungarian matching?
 
     <br>
     **Matching gate**:
@@ -740,7 +740,7 @@ def _(curves, fig_dir, mo, post, trf):
     **High** ($\hat{{y}} \ge 0.80$): $n = {_bins["high_ge_0.80"]}$.
     <br>
     <br>
-    Near-total uncertainty out-of-family — not a hard discovery gate.
+    Near-total uncertainty out-of-family under StratifiedGroupKFold.
     <br>
     Saved → `notebooks/figures/thesis_figures/{conf_png.name}`.
     """

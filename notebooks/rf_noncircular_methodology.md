@@ -25,12 +25,16 @@
 
 <br>
 
-**What this model is not**:
+**What this model is for**:
 <br>
 <br>
-- a wet-lab thermoswitch call ($\hat{y} \ge 0.5$ is **not** a gate),
+- ranking sequences on the matched panel with static 37 °C features,
 <br>
-- a replacement for EVA yield triage ($Z$, $\Delta P_{\mathrm{RBS}}$, $E_{\mathrm{Rfam}}$).
+- reporting out-of-family transfer under StratifiedGroupKFold.
+<br>
+<br>
+Yield admission of EVA sequences uses the locked filters $Z$, $\Delta P_{\mathrm{RBS}}$, and $E_{\mathrm{Rfam}}$.
+$\hat{y} \ge 0.5$ is a ranking threshold on this forest only.
 
 ---
 
@@ -117,7 +121,7 @@ RNA thermometers (thermoswitches) are structured 5′ UTRs that sequester the Sh
 
 ## 3. Feature representation $X$
 
-Let each sequence be $s \in \{A,U,G,C\}^L$. Features are **intensive** where relevant so length does not re-enter as a raw count proxy.
+Let each sequence be $s \in \{A,U,G,C\}^L$. Features are **intensive** where relevant so length enters as a normalised rate.
 
 ### 3.1 Static 37 °C biophysics (Vienna / NUPACK)
 
@@ -274,7 +278,7 @@ $$
 
 <br>
 
-where $h_t(x)$ is the tree’s estimated class-$1$ probability (fraction of training labels in the leaf). Hard call (not used as a wet-lab gate):
+where $h_t(x)$ is the tree’s estimated class-$1$ probability (fraction of training labels in the leaf). Hard call used only for panel diagnostics:
 
 <br>
 
@@ -316,7 +320,8 @@ RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1).fit(X, y)
 
 <br>
 
-**Not the honesty ladder**: a separate shallow path in `thermo_classifier.py` uses $T=300$, `max_depth=4` (monotonic XGB / legacy paths). Do **not** confuse that with the non-circular RF.
+A separate shallow path in `thermo_classifier.py` uses $T=300$, `max_depth=4` (monotonic XGB / legacy paths).
+The thesis non-circular Random Forest uses $T=200$ with unconstrained depth.
 
 ### 4.3 Schematic train / test figure vs honesty CV
 
@@ -333,7 +338,7 @@ Thesis figures may show a **40% / 60%** train–test cartoon for pedagogy.
 
 <br>
 
-Do not report the cartoon split as the CV protocol unless a separate holdout script is cited.
+Honesty metrics in the sidecars come from StratifiedGroupKFold and the full-panel fit above.
 
 ---
 
@@ -369,7 +374,7 @@ Each row carries a group id:
 <br>
 - StratifiedGroupKFold AUC $\approx \mathbf{0.28}$,
 <br>
-- length-alone control AUC $\approx 0.20$ (length shortcut removed),
+- length-alone control AUC $\approx 0.20$ after length/%GC matching,
 <br>
 - historical circular 20-col GroupKFold AUC $\approx 0.19$.
 
@@ -380,11 +385,12 @@ Each row carries a group id:
 <br>
 - $0.97$ is family-shaped $k$-mer memory on a random split,
 <br>
-- $0.28$ is near-chance out of family — ranking aid, not a transferable detector.
+- $0.28$ is near-chance out of family and supports ranking on this panel under grouped CV.
 
 ### 5.3 Attribution: grouped permutation importance
 
-Do **not** use Gini/MDI for scientific attribution (trinucleotides fragment importance).
+Scientific attribution on this matrix uses grouped permutation importance.
+Gini/MDI splits importance across correlated trinucleotides.
 
 <br>
 
@@ -449,7 +455,8 @@ Panel-wide Spearman between Vienna and NUPACK ($T_m$, Hill, amplitude) is near z
 
 ### 6.4 Relation to EVA yield (locked, separate)
 
-EVA stream triage does **not** use RF $\hat{y}$. Locked yield gate:
+EVA stream triage admits sequences with the locked yield filters below.
+RF $\hat{y}$ is reserved for panel ranking.
 
 <br>
 
@@ -521,7 +528,7 @@ PYTHONPATH=src python src/thermo_sim/thermo_classifier.py posthoc \
 
 ## 9. Concise Methods paragraph (paste-ready)
 
-> We trained a scikit-learn Random Forest classifier ($T = 200$ trees, unconstrained depth, Gini splits, `random_state=42`) on a length/%GC-matched panel of $N = 2396$ sequences ($1198$ Rfam positives, $1198$ RefSeq 5′ UTR negatives). The feature matrix comprised $92$ non-circular columns: static $37^\circ\mathrm{C}$ Vienna/NUPACK biophysics, length and %GC, RBS pairing probability at $37^\circ\mathrm{C}$, intensive dinucleotide and trinucleotide frequencies, and SD–AUG spacing with a missing-AUG sentinel. Melting scalars ($T_m$, Hill coefficient, amplitude, MFE $Z$, $\Delta P_{\mathrm{RBS}}$, $\Delta\Delta G$) were excluded from $X$ and reserved for post-hoc gates. Honesty was assessed with $5$-fold `StratifiedGroupKFold` grouped by Rfam accession / RefSeq assembly (out-of-family ROC-AUC $\approx 0.28$), contrasted with leaky stratified splits (AUC $\approx 0.97$). The forest is used as a ranking aid, not as a binary wet-lab gate; EVA candidates continue to be admitted by the locked yield rule $Z \le -2 \wedge \Delta P_{\mathrm{RBS}} > 0 \wedge E_{\mathrm{Rfam}} > 10^{-3}$.
+> I trained a scikit-learn Random Forest classifier ($T = 200$ trees, unconstrained depth, Gini splits, `random_state=42`) on a length/%GC-matched panel of $N = 2396$ sequences ($1198$ Rfam positives, $1198$ RefSeq 5′ UTR negatives). The feature matrix comprised $92$ non-circular columns: static $37^\circ\mathrm{C}$ Vienna/NUPACK biophysics, length and %GC, RBS pairing probability at $37^\circ\mathrm{C}$, intensive dinucleotide and trinucleotide frequencies, and SD–AUG spacing with a missing-AUG sentinel. Melting scalars ($T_m$, Hill coefficient, amplitude, MFE $Z$, $\Delta P_{\mathrm{RBS}}$, $\Delta\Delta G$) were excluded from $X$ and reserved for post-hoc filters. Out-of-family transfer was assessed with $5$-fold `StratifiedGroupKFold` grouped by Rfam accession / RefSeq assembly (ROC-AUC $\approx 0.28$). Random stratified splits on the same matrix reached AUC $\approx 0.97$. The forest ranks panel sequences. EVA candidates are admitted by the locked yield filters $Z \le -2 \wedge \Delta P_{\mathrm{RBS}} > 0 \wedge E_{\mathrm{Rfam}} > 10^{-3}$.
 
 ---
 
