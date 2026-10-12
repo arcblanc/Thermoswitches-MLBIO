@@ -12,7 +12,7 @@ concurrency:
 jobs:
   lint-typecheck-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,17 +25,16 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Sync dependencies
-        run: |
-          uv sync --group dev --group biophysics --group notebooks --group cloud --group llm
+      - name: Sync project + dev tools
+        run: uv sync --group dev
 
-      - name: Ruff lint
-        run: uv run ruff check src scripts notebooks tests
+      - name: Ruff lint (core)
+        run: uv run ruff check src scripts tests
 
-      - name: Ruff format
-        run: uv run ruff format --check src scripts notebooks tests
+      - name: Ruff format (core)
+        run: uv run ruff format --check src scripts tests
 
-      - name: Type check (ty)
+      - name: Type check (ty, core)
         run: uv check
 
       - name: Pytest

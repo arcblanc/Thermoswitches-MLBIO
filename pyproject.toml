@@ -52,8 +52,19 @@ stubPath = "typings"
 extra-paths = ["typings"]
 
 [tool.ty.src]
-include = ["src", "scripts", "notebooks", "tests"]
-exclude = ["data", "nupack-4.1.0.1", "**/__pycache__"]
+# Core scientific + CLI surface for CI. Appendix LLM, cloud batches, and Marimo
+# apps are linted locally via `make cleanliness`.
+include = ["src", "scripts", "tests"]
+exclude = [
+    "data",
+    "nupack-4.1.0.1",
+    "**/__pycache__",
+    "src/de_novo_hallucinations/genererna",
+    "src/validation_embedding",
+    "scripts/cloud",
+    "scripts/generation",
+    "scripts/eva/eva_cloud_batch.py",
+]
 
 [tool.ty.analysis]
 # Optional / manual-install modules — suppress unresolved-import without type: ignore.
@@ -65,6 +76,16 @@ allowed-unresolved-imports = [
     "IPython",
     "IPython.**",
     "RNA",
+    "torch",
+    "torch.**",
+    "transformers",
+    "transformers.**",
+    "huggingface_hub",
+    "huggingface_hub.**",
+    "boto3",
+    "boto3.**",
+    "validation_embedding",
+    "validation_embedding.**",
 ]
 replace-imports-with-any = [
     "nupack",

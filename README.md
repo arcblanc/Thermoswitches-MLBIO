@@ -23,7 +23,8 @@ uv run marimo edit notebooks/05_eva_yield_gates_then_melting_audit.py
 
 # optional: biophysics engines + full quality gate
 uv sync --group biophysics                   # ViennaRNA → import RNA
-make ci                                      # ruff + format + uv check + pytest
+make ci                                      # project gate: core ruff + ty + pytest
+make cleanliness                             # local: also lint/format notebooks
 ```
 
 **Note:** This project can be enacted with dual engine support. NUPACK 4.1 is licensed separately. Install the wheel from `nupack-4.1.0.1/package/` if you need dual-engine sweeps. However, in the thesis, the yield gates in the thesis path lock to **ViennaRNA only**.
@@ -268,11 +269,18 @@ If you use ViennaRNA, NUPACK, EVA, Rfam, or Infernal/HMMER, cite those tools sep
 
 ## <a name="dguide"></a>Developers' Guide
 
-Editable install and CI:
+Project gate (matches GitHub Actions):
 
 ```sh
-uv sync --group dev --group biophysics --group notebooks --group cloud --group llm
-make lint && make format-fix && make typecheck && make test
+uv sync --group dev
+make ci
+```
+
+Local workstation install (Vienna, notebooks, cloud, LLM) and repo hygiene on Marimo apps:
+
+```sh
+make sync-full
+make cleanliness
 ```
 
 | Package | Responsibility |
