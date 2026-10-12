@@ -16,14 +16,13 @@ def ensure_generna_assets(
     ckpt_path = cache_dir / "model_updated.pt"
 
     token = hf_token or os.environ.get("HF_TOKEN") or None
-    kwargs = {"token": token} if token else {}
 
     if not ckpt_path.exists():
         downloaded = hf_hub_download(
             repo_id=GENERNA_REPO,
             filename="model_updated.pt",
             local_dir=str(cache_dir),
-            **kwargs,
+            token=token,
         )
         ckpt_path = Path(downloaded)
 
@@ -32,7 +31,7 @@ def ensure_generna_assets(
             repo_id=GENERNA_REPO,
             allow_patterns=["tokenizer/*"],
             local_dir=str(cache_dir),
-            **kwargs,
+            token=token,
         )
 
     return {"ckpt_path": ckpt_path, "tokenizer_path": tokenizer_dir}

@@ -577,8 +577,8 @@ def plot_eva_attrition_funnel(stages: list[tuple[str, int]]) -> Figure:
         if drop is not None:
             note = f"{note}   −{drop:,}"
         ax.text(
-            n + xmax * 0.018,
-            yi,
+            float(n) + xmax * 0.018,
+            float(yi),
             note,
             va="center",
             ha="left",
