@@ -37,7 +37,7 @@ For end-to-end rebuild commands see [`docs/cookbook.md`](docs/cookbook.md). For 
 - [Users' Guide](#uguide)
   - [Installation](#install)
   - [General usage](#general)
-  - [Use cases](#cases)
+  - [Pipeline stages](#stages)
     - [Audit the matched Rfam / RefSeq cohort](#cohort)
     - [Inspect the honest Random Forest](#rf)
     - [Triage EVA FASTA and audit melting](#eva)
@@ -150,7 +150,9 @@ make ci
 
 Committed lightweight sidecars under `data/processed/*.json` are the audit source of truth. Large CSVs, FASTA pools, and `.joblib` models are gitignored and must be regenerated locally (see [Data artefacts](#data)).
 
-### <a name="cases"></a>Use cases
+### <a name="stages"></a>Pipeline stages
+
+Each subsection is one stretch of the same analysis path (Marimo apps 01–07).
 
 #### <a name="cohort"></a>Audit the matched Rfam / RefSeq cohort
 
